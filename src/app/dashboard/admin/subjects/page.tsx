@@ -65,7 +65,7 @@ function CreateOfferingDialog() {
                         <Select>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกครูผู้สอน" />
-                            </Trigger>
+                            </SelectTrigger>
                             <SelectContent>
                                 {teachers.map(t => (
                                     <SelectItem key={t.userId} value={t.email}>{t.thaiName}</SelectItem>
