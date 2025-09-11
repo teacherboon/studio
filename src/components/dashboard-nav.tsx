@@ -22,6 +22,7 @@ import {
   BookUser,
   AlertTriangle,
   ClipboardEdit,
+  BookOpenCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -231,9 +232,14 @@ export function DashboardNav() {
                               <Link href="/dashboard/admin/classes">จัดการห้องเรียน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/subjects/manage"} tooltip="Subjects">
+                              <Link href="/dashboard/admin/subjects/manage">จัดการข้อมูลรายวิชา</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
                        <SidebarMenuItem>
-                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/subjects"} tooltip="Subjects">
-                              <Link href="/dashboard/admin/subjects">จัดการรายวิชา</Link>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/subjects"} tooltip="Offerings">
+                              <Link href="/dashboard/admin/subjects">จัดการรายวิชาที่เปิดสอน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
@@ -302,3 +308,5 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
+
+    

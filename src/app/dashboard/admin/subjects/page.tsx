@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2, BookPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,9 +36,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { classes, subjects as initialSubjects, users, offerings as initialOfferings, type Offering, type Subject, type Class as ClassType, type User } from "@/lib/data";
+import { classes, subjects as initialSubjects, users, offerings as initialOfferings, type Offering, type Subject } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import Link from 'next/link';
 
 
 function OfferingActionDropdown({ offering, onEdit, onDelete }: { offering: Offering, onEdit: () => void, onDelete: () => void }) {
@@ -88,6 +89,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
     const [selectedSubject, setSelectedSubject] = useState(offeringData?.subjectId || '');
     const [selectedTeacher, setSelectedTeacher] = useState(offeringData?.teacherEmail || '');
     const [selectedClass, setSelectedClass] = useState(offeringData?.classId || '');
+    const [periodsPerWeek, setPeriodsPerWeek] = useState(offeringData?.periodsPerWeek || 0);
 
     useEffect(() => {
         if (open) { // Reset form when dialog opens
@@ -95,10 +97,12 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                 setSelectedSubject(offeringData.subjectId);
                 setSelectedTeacher(offeringData.teacherEmail);
                 setSelectedClass(offeringData.classId);
+                setPeriodsPerWeek(offeringData.periodsPerWeek || 0);
             } else {
                 setSelectedSubject('');
                 setSelectedTeacher('');
                 setSelectedClass('');
+                setPeriodsPerWeek(0);
             }
         }
     }, [offeringData, open]);
@@ -123,6 +127,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
             yearMode: classDetails.yearMode,
             termLabel: classDetails.termLabel,
             isConduct: offeringData?.isConduct || false,
+            periodsPerWeek: periodsPerWeek,
         };
 
         onSave(newOffering);
@@ -183,6 +188,12 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="periods" className="text-right">
+                            คาบ/สัปดาห์
+                        </Label>
+                        <Input id="periods" type="number" value={periodsPerWeek} onChange={e => setPeriodsPerWeek(Number(e.target.value))} className="col-span-3" />
                     </div>
                 </div>
                 <DialogFooter>
@@ -317,7 +328,8 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
     );
 }
 
-export default function AdminSubjectsPage() {
+export default function AdminOfferingsPage() {
+    const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
     const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings);
     const [editingOffering, setEditingOffering] = useState<Offering | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -353,7 +365,7 @@ export default function AdminSubjectsPage() {
     };
 
     const getOfferingDetails = (offering: Offering) => {
-        const subject = initialSubjects.find(s => s.subjectId === offering.subjectId);
+        const subject = subjects.find(s => s.subjectId === offering.subjectId);
         const classInfo = classes.find(c => c.classId === offering.classId);
         const teacher = users.find(u => u.email === offering.teacherEmail);
         return { subject, classInfo, teacher };
@@ -363,13 +375,21 @@ export default function AdminSubjectsPage() {
         <div className="space-y-8">
              <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">จัดการรายวิชา</h1>
-                    <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลรายวิชาทั้งหมดในระบบ</p>
+                    <h1 className="text-3xl font-bold font-headline">จัดการรายวิชาที่เปิดสอน</h1>
+                    <p className="text-muted-foreground">จับคู่รายวิชา, ครูผู้สอน, และห้องเรียน</p>
                 </div>
-                 <Button onClick={() => handleOpenDialog()}>
-                    <PlusCircle className="mr-2" />
-                    เพิ่มรายวิชาที่เปิดสอน
-                 </Button>
+                 <div className='flex gap-2'>
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/admin/subjects/manage">
+                            <BookPlus className="mr-2" />
+                            จัดการข้อมูลรายวิชา
+                        </Link>
+                    </Button>
+                    <Button onClick={() => handleOpenDialog()}>
+                        <PlusCircle className="mr-2" />
+                        เพิ่มรายวิชาที่เปิดสอน
+                    </Button>
+                 </div>
             </div>
 
             <ImportOfferingsCard onOfferingsImported={handleOfferingsImport} />
