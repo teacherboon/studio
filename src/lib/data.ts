@@ -22,7 +22,7 @@ export const students: Student[] = [
 
 export const classes: Class[] = [
   { classId: 'c1', level: 'ป.6', room: '1', yearMode: 'PRIMARY', termLabel: '2568', yearBe: 2568, isActive: true, homeroomTeacherEmail: 'teacher.a@school.ac.th' },
-  { classId: 'c2', level: 'ม.1', room: '2', yearMode: 'SECONDARY', termLabel: '1/2568', yearBe: 2568, isActive: true, homeroomTeacherEmail: 'teacher.b@school.ac.th' },
+  { classId: 'c2', level: 'ม.1', room: '2', yearMode: 'SECONDARY', termLabel: '1/2568,2/2568', yearBe: 2568, isActive: true, homeroomTeacherEmail: 'teacher.b@school.ac.th' },
 ];
 
 export const enrollments: Enrollment[] = [
@@ -129,3 +129,5 @@ export const leaveRequests: LeaveRequest[] = [
         createdAt: new Date().toISOString(),
     }
 ];
+
+    

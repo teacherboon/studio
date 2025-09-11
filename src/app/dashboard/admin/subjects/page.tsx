@@ -36,7 +36,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { classes, subjects, users, offerings as initialOfferings, type Offering, type Subject, type Class as ClassType, type User } from "@/lib/data";
+import { classes, subjects as initialSubjects, users, offerings as initialOfferings, type Offering, type Subject, type Class as ClassType, type User } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
@@ -148,7 +148,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                                 <SelectValue placeholder="เลือกรายวิชา" />
                             </SelectTrigger>
                             <SelectContent>
-                                {subjects.map(s => (
+                                {initialSubjects.map(s => (
                                     <SelectItem key={s.subjectId} value={s.subjectId}>{s.subjectCode} - {s.subjectNameTh}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -236,7 +236,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
                     const [subjectId, classId, teacherEmail] = line.split(',').map(item => item.trim());
                     
                     const classDetails = classes.find(c => c.classId === classId);
-                    const subjectExists = subjects.some(s => s.subjectId === subjectId);
+                    const subjectExists = initialSubjects.some(s => s.subjectId === subjectId);
                     const teacherExists = users.some(u => u.email === teacherEmail);
 
                     if (classDetails && subjectExists && teacherExists) {
@@ -353,7 +353,7 @@ export default function AdminSubjectsPage() {
     };
 
     const getOfferingDetails = (offering: Offering) => {
-        const subject = subjects.find(s => s.subjectId === offering.subjectId);
+        const subject = initialSubjects.find(s => s.subjectId === offering.subjectId);
         const classInfo = classes.find(c => c.classId === offering.classId);
         const teacher = users.find(u => u.email === offering.teacherEmail);
         return { subject, classInfo, teacher };
@@ -387,6 +387,7 @@ export default function AdminSubjectsPage() {
                             <TableRow>
                                 <TableHead>รหัสวิชา</TableHead>
                                 <TableHead>ชื่อวิชา</TableHead>
+                                <TableHead>ประเภท</TableHead>
                                 <TableHead>ห้องเรียน</TableHead>
                                 <TableHead>ครูผู้สอน</TableHead>
                                 <TableHead className="text-center">หน่วยกิต</TableHead>
@@ -401,6 +402,7 @@ export default function AdminSubjectsPage() {
                                     <TableRow key={offering.offeringId}>
                                         <TableCell>{subject?.subjectCode}</TableCell>
                                         <TableCell>{subject?.subjectNameTh}</TableCell>
+                                        <TableCell>{subject?.type}</TableCell>
                                         <TableCell>ห้อง {classInfo?.level}/{classInfo?.room}</TableCell>
                                         <TableCell>{teacher?.thaiName}</TableCell>
                                         <TableCell className="text-center">{subject?.defaultCredits.toFixed(1)}</TableCell>
@@ -429,3 +431,5 @@ export default function AdminSubjectsPage() {
         </div>
     );
 }
+
+    
