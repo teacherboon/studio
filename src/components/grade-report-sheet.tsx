@@ -29,7 +29,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 
 
     return (
-        <div ref={ref} className="p-8 bg-white text-black font-['Sarabun']" style={{ width: '210mm', minHeight: '297mm', fontFamily: 'Sarabun, sans-serif' }}>
+        <div ref={ref} className="p-8 bg-white text-black font-['Sarabun'] print:shadow-none" style={{ width: '210mm', minHeight: '297mm', fontFamily: 'Sarabun, sans-serif' }}>
             <div className="text-center mb-4">
                 <div className="flex items-center justify-center gap-4">
                     <Logo className="w-20 h-20" />
@@ -50,7 +50,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 
             <table className="w-full border-collapse border border-black text-sm">
                 <thead>
-                    <tr className="bg-gray-100">
+                    <tr className="bg-gray-100 print:bg-gray-100">
                         <th className="border border-black p-1" rowSpan={2}>รหัสวิชา</th>
                         <th className="border border-black p-1" rowSpan={2}>รายวิชา</th>
                         <th className="border border-black p-1" rowSpan={2}>ประเภท</th>
@@ -58,7 +58,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <th className="border border-black p-1" colSpan={3}>การประเมินผลสัมฤทธิ์</th>
                         <th className="border border-black p-1" rowSpan={2}>หมายเหตุ</th>
                     </tr>
-                    <tr className="bg-gray-100">
+                    <tr className="bg-gray-100 print:bg-gray-100">
                         <th className="border border-black p-1">คะแนน</th>
                         <th className="border border-black p-1">สอบปกติ</th>
                         <th className="border border-black p-1">แก้ตัว</th>
@@ -86,7 +86,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 <div>
                     <table className="w-full border-collapse border border-black">
                          <thead>
-                            <tr className="bg-gray-100">
+                            <tr className="bg-gray-100 print:bg-gray-100">
                                 <th className="border border-black p-1 text-left" colSpan={2}>สรุปผลการประเมิน</th>
                             </tr>
                         </thead>
@@ -112,7 +112,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 
                     <table className="w-full border-collapse border border-black mt-2">
                         <thead>
-                            <tr className="bg-gray-100">
+                            <tr className="bg-gray-100 print:bg-gray-100">
                                 <th className="border border-black p-1 text-left" colSpan={2}>การประเมินคุณลักษณะ</th>
                             </tr>
                         </thead>
@@ -129,7 +129,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                     </table>
                      <table className="w-full border-collapse border border-black mt-2">
                         <thead>
-                            <tr className="bg-gray-100">
+                            <tr className="bg-gray-100 print:bg-gray-100">
                                 <th className="border border-black p-1 text-left" colSpan={2}>กิจกรรมพัฒนาผู้เรียน</th>
                             </tr>
                         </thead>

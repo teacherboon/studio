@@ -73,13 +73,15 @@ export default function StudentGradesPage() {
           };
           const result = await analyzeStudentScores(input);
           setAnalysisResult(result);
-      } catch (error) {
+      } catch (error: any) {
           console.error("Error analyzing scores:", error);
-          toast({
-              variant: "destructive",
-              title: "เกิดข้อผิดพลาด",
-              description: "ไม่สามารถวิเคราะห์ผลการเรียนได้ โปรดลองอีกครั้ง"
-          });
+          if (!error.message?.includes('overloaded')) {
+            toast({
+                variant: "destructive",
+                title: "เกิดข้อผิดพลาดในการวิเคราะห์",
+                description: "ไม่สามารถวิเคราะห์ผลการเรียนได้ โปรดลองอีกครั้ง"
+            });
+          }
       } finally {
           setIsAnalyzing(false);
       }
@@ -182,7 +184,7 @@ export default function StudentGradesPage() {
             </CardHeader>
             <CardContent>
                 {hasDataForSelectedTerm ? (
-                    <div className="flex justify-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                     <div className="flex justify-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-auto">
                         <div className="transform scale-[0.8] origin-top">
                            <GradeReportSheet 
                                 student={studentData} 
@@ -203,17 +205,18 @@ export default function StudentGradesPage() {
             </CardContent>
         </Card>
         
-        {/* Hidden component for printing */}
+        {/* Hidden component for printing. Always rendered but hidden with CSS */}
         <div className="hidden">
            {hasDataForSelectedTerm && (
-                <GradeReportSheet 
-                    ref={reportRef}
-                    student={studentData} 
-                    grades={gradeDetails} 
-                    gpa={gpa}
-                    currentClass={currentClass}
-                    attributes={attributesForYear || null}
-                />
+                <div ref={reportRef}>
+                    <GradeReportSheet 
+                        student={studentData} 
+                        grades={gradeDetails} 
+                        gpa={gpa}
+                        currentClass={currentClass}
+                        attributes={attributesForYear || null}
+                    />
+                </div>
            )}
         </div>
 
