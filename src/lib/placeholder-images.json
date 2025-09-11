@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "student-avatar-1",
+      "description": "Avatar for a male student",
+      "imageUrl": "https://picsum.photos/seed/student1/100/100",
+      "imageHint": "student portrait"
+    },
+    {
+      "id": "student-avatar-2",
+      "description": "Avatar for a female student",
+      "imageUrl": "https://picsum.photos/seed/student2/100/100",
+      "imageHint": "student portrait"
+    },
+    {
+      "id": "teacher-avatar-1",
+      "description": "Avatar for a teacher",
+      "imageUrl": "https://picsum.photos/seed/teacher1/100/100",
+      "imageHint": "teacher portrait"
+    },
+    {
+      "id": "classroom-background",
+      "description": "Background image of a classroom",
+      "imageUrl": "https://picsum.photos/seed/school/1920/1080",
+      "imageHint": "classroom students"
+    }
+  ]
 }
