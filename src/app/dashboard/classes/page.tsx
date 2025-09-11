@@ -52,8 +52,22 @@ export default function ClassesPage() {
 
     const offeringsForTerm = useMemo(() => {
         if (!selectedTerm) return [];
+
+        const isPrimaryTerm = !selectedTerm.includes('/');
+
         return offerings
-            .filter(o => o.termLabel.includes(selectedTerm))
+            .filter(o => {
+                const classInfo = classes.find(c => c.classId === o.classId);
+                if (!classInfo) return false;
+
+                const termMatch = o.termLabel.includes(selectedTerm);
+                
+                if (isPrimaryTerm) {
+                    return termMatch && classInfo.yearMode === 'PRIMARY';
+                } else {
+                    return termMatch && classInfo.yearMode === 'SECONDARY';
+                }
+            })
             .map(o => {
                 const subject = subjects.find(s => s.subjectId === o.subjectId);
                 const classInfo = classes.find(c => c.classId === o.classId);
