@@ -173,6 +173,15 @@ export default function ManageSubjectsPage() {
             setAllSubjects(prev => prev.map(s => s.subjectId === data.subjectId ? data : s));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาได้รับการอัปเดตแล้ว" });
         } else {
+            // Check for duplicate subject code
+            if (allSubjects.some(s => s.subjectCode.toLowerCase() === data.subjectCode.toLowerCase())) {
+                 toast({
+                    variant: "destructive",
+                    title: "สร้างไม่สำเร็จ",
+                    description: `มีรายวิชาที่ใช้รหัส "${data.subjectCode}" อยู่ในระบบแล้ว`,
+                });
+                return;
+            }
             setAllSubjects(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "รายวิชาใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
@@ -256,5 +265,3 @@ export default function ManageSubjectsPage() {
         </div>
     )
 }
-
-    

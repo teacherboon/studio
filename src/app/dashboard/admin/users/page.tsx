@@ -58,13 +58,14 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
         }
 
         const finalUserData: User = {
-            userId: userData?.userId || `user${Math.random()}`,
+            userId: userData?.userId || `user${Date.now()}`,
             displayName,
             thaiName,
             email,
             role,
             status: userData?.status || 'ACTIVE',
             createdAt: userData?.createdAt || new Date().toISOString(),
+            // Only update password if it's a new user or if a new password is provided
             password: password || userData?.password,
         };
 
@@ -85,7 +86,7 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">อีเมล</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" readOnly={!!userData} />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="password" className="text-right">รหัสผ่าน</Label>
@@ -218,7 +219,7 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
 
             if (header.includes('studentId')) {
                 processStudentCsv(text);
-            } else if (header.includes('homeroomClassId')) {
+            } else if (header.includes('displayName')) {
                 processTeacherCsv(text);
             } else {
                 toast({
@@ -238,13 +239,13 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             const newUsers: User[] = [];
             let importedCount = 0;
 
-            lines.forEach((line) => {
+            lines.forEach((line, index) => {
                 if (line.trim() === '') return;
                 const [studentId, prefixTh, firstNameTh, lastNameTh, email, password] = line.split(',').map(s => s.trim());
 
                 if (studentId && email && password) {
                     newUsers.push({
-                        userId: `user-csv-${Date.now()}-${importedCount}`,
+                        userId: `user-csv-s-${Date.now()}-${index}`,
                         role: 'STUDENT',
                         email,
                         displayName: `${firstNameTh} ${lastNameTh}`,
@@ -260,10 +261,6 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             
             if (importedCount > 0) {
                 onUsersImported(newUsers);
-                toast({
-                    title: 'อัปโหลดสำเร็จ',
-                    description: `นำเข้าข้อมูลนักเรียนใหม่ ${importedCount} คน`,
-                });
             } else {
                 toast({
                     variant: 'destructive',
@@ -287,13 +284,13 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             const newUsers: User[] = [];
             let importedCount = 0;
 
-            lines.forEach((line) => {
+            lines.forEach((line, index) => {
                 if (line.trim() === '') return;
                 const [email, displayName, thaiName, password, homeroomClassId] = line.split(',').map(s => s.trim());
 
                 if (email && displayName && thaiName && password) {
                     newUsers.push({
-                        userId: `user-csv-${Date.now()}-${importedCount}`,
+                        userId: `user-csv-t-${Date.now()}-${index}`,
                         role: 'TEACHER',
                         email,
                         displayName,
@@ -309,10 +306,6 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             
             if (importedCount > 0) {
                 onUsersImported(newUsers);
-                toast({
-                    title: 'อัปโหลดสำเร็จ',
-                    description: `นำเข้าข้อมูลครูใหม่ ${importedCount} คน`,
-                });
             } else {
                 toast({
                     variant: 'destructive',
@@ -389,6 +382,15 @@ export default function AdminUsersPage() {
             setUserList(prev => prev.map(u => u.userId === data.userId ? data : u));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลผู้ใช้ได้รับการอัปเดตแล้ว" });
         } else {
+            // Check for duplicate email before adding
+            if (userList.some(u => u.email.toLowerCase() === data.email.toLowerCase())) {
+                toast({
+                    variant: "destructive",
+                    title: "สร้างไม่สำเร็จ",
+                    description: "มีผู้ใช้งานอีเมลนี้ในระบบแล้ว",
+                });
+                return;
+            }
             setUserList(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "ผู้ใช้ใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
@@ -408,7 +410,24 @@ export default function AdminUsersPage() {
     };
 
     const handleUsersImport = (newUsers: User[]) => {
-        setUserList(prev => [...prev, ...newUsers]);
+        const existingEmails = new Set(userList.map(u => u.email.toLowerCase()));
+        const uniqueNewUsers = newUsers.filter(newUser => !existingEmails.has(newUser.email.toLowerCase()));
+
+        if (uniqueNewUsers.length < newUsers.length) {
+            toast({
+                variant: "default",
+                title: "ตรวจพบข้อมูลซ้ำซ้อน",
+                description: `ข้ามการนำเข้าผู้ใช้ ${newUsers.length - uniqueNewUsers.length} คน เนื่องจากมีอีเมลซ้ำกับข้อมูลที่มีอยู่แล้ว`
+            });
+        }
+        
+        if (uniqueNewUsers.length > 0) {
+            setUserList(prev => [...prev, ...uniqueNewUsers]);
+            toast({
+                title: 'อัปโหลดสำเร็จ',
+                description: `นำเข้าข้อมูลผู้ใช้ใหม่ ${uniqueNewUsers.length} คน`,
+            });
+        }
     }
 
     return (

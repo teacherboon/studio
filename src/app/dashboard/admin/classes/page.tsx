@@ -62,7 +62,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
 
         if (yearMode === 'PRIMARY') {
             finalClassData = {
-                classId: classData?.classId || `c${Math.random()}`,
+                classId: classData?.classId || `c${Date.now()}`,
                 yearBe: year,
                 level,
                 room,
@@ -76,7 +76,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                  return;
             }
              finalClassData = {
-                classId: classData?.classId || `c${Math.random()}`,
+                classId: classData?.classId || `c${Date.now()}`,
                 yearBe: year,
                 level,
                 room,
@@ -222,7 +222,19 @@ export default function AdminClassesPage() {
             setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลห้องเรียนได้รับการอัปเดตแล้ว" });
         } else {
-            setAllClasses(prev => [data, ...prev]);
+            // Check for duplicates before adding
+            const isDuplicate = allClasses.some(
+                c => c.yearBe === data.yearBe && c.level === data.level && c.room === data.room
+            );
+            if (isDuplicate) {
+                toast({
+                    variant: "destructive",
+                    title: "สร้างไม่สำเร็จ",
+                    description: `ห้องเรียน ${data.level}/${data.room} สำหรับปีการศึกษา ${data.yearBe} มีอยู่แล้ว`,
+                });
+                return;
+            }
+            setAllClasses(prev => [data, ...prev].sort((a, b) => b.yearBe - a.yearBe));
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
     }
@@ -261,6 +273,7 @@ export default function AdminClassesPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>ปีการศึกษา</TableHead>
                                 <TableHead>ระดับชั้น</TableHead>
                                 <TableHead>ห้อง</TableHead>
                                 <TableHead>ภาคเรียน/ปีการศึกษา</TableHead>
@@ -271,6 +284,7 @@ export default function AdminClassesPage() {
                         <TableBody>
                             {allClasses.map((c) => (
                                 <TableRow key={c.classId}>
+                                    <TableCell>{c.yearBe}</TableCell>
                                     <TableCell>{c.level}</TableCell>
                                     <TableCell>{c.room}</TableCell>
                                     <TableCell>{c.termLabel.replace(',', ', ')}</TableCell>
@@ -302,5 +316,3 @@ export default function AdminClassesPage() {
         </div>
     )
 }
-
-    

@@ -212,8 +212,8 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
     const fileInputRef = useState<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
-        const header = 'subjectId,classId,teacherEmail\n';
-        const sampleData = 'subj1,c1,teacher.a@school.ac.th\n';
+        const header = 'subjectId,classId,teacherEmail,periodsPerWeek\n';
+        const sampleData = 'subj1,c1,teacher.a@school.ac.th,2\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -244,7 +244,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
 
                 lines.forEach((line, index) => {
                     if (line.trim() === '') return;
-                    const [subjectId, classId, teacherEmail] = line.split(',').map(item => item.trim());
+                    const [subjectId, classId, teacherEmail, periodsPerWeekStr] = line.split(',').map(item => item.trim());
                     
                     const classDetails = classes.find(c => c.classId === classId);
                     const subjectExists = initialSubjects.some(s => s.subjectId === subjectId);
@@ -259,6 +259,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
                             yearMode: classDetails.yearMode,
                             termLabel: classDetails.termLabel,
                             isConduct: false,
+                            periodsPerWeek: periodsPerWeekStr ? Number(periodsPerWeekStr) : undefined,
                         });
                         importedCount++;
                     }
@@ -266,10 +267,6 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
 
                 if (importedCount > 0) {
                     onOfferingsImported(newOfferings);
-                    toast({
-                        title: 'อัปโหลดสำเร็จ',
-                        description: `นำเข้ารายวิชาที่เปิดสอนใหม่ ${importedCount} รายการ`,
-                    });
                 } else {
                      toast({
                         variant: 'destructive',
@@ -301,7 +298,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
                 <div>
                     <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
                     <p className="text-sm text-muted-foreground mb-2">
-                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectId, classId, teacherEmail)
+                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectId, classId, teacherEmail, periodsPerWeek)
                     </p>
                     <Button variant="outline" onClick={handleDownloadTemplate}>
                         <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
@@ -342,6 +339,15 @@ export default function AdminOfferingsPage() {
             setOfferingsList(prev => prev.map(o => o.offeringId === data.offeringId ? data : o));
              toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาที่เปิดสอนได้รับการอัปเดตแล้ว" });
         } else {
+             // Check for duplicate offering
+            if (offeringsList.some(o => o.subjectId === data.subjectId && o.classId === data.classId && o.teacherEmail === data.teacherEmail)) {
+                toast({
+                    variant: "destructive",
+                    title: "สร้างไม่สำเร็จ",
+                    description: `รายวิชานี้ถูกเปิดสอนให้ห้องนี้และครูท่านนี้แล้ว`,
+                });
+                return;
+            }
             setOfferingsList(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย" });
         }
@@ -361,7 +367,24 @@ export default function AdminOfferingsPage() {
     };
 
     const handleOfferingsImport = (newOfferings: Offering[]) => {
-        setOfferingsList(prev => [...prev, ...newOfferings]);
+        const existingOfferings = new Set(offeringsList.map(o => `${o.subjectId}-${o.classId}-${o.teacherEmail}`));
+        const uniqueNewOfferings = newOfferings.filter(no => !existingOfferings.has(`${no.subjectId}-${no.classId}-${no.teacherEmail}`));
+
+        if (uniqueNewOfferings.length < newOfferings.length) {
+            toast({
+                variant: "default",
+                title: "ตรวจพบข้อมูลซ้ำซ้อน",
+                description: `ข้ามการนำเข้ารายการที่ซ้ำซ้อน ${newOfferings.length - uniqueNewOfferings.length} รายการ`
+            });
+        }
+
+        if (uniqueNewOfferings.length > 0) {
+            setOfferingsList(prev => [...prev, ...uniqueNewOfferings]);
+            toast({
+                title: 'อัปโหลดสำเร็จ',
+                description: `นำเข้ารายวิชาที่เปิดสอนใหม่ ${uniqueNewOfferings.length} รายการ`,
+            });
+        }
     };
 
     const getOfferingDetails = (offering: Offering) => {
@@ -451,5 +474,3 @@ export default function AdminOfferingsPage() {
         </div>
     );
 }
-
-    

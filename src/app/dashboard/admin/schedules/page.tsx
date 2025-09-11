@@ -271,7 +271,7 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
         const sampleData = 'off1,MONDAY,1\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-t;' });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
@@ -319,10 +319,7 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
 
                 if (importedCount > 0) {
                     onSchedulesImported(newSchedules);
-                    toast({
-                        title: 'อัปโหลดสำเร็จ',
-                        description: `นำเข้าตารางสอนใหม่ ${importedCount} รายการ`,
-                    });
+                    
                 } else {
                      toast({
                         variant: 'destructive',
@@ -427,20 +424,41 @@ export default function AdminSchedulesPage() {
     }
 
     const handleSchedulesImport = (newSchedules: Schedule[]) => {
-        // Simple merge: add new schedules, could be enhanced with conflict checking
-        setAllSchedules(prevSchedules => {
-            const existingIds = new Set(prevSchedules.map(s => `${s.offeringId}-${s.dayOfWeek}-${s.period}`));
-            const uniqueNewSchedules = newSchedules.filter(ns => !existingIds.has(`${ns.offeringId}-${ns.dayOfWeek}-${ns.period}`));
+        const schedulesWithConflicts: Schedule[] = [];
+        const uniqueNewSchedules: Schedule[] = [];
+
+        newSchedules.forEach(ns => {
+            const offering = offerings.find(o => o.offeringId === ns.offeringId);
+            if (!offering) return;
+            const teacherEmail = offering.teacherEmail;
+
+            const hasConflict = allSchedules.some(s => {
+                 const existingOffering = offerings.find(o => o.offeringId === s.offeringId);
+                 return existingOffering?.teacherEmail === teacherEmail && s.dayOfWeek === ns.dayOfWeek && s.period === ns.period;
+            });
             
-            if (uniqueNewSchedules.length < newSchedules.length) {
-                toast({
-                    variant: 'default',
-                    title: 'ตรวจพบข้อมูลซ้ำซ้อน',
-                    description: `ระบบได้ข้ามการนำเข้ารายการที่ซ้ำซ้อนจำนวน ${newSchedules.length - uniqueNewSchedules.length} รายการ`
-                })
+            if (hasConflict) {
+                schedulesWithConflicts.push(ns);
+            } else {
+                uniqueNewSchedules.push(ns);
             }
-            return [...prevSchedules, ...uniqueNewSchedules];
         });
+
+        if (schedulesWithConflicts.length > 0) {
+            toast({
+                variant: "destructive",
+                title: "ตรวจพบข้อมูลซ้ำซ้อน",
+                description: `ไม่สามารถนำเข้า ${schedulesWithConflicts.length} รายการ เนื่องจากครูมีคาบสอนในเวลาดังกล่าวแล้ว`
+            });
+        }
+        
+        if (uniqueNewSchedules.length > 0) {
+            setAllSchedules(prevSchedules => [...prevSchedules, ...uniqueNewSchedules]);
+            toast({
+                title: 'อัปโหลดสำเร็จ',
+                description: `นำเข้าตารางสอนใหม่ ${uniqueNewSchedules.length} รายการ`,
+            });
+        }
     }
 
     return (
@@ -503,5 +521,3 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
-
-    
