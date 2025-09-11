@@ -26,9 +26,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { students, scores, offerings, subjects, classes } from "@/lib/data";
+import { students, scores, offerings, subjects, classes, enrollments } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Wand, BarChart, User, FileText, PieChart } from "lucide-react";
+import { Loader2, Wand, BarChart, User, FileText, PieChart, School } from "lucide-react";
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from "@/ai/flows/analyze-student-scores";
 import type { StudentGradeDetails } from "@/lib/types";
 import { calculateGPA } from "@/lib/utils";
@@ -66,14 +66,29 @@ function AnalysisResultCard({ result }: { result: AnalyzeStudentScoresOutput }) 
 }
 
 export function StudentGradeViewer() {
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
   const { toast } = useToast();
 
+  const studentsInClass = useMemo(() => {
+    if (!selectedClassId) return [];
+    const studentIds = enrollments
+        .filter(e => e.classId === selectedClassId)
+        .map(e => e.studentId);
+    return students.filter(s => studentIds.includes(s.studentId));
+  }, [selectedClassId]);
+
   const selectedStudent = useMemo(() => {
     return students.find(s => s.studentId === selectedStudentId);
   }, [selectedStudentId]);
+
+  const handleClassChange = (classId: string) => {
+    setSelectedClassId(classId);
+    setSelectedStudentId("");
+    setAnalysisResult(null);
+  }
 
   const studentGrades = useMemo(() => {
     if (!selectedStudentId) return [];
@@ -156,26 +171,39 @@ export function StudentGradeViewer() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User />
-            เลือกนักเรียน
+            <School />
+            ค้นหานักเรียน
           </CardTitle>
           <CardDescription>
-            เลือกนักเรียนที่ต้องการดูข้อมูลผลการเรียนในภาพรวมทั้งหมด
+            เลือกห้องเรียนก่อน จากนั้นจึงเลือกนักเรียนที่ต้องการดูข้อมูล
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Select onValueChange={setSelectedStudentId} value={selectedStudentId}>
-            <SelectTrigger className="w-full md:w-[320px]">
-              <SelectValue placeholder="เลือกนักเรียน..." />
-            </SelectTrigger>
-            <SelectContent>
-              {students.map(student => (
-                <SelectItem key={student.studentId} value={student.studentId}>
-                  {`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <CardContent className="flex flex-col md:flex-row gap-4">
+            <Select onValueChange={handleClassChange} value={selectedClassId}>
+                <SelectTrigger className="w-full md:w-[320px]">
+                <SelectValue placeholder="เลือกห้องเรียน..." />
+                </SelectTrigger>
+                <SelectContent>
+                {classes.map(c => (
+                    <SelectItem key={c.classId} value={c.classId}>
+                        ห้อง {c.level}/{c.room} ({c.yearBe})
+                    </SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+
+            <Select onValueChange={setSelectedStudentId} value={selectedStudentId} disabled={!selectedClassId}>
+                <SelectTrigger className="w-full md:w-[320px]">
+                <SelectValue placeholder="เลือกนักเรียน..." />
+                </SelectTrigger>
+                <SelectContent>
+                {studentsInClass.map(student => (
+                    <SelectItem key={student.studentId} value={student.studentId}>
+                    {`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}
+                    </SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
         </CardContent>
       </Card>
 
