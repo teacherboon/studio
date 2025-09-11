@@ -4,7 +4,7 @@
 import { useState, ChangeEvent, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, UserSquare, Upload, Download, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import { PlusCircle, UserSquare, Upload, Download, Trash2, CheckCircle, AlertCircle, Wand, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -33,6 +33,7 @@ import { schedules as initialSchedules, offerings as initialOfferings, subjects,
 import type { DayOfWeek, Schedule, Offering, Subject, Class as ClassType, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { autoSchedule, AutoScheduleOutput } from '@/ai/flows/auto-schedule-flow';
 
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
@@ -77,10 +78,8 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
                 remaining,
             }
         }).sort((a, b) => {
-            // Prioritize items with remaining > 0
             if (a.remaining > 0 && b.remaining <= 0) return -1;
             if (b.remaining > 0 && a.remaining <= 0) return 1;
-            // Then sort by remaining descending
             return b.remaining - a.remaining;
         });
     }, [schedules, offerings]);
@@ -156,6 +155,107 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
     );
 }
 
+function AutoScheduleCard({ 
+    allSchedules,
+    allOfferings,
+    onSchedulesCreated 
+}: { 
+    allSchedules: Schedule[], 
+    allOfferings: Offering[],
+    onSchedulesCreated: (newSchedules: Schedule[]) => void,
+}) {
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState<AutoScheduleOutput | null>(null);
+
+    const handleAutoSchedule = async () => {
+        setLoading(true);
+        setResult(null);
+        try {
+            const classData = classes.map(c => ({ classId: c.classId, name: `${c.level}/${c.room}` }));
+            const teacherData = users.filter(u => u.role === 'TEACHER').map(t => ({ email: t.email, name: t.thaiName }));
+            const periodNumbers = periods.filter(p => p.period !== null).map(p => p.period as number);
+            const dayValues = daysOfWeek.map(d => d.value);
+
+            const response = await autoSchedule({
+                offerings: allOfferings,
+                existingSchedules: allSchedules,
+                teachers: teacherData,
+                classes: classData,
+                periods: periodNumbers,
+                days: dayValues,
+            });
+
+            setResult(response);
+            if (response.newSchedules.length > 0) {
+                onSchedulesCreated(response.newSchedules);
+                 toast({
+                    title: 'จัดตารางสอนอัตโนมัติสำเร็จ',
+                    description: `สร้างคาบสอนใหม่ ${response.newSchedules.length} คาบ และพบ ${response.failedSchedules.length} รายการที่จัดไม่สำเร็จ`,
+                });
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'ไม่สามารถจัดตารางสอนเพิ่มเติมได้',
+                    description: `ไม่พบช่องว่างสำหรับคาบสอนที่เหลือ หรือจัดครบหมดแล้ว`,
+                });
+            }
+        } catch (error) {
+            console.error("Error during auto-scheduling:", error);
+            toast({
+                variant: 'destructive',
+                title: 'เกิดข้อผิดพลาด',
+                description: 'ไม่สามารถจัดตารางสอนอัตโนมัติได้',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>จัดตารางสอนอัตโนมัติด้วย AI</CardTitle>
+                <CardDescription>
+                    คลิกปุ่มเพื่อให้ AI ช่วยจัดคาบสอนที่ยังว่างอยู่ทั้งหมดลงในตารางโดยอัตโนมัติ
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button onClick={handleAutoSchedule} disabled={loading}>
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 animate-spin" />
+                            กำลังวิเคราะห์และจัดตาราง...
+                        </>
+                    ) : (
+                        <>
+                            <Wand className="mr-2" />
+                            เริ่มจัดตารางสอนอัตโนมัติ
+                        </>
+                    )}
+                </Button>
+
+                {result && result.failedSchedules.length > 0 && (
+                    <div className="mt-4">
+                        <h4 className="font-semibold">รายการที่จัดไม่สำเร็จ:</h4>
+                        <ul className="list-disc list-inside text-sm text-muted-foreground mt-2">
+                            {result.failedSchedules.map(fail => {
+                                const offering = allOfferings.find(o => o.offeringId === fail.offeringId);
+                                const subject = subjects.find(s => s.subjectId === offering?.subjectId);
+                                const classInfo = classes.find(c => c.classId === offering?.classId);
+                                return (
+                                    <li key={fail.offeringId}>
+                                        <strong>{subject?.subjectCode} (ห้อง {classInfo?.level}/{classInfo?.room}):</strong> {fail.reason}
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 function TeacherScheduleTable({ 
     teacherEmail, 
@@ -600,13 +700,20 @@ export default function AdminSchedulesPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">จัดตารางสอนครู</h1>
-                    <p className="text-muted-foreground">ดูและจัดการตารางสอนสำหรับครูแต่ละคน</p>
+                    <h1 className="text-3xl font-bold font-headline">จัดตารางสอน</h1>
+                    <p className="text-muted-foreground">ดูและจัดการตารางสอนสำหรับครู, จัดตารางอัตโนมัติ, หรือนำเข้าข้อมูล</p>
                 </div>
                 <AddScheduleDialog onAddSchedule={handleAddSchedule} allSchedules={allSchedules} />
             </div>
 
             <ScheduleSummaryCard schedules={allSchedules} offerings={initialOfferings.filter(o => o.isConduct === false)} />
+            
+            <AutoScheduleCard 
+                allSchedules={allSchedules} 
+                allOfferings={initialOfferings.filter(o => o.isConduct === false)}
+                onSchedulesCreated={(newSchedules) => setAllSchedules(prev => [...prev, ...newSchedules])}
+            />
+
             <ImportSchedulesCard onSchedulesImported={handleSchedulesImport} />
 
 
