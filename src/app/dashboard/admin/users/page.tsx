@@ -44,9 +44,8 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
     const [displayName, setDisplayName] = useState(userData?.displayName || '');
     const [thaiName, setThaiName] = useState(userData?.thaiName || '');
     const [email, setEmail] = useState(userData?.email || '');
-    const [role, setRole] = useState<UserRole>(userData?.role || 'STUDENT');
+    const [role, setRole] = useState<UserRole>(userData?.role || 'TEACHER');
     const [password, setPassword] = useState('');
-    const [studentId, setStudentId] = useState(userData?.studentId || '');
     const [homeroomClassId, setHomeroomClassId] = useState(userData?.homeroomClassId || '');
 
     const handleSave = () => {
@@ -65,11 +64,10 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
             thaiName,
             email,
             role,
-            studentId: role === 'STUDENT' ? studentId : undefined,
+            studentId: undefined, // No longer managed here
             homeroomClassId: role === 'TEACHER' ? homeroomClassId : undefined,
             status: userData?.status || 'ACTIVE',
             createdAt: userData?.createdAt || new Date().toISOString(),
-            // Only update password if it's a new user or if a new password is provided
             password: password || userData?.password,
         };
 
@@ -112,16 +110,9 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                         <SelectContent>
                             <SelectItem value="ADMIN">ผู้ดูแลระบบ (ADMIN)</SelectItem>
                             <SelectItem value="TEACHER">ครู (TEACHER)</SelectItem>
-                            <SelectItem value="STUDENT">นักเรียน (STUDENT)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
-                 {role === 'STUDENT' && (
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="studentId" className="text-right">รหัสนักเรียน (Student ID)</Label>
-                        <Input id="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} className="col-span-3" placeholder="เช่น stu1, stu2" />
-                    </div>
-                )}
                  {role === 'TEACHER' && (
                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="homeroomClassId" className="text-right">ID ห้องประจำชั้น</Label>
@@ -145,9 +136,9 @@ function CreateOrEditUserDialog({ user, onSave, open, onOpenChange }: { user?: U
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{user?.userId ? 'แก้ไขผู้ใช้งาน' : 'สร้างผู้ใช้งานใหม่'}</DialogTitle>
+                    <DialogTitle>{user?.userId ? 'แก้ไขบุคลากร' : 'สร้างบุคลากรใหม่'}</DialogTitle>
                     <DialogDescription>
-                        {user?.userId ? 'แก้ไขข้อมูลผู้ใช้ในระบบ' : 'กรอกข้อมูลเพื่อสร้างผู้ใช้ใหม่'}
+                        {user?.userId ? 'แก้ไขข้อมูลบุคลากรในระบบ (ครู, ผู้ดูแลระบบ)' : 'กรอกข้อมูลเพื่อสร้างบุคลากรใหม่'}
                     </DialogDescription>
                 </DialogHeader>
                 {open && <UserForm userData={user || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
@@ -182,7 +173,7 @@ function ActionDropdown({ user, onEdit, onDelete }: { user: User, onEdit: () => 
                         <AlertDialogHeader>
                             <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
                             <AlertDialogDescription>
-                                คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ "{user.displayName}"? การกระทำนี้ไม่สามารถย้อนกลับได้
+                                คุณแน่ใจหรือไม่ว่าต้องการลบบุคลากร "{user.displayName}"? การกระทำนี้ไม่สามารถย้อนกลับได้
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -201,16 +192,15 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
-        const header = 'email,displayName,thaiName,password,role,studentId,homeroomClassId\n';
-        const sampleData1 = 'teacher.c@school.ac.th,Teacher C,ครูซี,password123,TEACHER,,c3\n';
-        const sampleData2 = 'student.new@school.ac.th,New Kid,เด็กใหม่,password123,STUDENT,stu-new,\n';
+        const header = 'email,password,displayName,thaiName,role,homeroomClassId\n';
+        const sampleData = 'teacher.d@school.ac.th,password123,Teacher D,ครูดี,TEACHER,c4\n';
         
-        const csvContent = "﻿" + header + sampleData1 + sampleData2;
+        const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `users_import_template.csv`);
+        link.setAttribute('download', `personnel_import_template.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -234,9 +224,9 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                 lines.forEach((line, index) => {
                      if (line.trim() === '') return;
                      const parts = line.split(',').map(s => s.trim());
-                     const [email, displayName, thaiName, password, role, studentId, homeroomClassId] = parts;
+                     const [email, password, displayName, thaiName, role, homeroomClassId] = parts;
 
-                     if (email && displayName && thaiName && password && role && (role === 'ADMIN' || role === 'TEACHER' || role === 'STUDENT')) {
+                     if (email && password && displayName && thaiName && role && (role === 'ADMIN' || role === 'TEACHER')) {
                          newUsers.push({
                             userId: `user-csv-${Date.now()}-${index}`,
                             email,
@@ -244,7 +234,6 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                             thaiName,
                             password,
                             role: role as UserRole,
-                            studentId: role === 'STUDENT' ? studentId : undefined,
                             homeroomClassId: role === 'TEACHER' ? homeroomClassId : undefined,
                             status: 'ACTIVE',
                             createdAt: new Date().toISOString(),
@@ -258,7 +247,7 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                     toast({
                         variant: 'destructive',
                         title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                        description: `ไม่พบข้อมูลผู้ใช้ที่ถูกต้องในไฟล์ CSV`,
+                        description: `ไม่พบข้อมูลบุคลากรที่ถูกต้องในไฟล์ CSV`,
                     });
                 }
 
@@ -277,9 +266,9 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
     return (
         <Card>
             <CardHeader>
-                <CardTitle>นำเข้าข้อมูลผู้ใช้ (CSV)</CardTitle>
+                <CardTitle>นำเข้าข้อมูลบุคลากร (CSV)</CardTitle>
                 <CardDescription>
-                    เพิ่มข้อมูลผู้ใช้จำนวนมาก (ครู, นักเรียน, ผู้ดูแลระบบ) ผ่านไฟล์ CSV
+                    เพิ่มข้อมูลครูหรือผู้ดูแลระบบจำนวนมากผ่านไฟล์ CSV
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -289,7 +278,7 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                         ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง
                     </p>
                     <Button variant="outline" onClick={handleDownloadTemplate}>
-                        <Download className="mr-2"/> เทมเพลตสำหรับผู้ใช้ทั้งหมด
+                        <Download className="mr-2"/> เทมเพลตสำหรับบุคลากร
                     </Button>
                 </div>
                  <div>
@@ -315,21 +304,24 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
 
 
 export default function AdminUsersPage() {
-    const [userList, setUserList] = useState<User[]>(initialUsers.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
+    
+    // Filter out students
+    const personnel = allUsers.filter(u => u.role !== 'STUDENT').sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const handleSaveUser = (data: User) => {
-        const isEditing = userList.some(u => u.userId === data.userId);
+        const isEditing = allUsers.some(u => u.userId === data.userId);
 
         if (isEditing) {
-            setUserList(prev => prev.map(u => u.userId === data.userId ? data : u));
-            toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลผู้ใช้ได้รับการอัปเดตแล้ว" });
+            setAllUsers(prev => prev.map(u => u.userId === data.userId ? data : u));
+            toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลบุคลากรได้รับการอัปเดตแล้ว" });
         } else {
-             if (userList.some(u => u.email.toLowerCase() === data.email.toLowerCase())) {
+             if (allUsers.some(u => u.email.toLowerCase() === data.email.toLowerCase())) {
                 toast({
                     variant: "destructive",
                     title: "สร้างไม่สำเร็จ",
@@ -337,17 +329,17 @@ export default function AdminUsersPage() {
                 });
                 return;
             }
-            setUserList(prev => [data, ...prev].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-            toast({ title: "สร้างสำเร็จ", description: "ผู้ใช้ใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
+            setAllUsers(prev => [data, ...prev]);
+            toast({ title: "สร้างสำเร็จ", description: "บุคลากรใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsDialogOpen(false);
     };
 
     const handleDeleteUser = (userId: string) => {
-        setUserList(prev => prev.filter(u => u.userId !== userId));
+        setAllUsers(prev => prev.filter(u => u.userId !== userId));
         toast({
-            title: 'ลบผู้ใช้สำเร็จ',
-            description: 'ผู้ใช้ได้ถูกลบออกจากระบบแล้ว',
+            title: 'ลบบุคลากรสำเร็จ',
+            description: 'บุคลากรได้ถูกลบออกจากระบบแล้ว',
         })
     };
     
@@ -357,48 +349,48 @@ export default function AdminUsersPage() {
     };
 
     const handleUsersImport = (newUsers: User[]) => {
-        const existingEmails = new Set(userList.map(u => u.email.toLowerCase()));
+        const existingEmails = new Set(allUsers.map(u => u.email.toLowerCase()));
         const uniqueNewUsers = newUsers.filter(newUser => !existingEmails.has(newUser.email.toLowerCase()));
 
         if (uniqueNewUsers.length < newUsers.length) {
             toast({
                 variant: "default",
                 title: "ตรวจพบข้อมูลซ้ำซ้อน",
-                description: `ข้ามการนำเข้าผู้ใช้ ${newUsers.length - uniqueNewUsers.length} คน เนื่องจากมีอีเมลซ้ำกับข้อมูลที่มีอยู่แล้ว`
+                description: `ข้ามการนำเข้า ${newUsers.length - uniqueNewUsers.length} รายการ เนื่องจากมีอีเมลซ้ำกับข้อมูลที่มีอยู่แล้ว`
             });
         }
         
         if (uniqueNewUsers.length > 0) {
-            setUserList(prev => [...prev, ...uniqueNewUsers].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            setAllUsers(prev => [...prev, ...uniqueNewUsers]);
             toast({
                 title: 'อัปโหลดสำเร็จ',
-                description: `นำเข้าข้อมูลผู้ใช้ใหม่ ${uniqueNewUsers.length} คน`,
+                description: `นำเข้าข้อมูลบุคลากรใหม่ ${uniqueNewUsers.length} คน`,
             });
         }
     }
     
-    const paginatedUsers = userList.slice(
+    const paginatedPersonnel = personnel.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
 
-    const totalPages = Math.ceil(userList.length / itemsPerPage);
+    const totalPages = Math.ceil(personnel.length / itemsPerPage);
 
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold font-headline">จัดการผู้ใช้งาน</h1>
-                <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2" /> เพิ่มผู้ใช้งานใหม่</Button>
+                <h1 className="text-3xl font-bold font-headline">จัดการบุคลากร</h1>
+                <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2" /> เพิ่มบุคลากรใหม่</Button>
             </div>
-            <p className="text-muted-foreground">เพิ่ม, แก้ไข, และดูบัญชีผู้ใช้ทั้งหมดในระบบ</p>
+            <p className="text-muted-foreground">เพิ่ม, แก้ไข, และดูบัญชีผู้ใช้ที่เป็นครูหรือผู้ดูแลระบบ</p>
 
             <UserImportCard onUsersImported={handleUsersImport}/>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>รายชื่อผู้ใช้ทั้งหมด</CardTitle>
+                    <CardTitle>รายชื่อบุคลากรทั้งหมด</CardTitle>
                     <CardDescription>
-                        แสดงรายชื่อผู้ใช้งานทั้งหมดในระบบ
+                        แสดงรายชื่อครูและผู้ดูแลระบบทั้งหมดในระบบ
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -413,15 +405,14 @@ export default function AdminUsersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedUsers.map((user) => (
+                            {paginatedPersonnel.map((user) => (
                                 <TableRow key={user.userId}>
                                     <TableCell className="font-medium">{user.displayName} ({user.thaiName})</TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell>
-                                        <Badge variant={
-                                            user.role === 'ADMIN' ? 'destructive' :
-                                            user.role === 'TEACHER' ? 'secondary' : 'default'
-                                        }>{user.role}</Badge>
+                                        <Badge variant={user.role === 'ADMIN' ? 'destructive' : 'secondary'}>
+                                            {user.role}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell>
                                          <span className={`px-2 py-1 text-xs rounded-full ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
