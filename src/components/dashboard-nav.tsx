@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   LogOut,
   FileText,
+  Wand,
 } from "lucide-react";
 import {
   Sidebar,
@@ -94,7 +95,7 @@ export function DashboardNav() {
             </SidebarMenuItem>
           )}
 
-          {user?.role === 'TEACHER' && (
+          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
@@ -109,7 +110,7 @@ export function DashboardNav() {
             </SidebarMenuItem>
           )}
           
-          {user?.role === 'TEACHER' && (
+          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
@@ -119,6 +120,21 @@ export function DashboardNav() {
                 <Link href="/dashboard/at-risk">
                   <AlertTriangle />
                   <span>นักเรียนกลุ่มเสี่ยง</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+
+          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/dashboard/score-analysis"}
+                tooltip="Score Analysis"
+              >
+                <Link href="/dashboard/score-analysis">
+                  <Wand />
+                  <span>วิเคราะห์ผลการเรียน</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
