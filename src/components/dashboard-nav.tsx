@@ -12,6 +12,10 @@ import {
   LogOut,
   FileText,
   Wand,
+  Book,
+  School,
+  ChevronDown,
+  LayoutDashboard
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,9 +35,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/hooks/use-user";
 import { Logo } from "@/components/logo";
+import { cn } from "@/lib/utils";
 
 export function DashboardNav() {
   const pathname = usePathname();
@@ -48,6 +58,8 @@ export function DashboardNav() {
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('');
   }
+
+  const isAdminSectionOpen = pathname.startsWith('/dashboard/admin');
 
   return (
     <Sidebar
@@ -74,7 +86,7 @@ export function DashboardNav() {
               tooltip="Dashboard"
             >
               <Link href="/dashboard">
-                <Home />
+                <LayoutDashboard />
                 <span>แดชบอร์ด</span>
               </Link>
             </SidebarMenuButton>
@@ -104,7 +116,7 @@ export function DashboardNav() {
               >
                 <Link href="/dashboard/classes">
                   <BookUser />
-                  <span>รายวิชาของฉัน</span>
+                  <span>จัดการคะแนน</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -141,18 +153,39 @@ export function DashboardNav() {
           )}
           
           {user?.role === 'ADMIN' && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith("/dashboard/admin")}
-                tooltip="Admin"
-              >
-                <Link href="/dashboard/admin/users">
-                  <Users />
-                  <span>จัดการผู้ใช้</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <Collapsible defaultOpen={isAdminSectionOpen}>
+                <SidebarMenuItem asChild>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            variant="ghost"
+                            className="w-full justify-start"
+                        >
+                            <Users />
+                            <span>ส่วนผู้ดูแลระบบ</span>
+                            <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                </SidebarMenuItem>
+                <CollapsibleContent>
+                    <SidebarMenu className="ml-4 my-1 border-l pl-4">
+                       <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/users"} tooltip="Users">
+                              <Link href="/dashboard/admin/users">ผู้ใช้งาน</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/classes"} tooltip="Classes">
+                              <Link href="/dashboard/admin/classes">ห้องเรียน</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/subjects"} tooltip="Subjects">
+                              <Link href="/dashboard/admin/subjects">รายวิชา</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
+                    </SidebarMenu>
+                </CollapsibleContent>
+            </Collapsible>
           )}
 
         </SidebarMenu>
