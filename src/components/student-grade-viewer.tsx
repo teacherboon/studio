@@ -66,11 +66,21 @@ function AnalysisResultCard({ result }: { result: AnalyzeStudentScoresOutput }) 
 }
 
 export function StudentGradeViewer() {
+  const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
   const { toast } = useToast();
+
+  const academicYears = useMemo(() => {
+    return [...new Set(classes.map(c => c.yearBe))].sort((a, b) => b - a);
+  }, []);
+
+  const classesInYear = useMemo(() => {
+      if (!selectedYear) return [];
+      return classes.filter(c => c.yearBe === Number(selectedYear));
+  }, [selectedYear]);
 
   const studentsInClass = useMemo(() => {
     if (!selectedClassId) return [];
@@ -83,6 +93,13 @@ export function StudentGradeViewer() {
   const selectedStudent = useMemo(() => {
     return students.find(s => s.studentId === selectedStudentId);
   }, [selectedStudentId]);
+
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    setSelectedClassId("");
+    setSelectedStudentId("");
+    setAnalysisResult(null);
+  }
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
@@ -175,25 +192,38 @@ export function StudentGradeViewer() {
             ค้นหานักเรียน
           </CardTitle>
           <CardDescription>
-            เลือกห้องเรียนก่อน จากนั้นจึงเลือกนักเรียนที่ต้องการดูข้อมูล
+            เลือกปีการศึกษา, ห้องเรียน, จากนั้นจึงเลือกนักเรียนที่ต้องการดูข้อมูล
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col md:flex-row gap-4">
-            <Select onValueChange={handleClassChange} value={selectedClassId}>
-                <SelectTrigger className="w-full md:w-[320px]">
+            <Select onValueChange={handleYearChange} value={selectedYear}>
+                <SelectTrigger className="w-full md:w-[240px]">
+                <SelectValue placeholder="เลือกปีการศึกษา..." />
+                </SelectTrigger>
+                <SelectContent>
+                {academicYears.map(year => (
+                    <SelectItem key={year} value={String(year)}>
+                        ปีการศึกษา {year}
+                    </SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+
+            <Select onValueChange={handleClassChange} value={selectedClassId} disabled={!selectedYear}>
+                <SelectTrigger className="w-full md:w-[240px]">
                 <SelectValue placeholder="เลือกห้องเรียน..." />
                 </SelectTrigger>
                 <SelectContent>
-                {classes.map(c => (
+                {classesInYear.map(c => (
                     <SelectItem key={c.classId} value={c.classId}>
-                        ห้อง {c.level}/{c.room} ({c.yearBe})
+                        ห้อง {c.level}/{c.room}
                     </SelectItem>
                 ))}
                 </SelectContent>
             </Select>
 
             <Select onValueChange={setSelectedStudentId} value={selectedStudentId} disabled={!selectedClassId}>
-                <SelectTrigger className="w-full md:w-[320px]">
+                <SelectTrigger className="w-full md:w-[240px]">
                 <SelectValue placeholder="เลือกนักเรียน..." />
                 </SelectTrigger>
                 <SelectContent>
