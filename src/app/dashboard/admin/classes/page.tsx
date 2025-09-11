@@ -26,10 +26,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { classes } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
+import type { Class } from '@/lib/types';
 
 function CreateClassDialog() {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
+    const [yearMode, setYearMode] = useState<'PRIMARY' | 'SECONDARY' | ''>('');
 
     const handleCreate = () => {
         // In a real app, you would handle form state and submission here
@@ -48,7 +50,7 @@ function CreateClassDialog() {
                     สร้างห้องเรียนใหม่
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>สร้างห้องเรียนใหม่</DialogTitle>
                     <DialogDescription>
@@ -56,6 +58,12 @@ function CreateClassDialog() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="year" className="text-right">
+                            ปีการศึกษา
+                        </Label>
+                        <Input id="year" type="number" placeholder="เช่น 2568" className="col-span-3" />
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="level" className="text-right">
                             ระดับชั้น
@@ -68,19 +76,13 @@ function CreateClassDialog() {
                         </Label>
                         <Input id="room" placeholder="เช่น 1 หรือ 2" className="col-span-3" />
                     </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="year" className="text-right">
-                            ปีการศึกษา
-                        </Label>
-                        <Input id="year" type="number" placeholder="เช่น 2568" className="col-span-3" />
-                    </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="term" className="text-right">
-                            ภาคเรียน/ปี
+                        <Label htmlFor="yearMode" className="text-right">
+                            ระบบภาคเรียน
                         </Label>
-                        <Select>
+                        <Select onValueChange={(value) => setYearMode(value as any)}>
                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="เลือกระบบภาคเรียน" />
+                                <SelectValue placeholder="เลือกระบบ" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="PRIMARY">ระบบปีการศึกษา (ประถม)</SelectItem>
@@ -88,6 +90,24 @@ function CreateClassDialog() {
                             </SelectContent>
                         </Select>
                     </div>
+
+                    {yearMode === 'SECONDARY' && (
+                         <>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="term1_label" className="text-right">
+                                    ป้ายภาคเรียน 1
+                                </Label>
+                                <Input id="term1_label" placeholder="เช่น 1/2568" className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="term2_label" className="text-right">
+                                    ป้ายภาคเรียน 2
+                                </Label>
+                                <Input id="term2_label" placeholder="เช่น 2/2568" className="col-span-3" />
+                            </div>
+                         </>
+                    )}
+
                 </div>
                 <DialogFooter>
                     <Button type="button" onClick={handleCreate}>สร้างห้องเรียน</Button>
@@ -97,36 +117,34 @@ function CreateClassDialog() {
     )
 }
 
-function ActionDropdown() {
+function ActionDropdown({ classItem }: { classItem: Class }) {
     const { toast } = useToast();
-    const showPlaceholderToast = () => {
+    const showPlaceholderToast = (action: 'แก้ไข' | 'ลบ') => {
         toast({
             title: "ยังไม่พร้อมใช้งาน",
-            description: "ฟังก์ชันแก้ไขและลบยังไม่สามารถใช้งานได้",
+            description: `ฟังก์ชัน ${action} ห้อง ${classItem.level}/${classItem.room} ยังไม่สามารถใช้งานได้`,
         });
     };
 
     return (
-        <Dialog>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">เปิดเมนู</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={showPlaceholderToast}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>แก้ไข</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={showPlaceholderToast} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>ลบ</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </Dialog>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">เปิดเมนู</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => showPlaceholderToast('แก้ไข')}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    <span>แก้ไข</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => showPlaceholderToast('ลบ')} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>ลบ</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -171,7 +189,7 @@ export default function AdminClassesPage() {
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <ActionDropdown />
+                                        <ActionDropdown classItem={c} />
                                     </TableCell>
                                 </TableRow>
                             ))}
