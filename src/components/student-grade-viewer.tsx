@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -212,6 +213,13 @@ export function StudentGradeViewer() {
       setLoadingAnalysis(false);
     }
   };
+  
+  const studentOptions = useMemo(() => {
+    return studentsForTerm.map(student => ({
+        value: student.studentId,
+        label: `${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`
+    }));
+  }, [studentsForTerm]);
 
   return (
     <div className="space-y-6">
@@ -260,18 +268,14 @@ export function StudentGradeViewer() {
 
             <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-muted-foreground" />
-                <Select onValueChange={handleStudentChange} value={selectedStudentId} disabled={!selectedTerm}>
-                    <SelectTrigger>
-                    <SelectValue placeholder="เลือกนักเรียน..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                    {studentsForTerm.map(student => (
-                        <SelectItem key={student.studentId} value={student.studentId}>
-                        {`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}
-                        </SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
+                <Combobox
+                    options={studentOptions}
+                    value={selectedStudentId}
+                    onValueChange={handleStudentChange}
+                    placeholder="เลือกนักเรียน..."
+                    searchPlaceholder="ค้นหานักเรียน..."
+                    disabled={!selectedTerm}
+                />
             </div>
         </CardContent>
       </Card>

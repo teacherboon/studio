@@ -34,6 +34,7 @@ import type { DayOfWeek, Schedule, Offering, Subject, Class as ClassType, User }
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { autoSchedule, AutoScheduleOutput } from '@/ai/flows/auto-schedule-flow';
+import { Combobox } from '@/components/ui/combobox';
 
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
@@ -590,6 +591,13 @@ export default function AdminSchedulesPage() {
     const selectedTeacher = allTeachers.find(t => t.email === selectedTeacherEmail);
     const { toast } = useToast();
 
+    const teacherOptions = useMemo(() => {
+        return allTeachers.map(t => ({
+            value: t.email,
+            label: `${t.thaiName} (${t.email})`,
+        }))
+    }, [allTeachers]);
+
     const handleAddSchedule = (schedule: Schedule) => {
         const offering = initialOfferings.find(o => o.offeringId === schedule.offeringId);
         if (!offering) return;
@@ -728,18 +736,14 @@ export default function AdminSchedulesPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <Select onValueChange={setSelectedTeacherEmail} value={selectedTeacherEmail}>
-                        <SelectTrigger className="w-full md:w-[320px]">
-                            <SelectValue placeholder="เลือกคุณครู..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {allTeachers.map(t => (
-                                <SelectItem key={t.userId} value={t.email}>
-                                    {t.thaiName} ({t.email})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                     <Combobox
+                        options={teacherOptions}
+                        value={selectedTeacherEmail}
+                        onValueChange={setSelectedTeacherEmail}
+                        placeholder="เลือกคุณครู..."
+                        searchPlaceholder="ค้นหาคุณครู..."
+                        className="w-full md:w-[320px]"
+                     />
                 </CardContent>
             </Card>
 
@@ -765,7 +769,5 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
-
-    
 
     
