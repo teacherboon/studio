@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { classes } from "@/lib/data";
+import { useToast } from "@/hooks/use-toast";
 
 function CreateClassDialog() {
     return (
@@ -34,6 +41,39 @@ function CreateClassDialog() {
             </DialogContent>
         </Dialog>
     )
+}
+
+function ActionDropdown() {
+    const { toast } = useToast();
+    const showPlaceholderToast = () => {
+        toast({
+            title: "ยังไม่พร้อมใช้งาน",
+            description: "ฟังก์ชันแก้ไขและลบยังไม่สามารถใช้งานได้",
+        });
+    };
+
+    return (
+        <Dialog>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">เปิดเมนู</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={showPlaceholderToast}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>แก้ไข</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={showPlaceholderToast} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>ลบ</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </Dialog>
+    );
 }
 
 export default function AdminClassesPage() {
@@ -62,6 +102,7 @@ export default function AdminClassesPage() {
                                 <TableHead>ห้อง</TableHead>
                                 <TableHead>ภาคเรียน/ปีการศึกษา</TableHead>
                                 <TableHead>สถานะ</TableHead>
+                                <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -74,6 +115,9 @@ export default function AdminClassesPage() {
                                         <span className={`px-2 py-1 text-xs rounded-full ${c.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                                             {c.isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                                         </span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <ActionDropdown />
                                     </TableCell>
                                 </TableRow>
                             ))}

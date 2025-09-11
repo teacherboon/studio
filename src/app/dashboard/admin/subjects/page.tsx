@@ -2,7 +2,7 @@
 "use client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Upload, Download } from "lucide-react";
+import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,20 +11,64 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { classes, subjects, users, offerings } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
+function ActionDropdown() {
+    const { toast } = useToast();
+    const showPlaceholderToast = () => {
+        toast({
+            title: "ยังไม่พร้อมใช้งาน",
+            description: "ฟังก์ชันแก้ไขและลบยังไม่สามารถใช้งานได้",
+        });
+    };
+
+    return (
+        <Dialog>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">เปิดเมนู</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={showPlaceholderToast}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>แก้ไข</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={showPlaceholderToast} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>ลบ</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </Dialog>
+    );
+}
+
 // --- Sub-component for Creating Offerings ---
 function CreateOfferingDialog() {
     const teachers = users.filter(u => u.role === 'TEACHER');
+    const { toast } = useToast();
 
     // In a real app, you'd use state and an onSubmit handler here
     const handleSave = () => {
         // Placeholder for save logic
         console.log("Saving new offering...");
+        toast({
+            title: 'บันทึกสำเร็จ (จำลอง)',
+            description: 'เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย',
+        });
     };
 
     return (
@@ -185,6 +229,7 @@ export default function AdminSubjectsPage() {
                                 <TableHead>ครูผู้สอน</TableHead>
                                 <TableHead className="text-center">หน่วยกิต</TableHead>
                                 <TableHead className="text-center">คาบ/สัปดาห์</TableHead>
+                                <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -200,6 +245,9 @@ export default function AdminSubjectsPage() {
                                         <TableCell>{teacher?.thaiName}</TableCell>
                                         <TableCell className="text-center">{subject?.defaultCredits.toFixed(1)}</TableCell>
                                         <TableCell className="text-center">{offering.periodsPerWeek || '-'}</TableCell>
+                                        <TableCell className="text-right">
+                                            <ActionDropdown />
+                                        </TableCell>
                                     </TableRow>
                                 );
                             })}
@@ -210,5 +258,3 @@ export default function AdminSubjectsPage() {
         </div>
     );
 }
-
-    
