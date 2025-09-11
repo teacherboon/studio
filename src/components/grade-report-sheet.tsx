@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Logo } from '@/components/logo';
 import { Student, StudentGradeDetails, Class } from '@/lib/types';
@@ -36,7 +37,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
             <div className="grid grid-cols-4 gap-x-4 gap-y-2 mb-4 border-t border-b border-black py-2 text-sm">
                 <div><strong>ชื่อ:</strong> {student.prefixTh}{student.firstNameTh} {student.lastNameTh}</div>
                 <div><strong>เลขประจำตัว:</strong> {student.stuCode}</div>
-                <div><strong>เลขที่:</strong> 2</div>
+                <div><strong>เลขที่:</strong> {student.classNumber || '-'}</div>
                 <div></div>
             </div>
 

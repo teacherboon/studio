@@ -20,6 +20,7 @@ export interface Student {
   lastNameTh: string;
   level: string; // e.g., 'ป.1' to 'ป.6', 'ม.1' to 'ม.6'
   room: string; // e.g., '1', '2'
+  classNumber?: number; // เลขที่
   homeroomEmail: string;
   status: 'ACTIVE' | 'INACTIVE';
   admitYearBe: number;
