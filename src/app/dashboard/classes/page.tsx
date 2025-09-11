@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, ChangeEvent, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,6 +12,7 @@ import { Download, Upload, Users, FileText, Save, Edit, School, BookOpen, Calend
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Offering, Class } from '@/lib/types';
+import { useRef, ChangeEvent } from 'react';
 
 
 interface OfferingWithDetails extends Offering {
@@ -36,35 +37,14 @@ export default function ClassesPage() {
 
     const termsForYear = useMemo(() => {
         if (!selectedYear) return [];
-        const terms = new Set<string>();
-        offerings.forEach(o => {
-            if (o.yearBe === Number(selectedYear)) {
-                if (o.yearMode === 'PRIMARY') {
-                    terms.add(o.termLabel);
-                } else { // SECONDARY
-                    o.termLabel.split(',').forEach(term => terms.add(term));
-                }
-            }
-        });
-        return Array.from(terms);
+        return [...new Set(offerings.filter(o => o.yearBe === Number(selectedYear)).map(o => o.termLabel))];
     }, [selectedYear]);
 
     const offeringsForTerm = useMemo(() => {
         if (!selectedTerm || !selectedYear) return [];
 
-        const isPrimaryTerm = !selectedTerm.includes('/');
-
         return offerings
-            .filter(o => {
-                const termMatch = o.termLabel.includes(selectedTerm);
-                const yearMatch = o.yearBe === Number(selectedYear);
-                
-                if (isPrimaryTerm) {
-                    return termMatch && yearMatch && o.yearMode === 'PRIMARY';
-                } else {
-                    return termMatch && yearMatch && o.yearMode === 'SECONDARY';
-                }
-            })
+            .filter(o => o.yearBe === Number(selectedYear) && o.termLabel === selectedTerm)
             .map(o => {
                 const subject = subjects.find(s => s.subjectId === o.subjectId);
                 const classInfo = classes.find(c => c.classId === o.classId);
@@ -90,7 +70,7 @@ export default function ClassesPage() {
     }, [selectedOffering]);
 
     // Effect to initialize scores when class changes
-    useMemo(() => {
+    useEffect(() => {
         if (!selectedOffering) {
             setStudentScores({});
             return;
@@ -220,7 +200,9 @@ export default function ClassesPage() {
         };
         reader.readAsText(file);
         // Reset file input
-        event.target.value = '';
+        if (event.target) {
+            event.target.value = '';
+        }
     }
 
     return (
@@ -237,7 +219,7 @@ export default function ClassesPage() {
                         กรุณาเลือกข้อมูลตามลำดับเพื่อค้นหารายการที่ต้องการจัดการ
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                          <Calendar className="h-5 w-5 text-muted-foreground" />
                         <Select onValueChange={handleYearChange} value={selectedYear}>
@@ -254,29 +236,25 @@ export default function ClassesPage() {
                         </Select>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <Select onValueChange={handleTermChange} value={selectedTerm} disabled={!selectedYear}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="เลือกภาคเรียน..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {termsForYear.map(term => (
-                                    <SelectItem key={term} value={term}>
-                                        {term.includes('/') ? `ภาคเรียนที่ ${term}`: `ตลอดปีการศึกษา`}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
                      <div className="flex items-center gap-2">
                         <BookOpen className="h-5 w-5 text-muted-foreground" />
-                         <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedTerm}>
+                         <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedYear}>
                             <SelectTrigger>
                                 <SelectValue placeholder="เลือกรายวิชา..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {offeringsForTerm.map(o => (
+                                {offerings
+                                    .filter(o => o.yearBe === Number(selectedYear))
+                                    .map(o => {
+                                        const subject = subjects.find(s => s.subjectId === o.subjectId);
+                                        const classInfo = classes.find(c => c.classId === o.classId);
+                                        return {
+                                            ...o,
+                                            subjectName: subject?.subjectNameTh || 'N/A',
+                                            subjectCode: subject?.subjectCode || 'N/A',
+                                            className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A'
+                                        }
+                                    }).map(o => (
                                     <SelectItem key={o.offeringId} value={o.offeringId}>
                                         {o.subjectCode} - {o.subjectName} ({o.className})
                                     </SelectItem>

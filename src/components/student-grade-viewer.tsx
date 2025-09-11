@@ -68,7 +68,6 @@ function AnalysisResultCard({ result }: { result: AnalyzeStudentScoresOutput }) 
 
 export function StudentGradeViewer() {
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
@@ -78,42 +77,26 @@ export function StudentGradeViewer() {
     return [...new Set(classes.map(c => c.yearBe))].sort((a, b) => b - a);
   }, []);
 
-  const termsForYear = useMemo(() => {
-        if (!selectedYear) return [];
-        const terms = new Set<string>();
-        offerings.forEach(o => {
-            const classInfo = classes.find(c => c.classId === o.classId);
-            if (classInfo?.yearBe === Number(selectedYear)) {
-                if (classInfo.yearMode === 'PRIMARY') {
-                    terms.add(classInfo.termLabel);
-                } else { // SECONDARY
-                    classInfo.termLabel.split(',').forEach(term => terms.add(term));
-                }
-            }
-        });
-        return Array.from(terms);
-    }, [selectedYear]);
+  const studentsForYear = useMemo(() => {
+    if (!selectedYear) return [];
 
-    const studentsForTerm = useMemo(() => {
-        if (!selectedTerm) return [];
+    const classIdsInYear = new Set<string>();
+    classes.forEach(c => {
+        if (c.yearBe === Number(selectedYear)) {
+            classIdsInYear.add(c.classId);
+        }
+    });
 
-        const classIdsInTerm = new Set<string>();
-        offerings.forEach(o => {
-            if (o.termLabel.includes(selectedTerm)) {
-                classIdsInTerm.add(o.classId);
-            }
-        });
+    const studentIdsInClass = new Set<string>();
+    enrollments.forEach(e => {
+        if (classIdsInYear.has(e.classId)) {
+            studentIdsInClass.add(e.studentId);
+        }
+    });
+    
+    return students.filter(s => studentIdsInClass.has(s.studentId));
 
-        const studentIdsInClass = new Set<string>();
-        enrollments.forEach(e => {
-            if (classIdsInTerm.has(e.classId)) {
-                studentIdsInClass.add(e.studentId);
-            }
-        });
-        
-        return students.filter(s => studentIdsInClass.has(s.studentId));
-
-    }, [selectedTerm]);
+  }, [selectedYear]);
 
 
   const selectedStudent = useMemo(() => {
@@ -122,13 +105,6 @@ export function StudentGradeViewer() {
 
   const handleYearChange = (year: string) => {
     setSelectedYear(year);
-    setSelectedTerm("");
-    setSelectedStudentId("");
-    setAnalysisResult(null);
-  }
-
-  const handleTermChange = (term: string) => {
-    setSelectedTerm(term);
     setSelectedStudentId("");
     setAnalysisResult(null);
   }
@@ -215,11 +191,11 @@ export function StudentGradeViewer() {
   };
   
   const studentOptions = useMemo(() => {
-    return studentsForTerm.map(student => ({
+    return studentsForYear.map(student => ({
         value: student.studentId,
         label: `${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`
     }));
-  }, [studentsForTerm]);
+  }, [studentsForYear]);
 
   return (
     <div className="space-y-6">
@@ -233,7 +209,7 @@ export function StudentGradeViewer() {
             เลือกปีการศึกษา, ภาคเรียน, จากนั้นจึงเลือกนักเรียนที่ต้องการดูข้อมูล
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <Select onValueChange={handleYearChange} value={selectedYear}>
@@ -251,22 +227,6 @@ export function StudentGradeViewer() {
             </div>
             
             <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <Select onValueChange={handleTermChange} value={selectedTerm} disabled={!selectedYear}>
-                    <SelectTrigger>
-                    <SelectValue placeholder="เลือกภาคเรียน..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                    {termsForYear.map(term => (
-                        <SelectItem key={term} value={term}>
-                            {term.includes('/') ? `ภาคเรียนที่ ${term}`: `ตลอดปีการศึกษา`}
-                        </SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-muted-foreground" />
                 <Combobox
                     options={studentOptions}
@@ -274,7 +234,7 @@ export function StudentGradeViewer() {
                     onValueChange={handleStudentChange}
                     placeholder="เลือกนักเรียน..."
                     searchPlaceholder="ค้นหานักเรียน..."
-                    disabled={!selectedTerm}
+                    disabled={!selectedYear}
                 />
             </div>
         </CardContent>
@@ -358,5 +318,3 @@ export function StudentGradeViewer() {
     </div>
   );
 }
-
-    

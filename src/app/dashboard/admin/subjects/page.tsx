@@ -91,10 +91,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
     const [selectedClass, setSelectedClass] = useState(offeringData?.classId || '');
     const [periodsPerWeek, setPeriodsPerWeek] = useState(offeringData?.periodsPerWeek || 0);
     const [yearBe, setYearBe] = useState(offeringData?.yearBe || new Date().getFullYear() + 543);
-    const [termLabel, setTermLabel] = useState(offeringData?.termLabel || '');
-    const [yearMode, setYearMode] = useState<'PRIMARY' | 'SECONDARY'>(offeringData?.yearMode || 'PRIMARY');
-
-
+    
     useEffect(() => {
         if (open) { // Reset form when dialog opens
             if (offeringData) {
@@ -103,22 +100,18 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                 setSelectedClass(offeringData.classId);
                 setPeriodsPerWeek(offeringData.periodsPerWeek || 0);
                 setYearBe(offeringData.yearBe);
-                setTermLabel(offeringData.termLabel);
-                setYearMode(offeringData.yearMode);
             } else {
                 setSelectedSubject('');
                 setSelectedTeacher('');
                 setSelectedClass('');
                 setPeriodsPerWeek(0);
                 setYearBe(new Date().getFullYear() + 543);
-                setTermLabel('');
-                setYearMode('PRIMARY');
             }
         }
     }, [offeringData, open]);
 
     const handleSave = () => {
-        if (!selectedSubject || !selectedTeacher || !selectedClass || !yearBe || !termLabel) {
+        if (!selectedSubject || !selectedTeacher || !selectedClass || !yearBe) {
             toast({ variant: 'destructive', title: 'ข้อมูลไม่ครบถ้วน', description: 'กรุณากรอกข้อมูลให้ครบทุกช่อง' });
             return;
         }
@@ -134,8 +127,8 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
             subjectId: selectedSubject,
             classId: selectedClass,
             teacherEmail: selectedTeacher,
-            yearMode,
-            termLabel,
+            yearMode: 'PRIMARY',
+            termLabel: String(yearBe),
             yearBe,
             isConduct: offeringData?.isConduct || false,
             periodsPerWeek: periodsPerWeek,
@@ -158,22 +151,6 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="year" className="text-right">ปีการศึกษา</Label>
                         <Input id="year" type="number" value={yearBe} onChange={e => setYearBe(Number(e.target.value))} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="yearMode" className="text-right">ระบบภาคเรียน</Label>
-                         <Select value={yearMode} onValueChange={(v) => setYearMode(v as any)}>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="เลือกระบบ" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="PRIMARY">ระบบปีการศึกษา (ประถม)</SelectItem>
-                                <SelectItem value="SECONDARY">ระบบภาคเรียน (มัธยม)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="termLabel" className="text-right">ป้ายภาคเรียน</Label>
-                        <Input id="termLabel" value={termLabel} onChange={e => setTermLabel(e.target.value)} placeholder="เช่น 2568 หรือ 1/2568" className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="subject" className="text-right">
@@ -315,7 +292,9 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
             }
         };
         reader.readAsText(file);
-        event.target.value = '';
+        if (event.target) {
+            event.target.value = '';
+        }
     }
 
     return (
