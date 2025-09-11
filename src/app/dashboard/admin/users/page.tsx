@@ -61,11 +61,11 @@ const UserImportCard = () => {
 
     const handleDownloadTemplate = (type: 'teachers' | 'students') => {
         const header = type === 'teachers' 
-            ? 'email,displayName,thaiName,homeroomClass\n'
-            : 'stuCode,classNumber,prefixTh,firstNameTh,lastNameTh,email,class\n';
+            ? 'email,displayName,thaiName,password,homeroomClass\n'
+            : 'stuCode,classNumber,prefixTh,firstNameTh,lastNameTh,email,password,class\n';
         const sampleData = type === 'teachers'
-            ? 'teacher.c@school.ac.th,Teacher C,ครู ซี,ป.1/1\n'
-            : 'S006,4,ด.ช.,เด็กใหม่,นามสกุลดี,student.new@school.ac.th,ป.6/1\n';
+            ? 'teacher.c@school.ac.th,Teacher C,ครู ซี,password123,ป.1/1\n'
+            : 'S006,4,ด.ช.,เด็กใหม่,นามสกุลดี,student.new@school.ac.th,password123,ป.6/1\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -128,7 +128,19 @@ export default function AdminUsersPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold font-headline">จัดการผู้ใช้งาน</h1>
-                <Button><PlusCircle className="mr-2" /> เพิ่มผู้ใช้งานใหม่</Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button><PlusCircle className="mr-2" /> เพิ่มผู้ใช้งานใหม่</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>เพิ่มผู้ใช้งานใหม่</DialogTitle>
+                            <DialogDescription>
+                                ฟังก์ชันนี้ยังไม่พร้อมใช้งานในเวอร์ชันนี้
+                            </DialogDescription>
+                        </DialogHeader>
+                    </DialogContent>
+                </Dialog>
             </div>
             <p className="text-muted-foreground">เพิ่ม, แก้ไข, และดูบัญชีผู้ใช้ทั้งหมดในระบบ</p>
 

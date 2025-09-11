@@ -7,6 +7,7 @@ export interface User {
   email: string;
   displayName: string;
   thaiName: string;
+  password?: string; // Added password field
   studentId?: string;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
@@ -55,7 +56,7 @@ export interface Subject {
 
 export interface Offering {
   offeringId: string;
-  subjectId: string;
+  subjectId:string;
   classId: string;
   teacherEmail: string;
   creditsOverride?: number;

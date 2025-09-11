@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -8,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -19,12 +21,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { classes } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 
 function CreateClassDialog() {
+    const { toast } = useToast();
+    const [open, setOpen] = useState(false);
+
+    const handleCreate = () => {
+        // In a real app, you would handle form state and submission here
+        toast({
+            title: "สร้างห้องเรียนสำเร็จ (จำลอง)",
+            description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว"
+        });
+        setOpen(false); // Close the dialog
+    }
+
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                  <Button>
                     <PlusCircle className="mr-2" />
@@ -35,9 +52,46 @@ function CreateClassDialog() {
                 <DialogHeader>
                     <DialogTitle>สร้างห้องเรียนใหม่</DialogTitle>
                     <DialogDescription>
-                        ฟังก์ชันนี้ยังไม่พร้อมใช้งานในเวอร์ชันนี้
+                        กรอกข้อมูลเพื่อสร้างห้องเรียนสำหรับปีการศึกษาใหม่
                     </DialogDescription>
                 </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="level" className="text-right">
+                            ระดับชั้น
+                        </Label>
+                        <Input id="level" placeholder="เช่น ป.1 หรือ ม.4" className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="room" className="text-right">
+                            ห้อง
+                        </Label>
+                        <Input id="room" placeholder="เช่น 1 หรือ 2" className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="year" className="text-right">
+                            ปีการศึกษา
+                        </Label>
+                        <Input id="year" type="number" placeholder="เช่น 2568" className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="term" className="text-right">
+                            ภาคเรียน/ปี
+                        </Label>
+                        <Select>
+                             <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="เลือกระบบภาคเรียน" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="PRIMARY">ระบบปีการศึกษา (ประถม)</SelectItem>
+                                <SelectItem value="SECONDARY">ระบบภาคเรียน (มัธยม)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="button" onClick={handleCreate}>สร้างห้องเรียน</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

@@ -14,7 +14,10 @@ import {
   AlertTriangle,
   FileText,
   Activity,
-  Wand
+  Wand,
+  School,
+  Book,
+  CalendarDays
 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
@@ -47,7 +50,7 @@ export default function DashboardPage() {
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         
-        {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
+        {user.role === 'TEACHER' && (
             <Card className="hover:shadow-lg transition-shadow">
             <Link href="/dashboard/classes">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -64,7 +67,7 @@ export default function DashboardPage() {
             </Card>
         )}
         
-        {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
+        {user.role === 'TEACHER' && (
             <Card className="hover:shadow-lg transition-shadow">
             <Link href="/dashboard/score-analysis">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -81,7 +84,7 @@ export default function DashboardPage() {
             </Card>
         )}
 
-        {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
+        {user.role === 'TEACHER' && (
             <Card className="hover:shadow-lg transition-shadow bg-accent/20 border-accent">
             <Link href="/dashboard/at-risk">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -114,6 +117,68 @@ export default function DashboardPage() {
             </Link>
             </Card>
         )}
+        
+        {user.role === 'ADMIN' && (
+          <>
+            <Card className="hover:shadow-lg transition-shadow">
+              <Link href="/dashboard/admin/users">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">จัดการผู้ใช้งาน</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                  <div className="text-2xl font-bold">257 คน</div>
+                  <p className="text-xs text-muted-foreground">
+                      เพิ่ม, แก้ไข, และนำเข้าข้อมูลผู้ใช้
+                  </p>
+                  </CardContent>
+              </Link>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow">
+              <Link href="/dashboard/admin/classes">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">จัดการห้องเรียน</CardTitle>
+                  <School className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                  <div className="text-2xl font-bold">12 ห้อง</div>
+                  <p className="text-xs text-muted-foreground">
+                      สร้าง, แก้ไข, และดูข้อมูลห้องเรียน
+                  </p>
+                  </CardContent>
+              </Link>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow">
+              <Link href="/dashboard/admin/subjects">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">จัดการรายวิชา</CardTitle>
+                  <Book className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                  <div className="text-2xl font-bold">50+ วิชา</div>
+                  <p className="text-xs text-muted-foreground">
+                      จัดการรายวิชาและวิชาที่เปิดสอน
+                  </p>
+                  </CardContent>
+              </Link>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow">
+              <Link href="/dashboard/admin/schedules">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">จัดการตารางสอน</CardTitle>
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                  <div className="text-2xl font-bold">ตารางรวม</div>
+                  <p className="text-xs text-muted-foreground">
+                      จัดตารางสอนสำหรับครูและห้องเรียน
+                  </p>
+                  </CardContent>
+              </Link>
+            </Card>
+          </>
+        )}
+
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -128,22 +193,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {user.role === 'ADMIN' && (
-            <Card className="hover:shadow-lg transition-shadow">
-            <Link href="/dashboard/admin/users">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">จัดการผู้ใช้</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-2xl font-bold">257 คน</div>
-                <p className="text-xs text-muted-foreground">
-                    จัดการบัญชีผู้ใช้ในระบบ
-                </p>
-                </CardContent>
-            </Link>
-            </Card>
-        )}
       </div>
     </div>
   );

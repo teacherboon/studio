@@ -5,11 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
-  Home,
   Users,
-  BookUser,
   Settings,
-  AlertTriangle,
   LogOut,
   FileText,
   Book,
@@ -22,7 +19,8 @@ import {
   CalendarPlus,
   Calendar as CalendarIcon,
   Wand,
-  UserSquare
+  BookUser,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -129,7 +127,7 @@ export function DashboardNav() {
             </>
           )}
 
-           {(user?.role === 'TEACHER') && (
+           {user?.role === 'TEACHER' && (
             <>
                 <SidebarMenuItem>
                     <SidebarMenuButton
@@ -142,6 +140,42 @@ export function DashboardNav() {
                             <span>ตารางสอน</span>
                         </Link>
                     </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/dashboard/classes")}
+                    tooltip="Manage Scores"
+                  >
+                    <Link href="/dashboard/classes">
+                      <BookUser />
+                      <span>จัดการคะแนน</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/dashboard/score-analysis"}
+                    tooltip="Score Analysis (AI)"
+                  >
+                    <Link href="/dashboard/score-analysis">
+                      <Wand />
+                      <span>วิเคราะห์ผลการเรียน (AI)</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/dashboard/at-risk"}
+                    tooltip="At-Risk Students"
+                  >
+                    <Link href="/dashboard/at-risk">
+                      <AlertTriangle />
+                      <span>นักเรียนกลุ่มเสี่ยง</span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton
@@ -156,51 +190,6 @@ export function DashboardNav() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </>
-          )}
-
-          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith("/dashboard/classes")}
-                tooltip="Manage Scores"
-              >
-                <Link href="/dashboard/classes">
-                  <BookUser />
-                  <span>จัดการคะแนน</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-
-          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/dashboard/score-analysis"}
-                tooltip="Score Analysis (AI)"
-              >
-                <Link href="/dashboard/score-analysis">
-                  <Wand />
-                  <span>วิเคราะห์ผลการเรียน (AI)</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-          
-          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/dashboard/at-risk"}
-                tooltip="At-Risk Students"
-              >
-                <Link href="/dashboard/at-risk">
-                  <AlertTriangle />
-                  <span>นักเรียนกลุ่มเสี่ยง</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           )}
           
           {user?.role === 'ADMIN' && (
@@ -221,22 +210,27 @@ export function DashboardNav() {
                     <SidebarMenu className="ml-4 my-1 border-l pl-4">
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/users"} tooltip="Users">
-                              <Link href="/dashboard/admin/users">เพิ่ม/นำเข้าผู้ใช้งาน</Link>
+                              <Link href="/dashboard/admin/users">จัดการผู้ใช้งาน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/classes"} tooltip="Classes">
-                              <Link href="/dashboard/admin/classes">เพิ่มห้องเรียน</Link>
+                              <Link href="/dashboard/admin/classes">จัดการห้องเรียน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/subjects"} tooltip="Subjects">
-                              <Link href="/dashboard/admin/subjects">เพิ่มรายวิชา</Link>
+                              <Link href="/dashboard/admin/subjects">จัดการรายวิชา</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/schedules"} tooltip="Schedules">
                               <Link href="/dashboard/admin/schedules">จัดการตารางสอน</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/teachers"} tooltip="Teachers">
+                              <Link href="/dashboard/admin/teachers">จัดการครู</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                     </SidebarMenu>
@@ -293,5 +287,3 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
-
-    
