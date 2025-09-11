@@ -156,13 +156,14 @@ export default function StudentGradesPage() {
   return (
     <div className="space-y-8">
         <div style={{ display: 'none' }}>
-            {studentData && currentClass && <GradeReportSheet 
-                ref={reportRef} 
-                student={studentData} 
-                grades={gradeDetails} 
-                gpa={gpa}
-                currentClass={currentClass}
-            />}
+            <div ref={reportRef}>
+                {studentData && currentClass && <GradeReportSheet 
+                    student={studentData} 
+                    grades={gradeDetails} 
+                    gpa={gpa}
+                    currentClass={currentClass}
+                />}
+            </div>
         </div>
 
         <div>
