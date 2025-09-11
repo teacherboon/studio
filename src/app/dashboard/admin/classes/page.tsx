@@ -154,12 +154,9 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
     )
 }
 
-function CreateOrEditClassDialog({ classData, onSave, trigger, open, onOpenChange }: { classData?: Class | null, onSave: (data: Class) => void, trigger: React.ReactNode, open: boolean, onOpenChange: (open: boolean) => void }) {
+function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { classData?: Class | null, onSave: (data: Class) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>
-                 {trigger}
-            </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{classData ? 'แก้ไขห้องเรียน' : 'สร้างห้องเรียนใหม่'}</DialogTitle>
@@ -301,7 +298,6 @@ export default function AdminClassesPage() {
                 onOpenChange={setIsDialogOpen}
                 classData={editingClass}
                 onSave={handleSaveClass}
-                trigger={<></>}
             />
         </div>
     )

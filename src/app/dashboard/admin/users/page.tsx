@@ -107,10 +107,9 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
 }
 
 
-function CreateOrEditUserDialog({ user, onSave, trigger, open, onOpenChange }: { user?: User | null, onSave: (data: User) => void, trigger: React.ReactNode, open: boolean, onOpenChange: (open: boolean) => void }) {
+function CreateOrEditUserDialog({ user, onSave, open, onOpenChange }: { user?: User | null, onSave: (data: User) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{user ? 'แก้ไขผู้ใช้งาน' : 'สร้างผู้ใช้งานใหม่'}</DialogTitle>
@@ -459,10 +458,7 @@ export default function AdminUsersPage() {
                 onOpenChange={setIsDialogOpen}
                 user={editingUser}
                 onSave={handleSaveUser}
-                trigger={<></>}
             />
         </div>
     )
 }
-
-    

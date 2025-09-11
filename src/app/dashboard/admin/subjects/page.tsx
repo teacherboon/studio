@@ -81,7 +81,7 @@ function OfferingActionDropdown({ offering, onEdit, onDelete }: { offering: Offe
     );
 }
 
-function CreateOrEditOfferingDialog({ offeringData, onSave, trigger, open, onOpenChange }: { offeringData?: Offering | null, onSave: (data: Offering) => void, trigger: React.ReactNode, open: boolean, onOpenChange: (open: boolean) => void }) {
+function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }: { offeringData?: Offering | null, onSave: (data: Offering) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const teachers = users.filter(u => u.role === 'TEACHER');
     const { toast } = useToast();
     
@@ -131,7 +131,6 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, trigger, open, onOpe
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>{offeringData ? 'แก้ไขรายวิชาที่เปิดสอน' : 'เพิ่มรายวิชาที่เปิดสอน'}</DialogTitle>
@@ -426,7 +425,6 @@ export default function AdminSubjectsPage() {
                 onOpenChange={setIsDialogOpen}
                 offeringData={editingOffering}
                 onSave={handleSaveOffering}
-                trigger={<></>}
             />
         </div>
     );
