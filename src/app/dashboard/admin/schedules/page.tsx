@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, UserSquare, Upload, Download } from "lucide-react";
+import { PlusCircle, UserSquare, Upload, Download, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -13,12 +13,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
+  DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { schedules, offerings, subjects, classes, users } from '@/lib/data';
-import type { DayOfWeek } from '@/lib/types';
+import { schedules as initialSchedules, offerings, subjects, classes, users } from '@/lib/data';
+import type { DayOfWeek, Schedule, Offering, Subject, Class as ClassType, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { TeacherScheduleTable } from '@/app/dashboard/admin/teachers/page';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
     { value: 'MONDAY', label: 'วันจันทร์' },
@@ -38,7 +52,103 @@ const periods = [
     { period: 6, time: '14:30-15:30' },
 ];
 
-function AddScheduleDialog() {
+function TeacherScheduleTable({ 
+    teacherEmail, 
+    schedules, 
+    onDelete 
+}: { 
+    teacherEmail: string, 
+    schedules: Schedule[],
+    onDelete: (scheduleId: string) => void,
+}) {
+    const getScheduleForCell = (day: DayOfWeek, period: number) => {
+        const offeringForTeacher = offerings.filter(o => o.teacherEmail === teacherEmail);
+        const scheduleEntry = schedules.find(s => 
+            s.dayOfWeek === day && 
+            s.period === period &&
+            offeringForTeacher.some(o => o.offeringId === s.offeringId)
+        );
+
+        if (!scheduleEntry) return null;
+
+        const offering = offerings.find(o => o.offeringId === scheduleEntry.offeringId);
+        if (!offering) return null;
+
+        const subject = subjects.find(s => s.subjectId === offering.subjectId);
+        const classInfo = classes.find(c => c.classId === offering.classId);
+
+        return (
+            <div className="text-xs p-1 bg-primary/10 rounded-md relative group">
+                <p className="font-bold truncate">{subject?.subjectCode}</p>
+                <p className="truncate">{subject?.subjectNameTh}</p>
+                <p className="truncate">ห้อง {classInfo?.level}/{classInfo?.room}</p>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-0 right-0 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>ยืนยันการลบคาบสอน</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                คุณแน่ใจหรือไม่ว่าต้องการลบคาบสอนนี้?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(scheduleEntry.scheduleId)}>ยืนยัน</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        );
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <Table className="border min-w-full">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[120px] border-r text-center">เวลา</TableHead>
+                        <TableHead className="w-[80px] border-r text-center">คาบที่</TableHead>
+                        {daysOfWeek.map(day => <TableHead key={day.value} className="text-center border-r min-w-[150px]">{day.label}</TableHead>)}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {periods.map(({ period, time }, index) => (
+                        period ? (
+                            <TableRow key={period}>
+                                <TableCell className="font-medium border-r text-center">{time}</TableCell>
+                                <TableCell className="font-medium border-r text-center">{period}</TableCell>
+                                {daysOfWeek.map(day => (
+                                    <TableCell key={day.value} className="p-1 border-r align-top h-[80px]">
+                                        {getScheduleForCell(day.value, period)}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ) : (
+                            <TableRow key={`break-${index}`} className="bg-muted/50">
+                                <TableCell className="font-medium border-r text-center">{time}</TableCell>
+                                <TableCell colSpan={daysOfWeek.length + 1} className="text-center font-semibold text-muted-foreground">
+                                    พักกลางวัน
+                                </TableCell>
+                            </TableRow>
+                        )
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    )
+}
+
+
+function AddScheduleDialog({ onAddSchedule }: { onAddSchedule: (schedule: Schedule) => void }) {
+    const [open, setOpen] = useState(false);
     const classOfferings = offerings;
     const { toast } = useToast();
     const [selectedOfferingId, setSelectedOfferingId] = useState('');
@@ -55,36 +165,27 @@ function AddScheduleDialog() {
             return;
         }
 
-        const offering = offerings.find(o => o.offeringId === selectedOfferingId);
-        if (!offering) return;
+        const newSchedule: Schedule = {
+            scheduleId: `sch${Math.random()}`,
+            offeringId: selectedOfferingId,
+            dayOfWeek: selectedDay as DayOfWeek,
+            period: Number(selectedPeriod),
+        };
 
-        // Check if teacher is already scheduled
-        const teacherSchedules = schedules.filter(s => {
-            const schOffering = offerings.find(o => o.offeringId === s.offeringId);
-            return schOffering?.teacherEmail === offering.teacherEmail;
-        });
-
-        const conflict = teacherSchedules.find(s => s.dayOfWeek === selectedDay && s.period === Number(selectedPeriod));
-
-        if (conflict) {
-            toast({
-                variant: 'destructive',
-                title: 'ตารางสอนซ้ำซ้อน',
-                description: `ครู ${users.find(u => u.email === offering.teacherEmail)?.thaiName} มีคาบสอนแล้วในวันและเวลาดังกล่าว`,
-            });
-            return;
-        }
-
-        // Add new schedule (in a real app, this would be an API call)
-        console.log('Saving schedule:', { selectedOfferingId, selectedDay, selectedPeriod });
+        onAddSchedule(newSchedule);
         toast({
             title: 'บันทึกสำเร็จ',
-            description: 'เพิ่มคาบสอนใหม่ในตารางเรียบร้อยแล้ว (จำลอง)',
+            description: 'เพิ่มคาบสอนใหม่ในตารางเรียบร้อยแล้ว',
         });
+        setOpen(false);
+        // Reset form
+        setSelectedOfferingId('');
+        setSelectedDay('');
+        setSelectedPeriod('');
     }
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2" />
@@ -103,7 +204,7 @@ function AddScheduleDialog() {
                         <Label htmlFor="offering" className="text-right">
                             วิชาที่เปิดสอน
                         </Label>
-                        <Select onValueChange={setSelectedOfferingId}>
+                        <Select value={selectedOfferingId} onValueChange={setSelectedOfferingId}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกวิชาที่เปิดสอน" />
                             </SelectTrigger>
@@ -125,7 +226,7 @@ function AddScheduleDialog() {
                         <Label htmlFor="day" className="text-right">
                             วัน
                         </Label>
-                        <Select onValueChange={setSelectedDay}>
+                        <Select value={selectedDay} onValueChange={setSelectedDay}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกวัน" />
                             </SelectTrigger>
@@ -140,7 +241,7 @@ function AddScheduleDialog() {
                         <Label htmlFor="period" className="text-right">
                             คาบเรียน
                         </Label>
-                        <Select onValueChange={setSelectedPeriod}>
+                        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกคาบเรียน" />
                             </SelectTrigger>
@@ -152,7 +253,12 @@ function AddScheduleDialog() {
                         </Select>
                     </div>
                 </div>
-                <Button type="submit" className="w-full" onClick={handleSave}>บันทึกข้อมูล</Button>
+                 <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">ยกเลิก</Button>
+                    </DialogClose>
+                     <Button type="button" onClick={handleSave}>บันทึกข้อมูล</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -217,9 +323,42 @@ function ImportSchedulesCard() {
 
 
 export default function AdminSchedulesPage() {
+    const [allSchedules, setAllSchedules] = useState<Schedule[]>(initialSchedules);
     const [selectedTeacherEmail, setSelectedTeacherEmail] = useState<string>('');
     const allTeachers = users.filter(u => u.role === 'TEACHER');
     const selectedTeacher = allTeachers.find(t => t.email === selectedTeacherEmail);
+    const { toast } = useToast();
+
+    const handleAddSchedule = (schedule: Schedule) => {
+        const offering = offerings.find(o => o.offeringId === schedule.offeringId);
+        if (!offering) return;
+
+        const teacherSchedules = allSchedules.filter(s => {
+            const schOffering = offerings.find(o => o.offeringId === s.offeringId);
+            return schOffering?.teacherEmail === offering.teacherEmail;
+        });
+
+        const conflict = teacherSchedules.some(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period);
+
+        if (conflict) {
+            toast({
+                variant: 'destructive',
+                title: 'ตารางสอนซ้ำซ้อน',
+                description: `ครู ${users.find(u => u.email === offering.teacherEmail)?.thaiName} มีคาบสอนแล้วในวันและเวลาดังกล่าว`,
+            });
+            return;
+        }
+
+        setAllSchedules(prev => [...prev, schedule]);
+    }
+    
+    const handleDeleteSchedule = (scheduleId: string) => {
+        setAllSchedules(prev => prev.filter(s => s.scheduleId !== scheduleId));
+        toast({
+            title: 'ลบสำเร็จ',
+            description: 'คาบสอนได้ถูกลบออกจากตารางแล้ว',
+        })
+    }
 
     return (
         <div className="space-y-8">
@@ -228,7 +367,7 @@ export default function AdminSchedulesPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดตารางสอนครู</h1>
                     <p className="text-muted-foreground">ดูและจัดการตารางสอนสำหรับครูแต่ละคน</p>
                 </div>
-                <AddScheduleDialog />
+                <AddScheduleDialog onAddSchedule={handleAddSchedule} />
             </div>
 
             <ImportSchedulesCard />
@@ -266,14 +405,20 @@ export default function AdminSchedulesPage() {
                            ตารางสอนของ {selectedTeacher.thaiName}
                         </CardTitle>
                         <CardDescription>
-                           ภาพรวมคาบสอนทั้งหมดในสัปดาห์
+                           ภาพรวมคาบสอนทั้งหมดในสัปดาห์ (คลิกที่คาบสอนเพื่อลบ)
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <TeacherScheduleTable teacherEmail={selectedTeacher.email} />
+                        <TeacherScheduleTable 
+                            teacherEmail={selectedTeacher.email} 
+                            schedules={allSchedules}
+                            onDelete={handleDeleteSchedule}
+                        />
                     </CardContent>
                 </Card>
             )}
         </div>
     )
 }
+
+    

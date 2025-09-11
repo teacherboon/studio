@@ -40,14 +40,7 @@ import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@
 import { useToast } from "@/hooks/use-toast";
 
 
-function OfferingActionDropdown({ offering, onDelete }: { offering: Offering, onDelete: () => void }) {
-    const { toast } = useToast();
-    const showPlaceholderToast = () => {
-        toast({
-            title: "ยังไม่พร้อมใช้งาน",
-            description: "ฟังก์ชันแก้ไขยังไม่สามารถใช้งานได้",
-        });
-    };
+function OfferingActionDropdown({ offering, onEdit, onDelete }: { offering: Offering, onEdit: () => void, onDelete: () => void }) {
 
     return (
         <DropdownMenu>
@@ -58,7 +51,7 @@ function OfferingActionDropdown({ offering, onDelete }: { offering: Offering, on
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={showPlaceholderToast}>
+                <DropdownMenuItem onClick={onEdit}>
                     <Pencil className="mr-2 h-4 w-4" />
                     <span>แก้ไข</span>
                 </DropdownMenuItem>
@@ -87,13 +80,14 @@ function OfferingActionDropdown({ offering, onDelete }: { offering: Offering, on
     );
 }
 
-function CreateOfferingDialog({ onAddOffering }: { onAddOffering: (newOffering: Offering) => void }) {
+function CreateOrEditOfferingDialog({ offeringData, onSave, trigger }: { offeringData?: Offering | null, onSave: (data: Offering) => void, trigger: React.ReactNode }) {
+    const [open, setOpen] = useState(false);
     const teachers = users.filter(u => u.role === 'TEACHER');
     const { toast } = useToast();
-    const [open, setOpen] = useState(false);
-    const [selectedSubject, setSelectedSubject] = useState('');
-    const [selectedTeacher, setSelectedTeacher] = useState('');
-    const [selectedClass, setSelectedClass] = useState('');
+    
+    const [selectedSubject, setSelectedSubject] = useState(offeringData?.subjectId || '');
+    const [selectedTeacher, setSelectedTeacher] = useState(offeringData?.teacherEmail || '');
+    const [selectedClass, setSelectedClass] = useState(offeringData?.classId || '');
 
     const handleSave = () => {
         if (!selectedSubject || !selectedTeacher || !selectedClass) {
@@ -101,41 +95,45 @@ function CreateOfferingDialog({ onAddOffering }: { onAddOffering: (newOffering: 
             return;
         }
 
+        const classDetails = classes.find(c => c.classId === selectedClass);
+        if (!classDetails) {
+            toast({ variant: 'destructive', title: 'ไม่พบข้อมูลห้องเรียน', description: 'ไม่สามารถหารายละเอียดห้องเรียนได้' });
+            return
+        };
+
         const newOffering: Offering = {
-            offeringId: `off${Math.floor(Math.random() * 1000)}`,
+            offeringId: offeringData?.offeringId || `off${Math.random()}`,
             subjectId: selectedSubject,
             classId: selectedClass,
             teacherEmail: selectedTeacher,
-            yearMode: classes.find(c => c.classId === selectedClass)?.yearMode || 'PRIMARY',
-            termLabel: classes.find(c => c.classId === selectedClass)?.termLabel || '',
-            isConduct: false,
+            yearMode: classDetails.yearMode,
+            termLabel: classDetails.termLabel,
+            isConduct: offeringData?.isConduct || false,
         };
 
-        onAddOffering(newOffering);
-        toast({
-            title: 'บันทึกสำเร็จ',
-            description: 'เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย',
-        });
+        onSave(newOffering);
         setOpen(false);
-        // Reset form
-        setSelectedSubject('');
-        setSelectedTeacher('');
-        setSelectedClass('');
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <PlusCircle className="mr-2" />
-                    เพิ่มรายวิชาที่เปิดสอน
-                </Button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={(isOpen) => {
+            setOpen(isOpen);
+            if(isOpen && offeringData) {
+                 setSelectedSubject(offeringData.subjectId);
+                 setSelectedTeacher(offeringData.teacherEmail);
+                 setSelectedClass(offeringData.classId);
+            } else if (!isOpen) {
+                 setSelectedSubject('');
+                 setSelectedTeacher('');
+                 setSelectedClass('');
+            }
+        }}>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>เพิ่มรายวิชาที่เปิดสอน</DialogTitle>
+                    <DialogTitle>{offeringData ? 'แก้ไขรายวิชาที่เปิดสอน' : 'เพิ่มรายวิชาที่เปิดสอน'}</DialogTitle>
                     <DialogDescription>
-                        กำหนดครู, วิชา, และห้องเรียนสำหรับภาคการศึกษานี้
+                         {offeringData ? 'แก้ไขข้อมูลครู, วิชา, และห้องเรียน' : 'กำหนดครู, วิชา, และห้องเรียนสำหรับภาคการศึกษานี้'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -255,11 +253,21 @@ function ImportOfferingsCard() {
 
 export default function AdminSubjectsPage() {
     const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings);
+    const [editingOffering, setEditingOffering] = useState<Offering | null>(null);
     const { toast } = useToast();
 
-    const addOffering = (newOffering: Offering) => {
-        setOfferingsList(prev => [newOffering, ...prev]);
-    };
+    const handleSaveOffering = (data: Offering) => {
+        const isEditing = offeringsList.some(o => o.offeringId === data.offeringId);
+        
+        if(isEditing) {
+            setOfferingsList(prev => prev.map(o => o.offeringId === data.offeringId ? data : o));
+             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาที่เปิดสอนได้รับการอัปเดตแล้ว" });
+        } else {
+            setOfferingsList(prev => [data, ...prev]);
+            toast({ title: "สร้างสำเร็จ", description: "เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย" });
+        }
+        setEditingOffering(null);
+    }
 
     const deleteOffering = (offeringId: string) => {
         setOfferingsList(prev => prev.filter(o => o.offeringId !== offeringId));
@@ -283,7 +291,17 @@ export default function AdminSubjectsPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดการรายวิชา</h1>
                     <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลรายวิชาทั้งหมดในระบบ</p>
                 </div>
-                <CreateOfferingDialog onAddOffering={addOffering} />
+                 <CreateOrEditOfferingDialog
+                    key={editingOffering ? `edit-${editingOffering.offeringId}` : 'create'}
+                    offeringData={editingOffering}
+                    onSave={handleSaveOffering}
+                    trigger={
+                        <Button onClick={() => setEditingOffering(null)}>
+                            <PlusCircle className="mr-2" />
+                            เพิ่มรายวิชาที่เปิดสอน
+                        </Button>
+                    }
+                />
             </div>
 
             <ImportOfferingsCard />
@@ -320,7 +338,11 @@ export default function AdminSubjectsPage() {
                                         <TableCell className="text-center">{subject?.defaultCredits.toFixed(1)}</TableCell>
                                         <TableCell className="text-center">{offering.periodsPerWeek || '-'}</TableCell>
                                         <TableCell className="text-right">
-                                            <OfferingActionDropdown offering={offering} onDelete={() => deleteOffering(offering.offeringId)} />
+                                            <OfferingActionDropdown 
+                                                offering={offering} 
+                                                onEdit={() => setEditingOffering(offering)}
+                                                onDelete={() => deleteOffering(offering.offeringId)} 
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -332,3 +354,5 @@ export default function AdminSubjectsPage() {
         </div>
     );
 }
+
+    
