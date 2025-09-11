@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2, BookPlus } from "lucide-react";
@@ -209,7 +209,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
 
 function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (newOfferings: Offering[]) => void }) {
     const { toast } = useToast();
-    const fileInputRef = useState<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
         const header = 'subjectId,classId,teacherEmail,periodsPerWeek\n';
@@ -525,7 +525,3 @@ export default function AdminOfferingsPage() {
         </div>
     );
 }
-
-    
-
-    

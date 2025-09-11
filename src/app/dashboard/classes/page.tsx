@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, ChangeEvent } from 'react';
+import { useState, useMemo, ChangeEvent, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,7 +28,7 @@ export default function ClassesPage() {
     
     const [studentScores, setStudentScores] = useState<Record<string, number | null>>({});
     const { toast } = useToast();
-    const fileInputRef = useState<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const academicYears = useMemo(() => {
         return [...new Set(classes.map(c => c.yearBe))].sort((a, b) => b - a);

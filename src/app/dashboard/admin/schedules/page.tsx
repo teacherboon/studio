@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, ChangeEvent, useMemo } from 'react';
+import { useState, ChangeEvent, useMemo, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, UserSquare, Upload, Download, Trash2, CheckCircle, AlertCircle, Wand, Loader2 } from "lucide-react";
@@ -469,7 +469,7 @@ function AddScheduleDialog({ onAddSchedule, allSchedules }: { onAddSchedule: (sc
 
 function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (newSchedules: Schedule[]) => void }) {
     const { toast } = useToast();
-    const fileInputRef = useState<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
         const header = 'offeringId,dayOfWeek,period\n';
@@ -769,5 +769,3 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
-
-    

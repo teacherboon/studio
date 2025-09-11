@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import { useState, ChangeEvent, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Download, PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -182,7 +182,7 @@ function ActionDropdown({ user, onEdit, onDelete }: { user: User, onEdit: () => 
 
 const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[]) => void }) => {
     const { toast } = useToast();
-    const fileInputRef = useState<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = (type: 'teachers' | 'students') => {
         const header = type === 'teachers' 
@@ -508,5 +508,3 @@ export default function AdminUsersPage() {
         </div>
     )
 }
-
-    
