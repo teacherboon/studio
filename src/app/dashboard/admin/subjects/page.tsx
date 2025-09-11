@@ -339,15 +339,14 @@ export default function AdminOfferingsPage() {
         const isDuplicate = offeringsList.some(o => 
             o.offeringId !== data.offeringId &&
             o.subjectId === data.subjectId && 
-            o.classId === data.classId && 
-            o.teacherEmail === data.teacherEmail
+            o.classId === data.classId
         );
 
         if (isDuplicate) {
             toast({
                 variant: "destructive",
                 title: "สร้างไม่สำเร็จ",
-                description: `รายวิชานี้ถูกเปิดสอนให้ห้องนี้และครูท่านนี้แล้ว`,
+                description: `รายวิชานี้ถูกเปิดสอนให้ห้องนี้แล้ว (อาจจะโดยครูท่านอื่น)`,
             });
             return;
         }
@@ -375,14 +374,27 @@ export default function AdminOfferingsPage() {
     };
 
     const handleOfferingsImport = (newOfferings: Offering[]) => {
-        const existingOfferings = new Set(offeringsList.map(o => `${o.subjectId}-${o.classId}-${o.teacherEmail}`));
-        const uniqueNewOfferings = newOfferings.filter(no => !existingOfferings.has(`${no.subjectId}-${no.classId}-${no.teacherEmail}`));
+        const uniqueNewOfferings: Offering[] = [];
+        const offeringConflicts: Offering[] = [];
+        const currentOfferings = [...offeringsList];
 
-        if (uniqueNewOfferings.length < newOfferings.length) {
+        newOfferings.forEach(newO => {
+            const isDuplicate = currentOfferings.some(
+                o => o.subjectId === newO.subjectId && o.classId === newO.classId
+            );
+            if (isDuplicate) {
+                offeringConflicts.push(newO);
+            } else {
+                uniqueNewOfferings.push(newO);
+                currentOfferings.push(newO); // Add to temp array to check against duplicates within the same file
+            }
+        });
+        
+        if (offeringConflicts.length > 0) {
             toast({
                 variant: "default",
                 title: "ตรวจพบข้อมูลซ้ำซ้อน",
-                description: `ข้ามการนำเข้ารายการที่ซ้ำซ้อน ${newOfferings.length - uniqueNewOfferings.length} รายการ`
+                description: `ข้ามการนำเข้ารายการที่ซ้ำซ้อน ${offeringConflicts.length} รายการ (มีวิชาในห้องเรียนนั้นแล้ว)`
             });
         }
 
@@ -482,3 +494,5 @@ export default function AdminOfferingsPage() {
         </div>
     );
 }
+
+    

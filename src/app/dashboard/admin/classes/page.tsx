@@ -49,7 +49,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
     const [yearMode, setYearMode] = useState<'PRIMARY' | 'SECONDARY' | ''>(classData?.yearMode || '');
     const [term1Label, setTerm1Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[0] || '') : '');
     const [term2Label, setTerm2Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[1] || '') : '');
-    const isEditing = !!classData;
+    const isEditing = !!classData?.classId;
 
     const handleSave = () => {
         // Basic validation
@@ -148,7 +148,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                  <DialogClose asChild>
                     <Button type="button" variant="secondary">ยกเลิก</Button>
                 </DialogClose>
-                <Button type="button" onClick={handleSave}>{classData ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างห้องเรียน'}</Button>
+                <Button type="button" onClick={handleSave}>{classData?.classId ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างห้องเรียน'}</Button>
             </DialogFooter>
         </>
     )
@@ -159,9 +159,9 @@ function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { cl
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{classData ? 'แก้ไขห้องเรียน' : 'สร้างห้องเรียนใหม่'}</DialogTitle>
+                    <DialogTitle>{classData?.classId ? 'แก้ไขห้องเรียน' : 'สร้างห้องเรียนใหม่'}</DialogTitle>
                     <DialogDescription>
-                        {classData ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนสำหรับปีการศึกษาใหม่'}
+                        {classData?.classId ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนสำหรับปีการศึกษาใหม่'}
                     </DialogDescription>
                 </DialogHeader>
                 <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />
@@ -316,3 +316,5 @@ export default function AdminClassesPage() {
         </div>
     )
 }
+
+    

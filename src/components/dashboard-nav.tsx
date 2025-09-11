@@ -22,7 +22,7 @@ import {
   BookUser,
   AlertTriangle,
   ClipboardEdit,
-  BookOpenCheck,
+  Milestone,
 } from "lucide-react";
 import {
   Sidebar,
@@ -245,6 +245,14 @@ export function DashboardNav() {
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/schedules"} tooltip="Schedules">
                               <Link href="/dashboard/admin/schedules">จัดตารางสอนครู</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
+                        <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/end-of-year"} tooltip="End of Year">
+                              <Link href="/dashboard/admin/end-of-year">
+                                <Milestone className="mr-2" />
+                                <span>สิ้นปีการศึกษา</span>
+                              </Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                     </SidebarMenu>

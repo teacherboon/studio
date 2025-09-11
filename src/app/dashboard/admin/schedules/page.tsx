@@ -215,7 +215,7 @@ function TeacherScheduleTable({
 }
 
 
-function AddScheduleDialog({ onAddSchedule }: { onAddSchedule: (schedule: Schedule) => void }) {
+function AddScheduleDialog({ onAddSchedule, allSchedules }: { onAddSchedule: (schedule: Schedule) => void, allSchedules: Schedule[] }) {
     const [open, setOpen] = useState(false);
     const classOfferings = initialOfferings;
     const { toast } = useToast();
@@ -566,7 +566,7 @@ export default function AdminSchedulesPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดตารางสอนครู</h1>
                     <p className="text-muted-foreground">ดูและจัดการตารางสอนสำหรับครูแต่ละคน</p>
                 </div>
-                <AddScheduleDialog onAddSchedule={handleAddSchedule} />
+                <AddScheduleDialog onAddSchedule={handleAddSchedule} allSchedules={allSchedules} />
             </div>
 
             <ScheduleSummaryCard schedules={allSchedules} offerings={initialOfferings} />
@@ -621,3 +621,5 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
+
+    

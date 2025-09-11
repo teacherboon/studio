@@ -86,7 +86,7 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">อีเมล</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" readOnly={!!userData} />
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" readOnly={!!userData?.userId} />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="password" className="text-right">รหัสผ่าน</Label>
@@ -96,7 +96,7 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                         value={password} 
                         onChange={(e) => setPassword(e.target.value)} 
                         className="col-span-3" 
-                        placeholder={userData ? "(ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน)" : "กำหนดรหัสผ่าน..."}
+                        placeholder={userData?.userId ? "(ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน)" : "กำหนดรหัสผ่าน..."}
                     />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -117,7 +117,7 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                 <DialogClose asChild>
                     <Button type="button" variant="secondary">ยกเลิก</Button>
                 </DialogClose>
-                <Button type="button" onClick={handleSave}>{userData ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างผู้ใช้'}</Button>
+                <Button type="button" onClick={handleSave}>{userData?.userId ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างผู้ใช้'}</Button>
             </DialogFooter>
         </>
     );
@@ -129,9 +129,9 @@ function CreateOrEditUserDialog({ user, onSave, open, onOpenChange }: { user?: U
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{user ? 'แก้ไขผู้ใช้งาน' : 'สร้างผู้ใช้งานใหม่'}</DialogTitle>
+                    <DialogTitle>{user?.userId ? 'แก้ไขผู้ใช้งาน' : 'สร้างผู้ใช้งานใหม่'}</DialogTitle>
                     <DialogDescription>
-                        {user ? 'แก้ไขข้อมูลผู้ใช้ในระบบ' : 'กรอกข้อมูลเพื่อสร้างผู้ใช้ใหม่'}
+                        {user?.userId ? 'แก้ไขข้อมูลผู้ใช้ในระบบ' : 'กรอกข้อมูลเพื่อสร้างผู้ใช้ใหม่'}
                     </DialogDescription>
                 </DialogHeader>
                 <UserForm userData={user || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />
@@ -217,110 +217,90 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             const lines = text.split('\n');
             const header = lines[0].trim().split(',');
 
-            if (header.includes('studentId')) {
-                processStudentCsv(text);
-            } else if (header.includes('displayName')) {
-                processTeacherCsv(text);
-            } else {
+            try {
+                if (header.includes('studentId')) {
+                    processStudentCsv(lines.slice(1));
+                } else if (header.includes('displayName')) {
+                    processTeacherCsv(lines.slice(1));
+                } else {
+                    toast({
+                        variant: 'destructive',
+                        title: 'ไฟล์ไม่ถูกต้อง',
+                        description: 'ไม่รู้จักรูปแบบของไฟล์ CSV',
+                    });
+                }
+            } catch (error) {
                 toast({
                     variant: 'destructive',
-                    title: 'ไฟล์ไม่ถูกต้อง',
-                    description: 'ไม่รู้จักรูปแบบของไฟล์ CSV',
+                    title: 'ประมวลผลไฟล์ล้มเหลว',
+                    description: `เกิดข้อผิดพลาดในการอ่านข้อมูลจากไฟล์ CSV: ${error instanceof Error ? error.message : String(error)}`,
                 });
             }
         };
-        reader.readAsText(file);
+        reader.readAsText(file, 'UTF-8');
         event.target.value = '';
     }
 
-    const processStudentCsv = (csvText: string) => {
-        try {
-            const lines = csvText.split('\n').slice(1);
-            const newUsers: User[] = [];
-            let importedCount = 0;
-
-            lines.forEach((line, index) => {
-                if (line.trim() === '') return;
-                const [studentId, prefixTh, firstNameTh, lastNameTh, email, password] = line.split(',').map(s => s.trim());
-
-                if (studentId && email && password) {
-                    newUsers.push({
-                        userId: `user-csv-s-${Date.now()}-${index}`,
-                        role: 'STUDENT',
-                        email,
-                        displayName: `${firstNameTh} ${lastNameTh}`,
-                        thaiName: `${prefixTh}${firstNameTh} ${lastNameTh}`,
-                        password,
-                        studentId,
-                        status: 'ACTIVE',
-                        createdAt: new Date().toISOString(),
-                    });
-                    importedCount++;
-                }
-            });
-            
-            if (importedCount > 0) {
-                onUsersImported(newUsers);
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                    description: 'ไม่พบข้อมูลนักเรียนที่ถูกต้องในไฟล์ CSV',
-                });
+    const processCsv = (lines: string[], role: UserRole, processor: (parts: string[], index: number) => User | null) => {
+        const newUsers: User[] = [];
+        lines.forEach((line, index) => {
+            if (line.trim() === '') return;
+            const parts = line.split(',').map(s => s.trim());
+            const user = processor(parts, index);
+            if (user) {
+                newUsers.push(user);
             }
+        });
 
-        } catch (error) {
-             toast({
+        if (newUsers.length > 0) {
+            onUsersImported(newUsers);
+        } else {
+            toast({
                 variant: 'destructive',
-                title: 'ประมวลผลไฟล์ล้มเหลว',
-                description: 'เกิดข้อผิดพลาดในการอ่านข้อมูลจากไฟล์ CSV',
+                title: 'ไม่พบข้อมูลที่ถูกต้อง',
+                description: `ไม่พบข้อมูล${role === 'STUDENT' ? 'นักเรียน' : 'ครู'}ที่ถูกต้องในไฟล์ CSV`,
             });
         }
     };
-    
-    const processTeacherCsv = (csvText: string) => {
-        try {
-            const lines = csvText.split('\n').slice(1);
-            const newUsers: User[] = [];
-            let importedCount = 0;
 
-            lines.forEach((line, index) => {
-                if (line.trim() === '') return;
-                const [email, displayName, thaiName, password, homeroomClassId] = line.split(',').map(s => s.trim());
-
-                if (email && displayName && thaiName && password) {
-                    newUsers.push({
-                        userId: `user-csv-t-${Date.now()}-${index}`,
-                        role: 'TEACHER',
-                        email,
-                        displayName,
-                        thaiName,
-                        password,
-                        homeroomClassId: homeroomClassId || undefined,
-                        status: 'ACTIVE',
-                        createdAt: new Date().toISOString(),
-                    });
-                    importedCount++;
-                }
-            });
-            
-            if (importedCount > 0) {
-                onUsersImported(newUsers);
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                    description: 'ไม่พบข้อมูลครูที่ถูกต้องในไฟล์ CSV',
-                });
+    const processStudentCsv = (lines: string[]) => {
+        processCsv(lines, 'STUDENT', (parts, index) => {
+            const [studentId, prefixTh, firstNameTh, lastNameTh, email, password] = parts;
+            if (studentId && email && password) {
+                return {
+                    userId: `user-csv-s-${Date.now()}-${index}`,
+                    role: 'STUDENT',
+                    email,
+                    displayName: `${firstNameTh} ${lastNameTh}`,
+                    thaiName: `${prefixTh}${firstNameTh} ${lastNameTh}`,
+                    password,
+                    studentId,
+                    status: 'ACTIVE',
+                    createdAt: new Date().toISOString(),
+                };
             }
-
-        } catch (error) {
-             toast({
-                variant: 'destructive',
-                title: 'ประมวลผลไฟล์ล้มเหลว',
-                description: 'เกิดข้อผิดพลาดในการอ่านข้อมูลจากไฟล์ CSV ของครู',
-            });
-        }
+            return null;
+        });
+    };
+    
+    const processTeacherCsv = (lines: string[]) => {
+        processCsv(lines, 'TEACHER', (parts, index) => {
+             const [email, displayName, thaiName, password, homeroomClassId] = parts;
+             if (email && displayName && thaiName && password) {
+                return {
+                    userId: `user-csv-t-${Date.now()}-${index}`,
+                    role: 'TEACHER',
+                    email,
+                    displayName,
+                    thaiName,
+                    password,
+                    homeroomClassId: homeroomClassId || undefined,
+                    status: 'ACTIVE',
+                    createdAt: new Date().toISOString(),
+                };
+            }
+            return null;
+        });
     };
 
 
@@ -394,6 +374,7 @@ export default function AdminUsersPage() {
             setUserList(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "ผู้ใช้ใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
+        setIsDialogOpen(false);
     };
 
     const handleDeleteUser = (userId: string) => {
@@ -497,3 +478,5 @@ export default function AdminUsersPage() {
         </div>
     )
 }
+
+    
