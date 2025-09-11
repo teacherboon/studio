@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Wand2 } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -146,7 +146,7 @@ function AddScheduleDialog() {
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2" />
-                    เพิ่มคาบสอน (ด้วยตนเอง)
+                    เพิ่มคาบสอน
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
@@ -217,15 +217,6 @@ function AddScheduleDialog() {
 }
 
 export default function AdminSchedulesPage() {
-    const { toast } = useToast();
-
-    const handleComingSoon = () => {
-        toast({
-            title: "ฟีเจอร์ยังไม่พร้อมใช้งาน",
-            description: "ระบบจัดตารางสอนอัตโนมัติด้วย AI จะพร้อมให้ใช้งานเร็วๆ นี้"
-        });
-    }
-
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -236,29 +227,11 @@ export default function AdminSchedulesPage() {
                 <AddScheduleDialog />
             </div>
 
-            <Card className="border-dashed border-accent">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-accent">
-                        <Wand2 />
-                        สร้างตารางสอนอัตโนมัติ (AI)
-                    </CardTitle>
-                    <CardDescription>
-                        กำหนดภาระงานสอนให้ครูแต่ละท่าน จากนั้นให้ AI ช่วยจัดตารางเรียนที่เหมาะสมที่สุดสำหรับทั้งโรงเรียน
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button onClick={handleComingSoon}>
-                        <Wand2 className="mr-2" />
-                        เริ่มสร้างตารางสอนอัตโนมัติ (เร็วๆ นี้)
-                    </Button>
-                </CardContent>
-            </Card>
-
             <Card>
                 <CardHeader>
                     <CardTitle>ตารางสอนรวม</CardTitle>
                     <CardDescription>
-                        ภาพรวมตารางสอนทั้งหมดในสัปดาห์ (จัดด้วยตนเอง)
+                        ภาพรวมตารางสอนทั้งหมดในสัปดาห์
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
-  Bell,
   Home,
   Users,
   BookUser,
@@ -13,7 +12,6 @@ import {
   AlertTriangle,
   LogOut,
   FileText,
-  Wand,
   Book,
   School,
   ChevronDown,
@@ -130,18 +128,32 @@ export function DashboardNav() {
           )}
 
            {(user?.role === 'TEACHER') && (
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname === "/dashboard/teacher/leave"}
-                    tooltip="Leave Request"
-                >
-                    <Link href="/dashboard/teacher/leave">
-                        <CalendarPlus />
-                        <span>แจ้งลา/ราชการ</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
+            <>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname === "/dashboard/teacher/schedule"}
+                        tooltip="My Schedule"
+                    >
+                        <Link href="/dashboard/teacher/schedule">
+                            <CalendarIcon />
+                            <span>ตารางสอน</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname === "/dashboard/teacher/leave"}
+                        tooltip="Leave Request"
+                    >
+                        <Link href="/dashboard/teacher/leave">
+                            <CalendarPlus />
+                            <span>แจ้งลา/ราชการ</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </>
           )}
 
           {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
@@ -149,7 +161,7 @@ export function DashboardNav() {
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith("/dashboard/classes")}
-                tooltip="My Classes"
+                tooltip="Manage Scores"
               >
                 <Link href="/dashboard/classes">
                   <BookUser />
@@ -169,21 +181,6 @@ export function DashboardNav() {
                 <Link href="/dashboard/at-risk">
                   <AlertTriangle />
                   <span>นักเรียนกลุ่มเสี่ยง</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-
-          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/dashboard/score-analysis"}
-                tooltip="Score Analysis"
-              >
-                <Link href="/dashboard/score-analysis">
-                  <Wand />
-                  <span>วิเคราะห์ผลการเรียน</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -258,10 +255,6 @@ export function DashboardNav() {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>ตั้งค่า</span>
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setTheme("light")}>
                             <Sun className="mr-2 h-4 w-4" />
                             <span>Light Mode</span>
