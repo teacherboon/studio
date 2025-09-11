@@ -9,7 +9,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
 } from "@/components/ui/card";
 import {
   Select,
@@ -22,19 +21,18 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { scores, offerings, subjects, classes, students, studentAttributes } from "@/lib/data";
 import { calculateGPA } from "@/lib/utils";
-import type { StudentGradeDetails, Score, StudentAttributes } from '@/lib/types';
-import { Download, FileWarning, Wand, Loader2, BarChart } from 'lucide-react';
+import type { StudentGradeDetails, Score } from '@/lib/types';
+import { Download, FileWarning, Loader2, BarChart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from '@/ai/flows/analyze-student-scores';
 import { useToast } from '@/hooks/use-toast';
 import { GradeReportSheet } from '@/components/grade-report-sheet';
-import { cn } from '@/lib/utils';
 
 export default function StudentGradesPage() {
   const user = useUser();
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(true); // Set to true to start loading initially
+  const [isAnalyzing, setIsAnalyzing] = useState(true);
   const { toast } = useToast();
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -49,7 +47,10 @@ export default function StudentGradesPage() {
 
   useEffect(() => {
     const handleAnalyzeScores = async () => {
-      if (!user || !user.studentId) return;
+      if (!user || !user.studentId || studentScores.length === 0) {
+          setIsAnalyzing(false);
+          return;
+      };
   
       setIsAnalyzing(true);
       try {
@@ -87,20 +88,17 @@ export default function StudentGradesPage() {
       }
     };
 
-    if (user && studentScores.length > 0) {
+    if (user) {
         handleAnalyzeScores();
-    } else if (user) {
-        // No scores to analyze
-        setIsAnalyzing(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, studentScores.length]); // Depend on user and score count
+  }, [user, studentScores.length]); 
 
   const availableTerms = [...new Set(
     offerings
       .filter(o => studentScores.some(s => s.offeringId === o.offeringId))
       .map(o => o.termLabel)
-  )].sort((a,b) => b.localeCompare(a)); // Sort terms, latest first
+  )].sort((a,b) => b.localeCompare(a)); 
 
   useEffect(() => {
     if(availableTerms.length > 0 && !selectedTerm) {
@@ -205,22 +203,20 @@ export default function StudentGradesPage() {
             </CardContent>
         </Card>
         
+        {/* This div is for printing only. It is hidden from view. */}
         <div className="hidden">
             <div ref={reportRef}>
-               {hasDataForSelectedTerm && studentData && currentClass ? (
+               {hasDataForSelectedTerm && (
                     <GradeReportSheet 
                         student={studentData} 
                         grades={gradeDetails} 
                         gpa={gpa}
-                        currentClass={currentClass}
+                        currentClass={currentClass!}
                         attributes={attributesForYear || null}
                     />
-               ) : (
-                    <div>กรุณาเลือกข้อมูลเพื่อสร้างรายงาน</div>
                )}
             </div>
         </div>
-
 
         {isAnalyzing ? (
             <Card>
@@ -268,3 +264,5 @@ export default function StudentGradesPage() {
     </div>
   );
 }
+
+    
