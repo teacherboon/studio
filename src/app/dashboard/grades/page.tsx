@@ -205,10 +205,9 @@ export default function StudentGradesPage() {
             </CardContent>
         </Card>
         
-        {/* Hidden component for printing. Always rendered but hidden with CSS */}
         <div className="hidden">
-           {hasDataForSelectedTerm && (
-                <div ref={reportRef}>
+            <div ref={reportRef}>
+               {hasDataForSelectedTerm && (
                     <GradeReportSheet 
                         student={studentData} 
                         grades={gradeDetails} 
@@ -216,8 +215,8 @@ export default function StudentGradesPage() {
                         currentClass={currentClass}
                         attributes={attributesForYear || null}
                     />
-                </div>
-           )}
+               )}
+            </div>
         </div>
 
 
