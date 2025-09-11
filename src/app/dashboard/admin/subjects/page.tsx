@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, useEffect, ChangeEvent, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2, BookPlus } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2, BookPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -90,48 +90,39 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
     const [selectedTeacher, setSelectedTeacher] = useState(offeringData?.teacherEmail || '');
     const [selectedClass, setSelectedClass] = useState(offeringData?.classId || '');
     const [periodsPerWeek, setPeriodsPerWeek] = useState(offeringData?.periodsPerWeek || 0);
-    const [yearBe, setYearBe] = useState(offeringData?.yearBe || new Date().getFullYear() + 543);
-    const [termLabel, setTermLabel] = useState(offeringData?.termLabel || (new Date().getFullYear() + 543).toString());
-    const [yearMode, setYearMode] = useState<"PRIMARY" | "SECONDARY">(offeringData?.yearMode || 'PRIMARY');
+    const [yearBe, setYearBe] = useState(offeringData?.yearBe || 0);
 
     useEffect(() => {
-        if (open) { // Reset form when dialog opens
+        if (open) { 
             if (offeringData) {
                 setSelectedSubject(offeringData.subjectId);
                 setSelectedTeacher(offeringData.teacherEmail);
                 setSelectedClass(offeringData.classId);
                 setPeriodsPerWeek(offeringData.periodsPerWeek || 0);
                 setYearBe(offeringData.yearBe);
-                setTermLabel(offeringData.termLabel);
-                setYearMode(offeringData.yearMode);
             } else {
-                const currentYear = new Date().getFullYear() + 543;
                 setSelectedSubject('');
                 setSelectedTeacher('');
                 setSelectedClass('');
                 setPeriodsPerWeek(0);
-                setYearBe(currentYear);
-                setTermLabel(String(currentYear));
-                setYearMode('PRIMARY');
+                setYearBe(0);
             }
         }
     }, [offeringData, open]);
     
     const handleSave = () => {
-        if (!selectedSubject || !selectedTeacher || !selectedClass || !yearBe) {
+        if (!selectedSubject || !selectedTeacher || !selectedClass) {
             toast({ variant: 'destructive', title: 'ข้อมูลไม่ครบถ้วน', description: 'กรุณากรอกข้อมูลให้ครบทุกช่อง' });
             return;
         }
-
-        const finalTermLabel = yearMode === 'PRIMARY' ? String(yearBe) : termLabel;
 
         const newOffering: Offering = {
             offeringId: offeringData?.offeringId || `off-${Date.now()}`,
             subjectId: selectedSubject,
             classId: selectedClass,
             teacherEmail: selectedTeacher,
-            yearMode,
-            termLabel: finalTermLabel,
+            yearMode: 'PRIMARY',
+            termLabel: String(yearBe),
             yearBe,
             isConduct: offeringData?.isConduct || false,
             periodsPerWeek: periodsPerWeek,
@@ -202,34 +193,12 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                         </Label>
                         <Input id="periods" type="number" value={periodsPerWeek} onChange={e => setPeriodsPerWeek(Number(e.target.value))} className="col-span-3" />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
+                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="yearBe" className="text-right">
-                            ปีการศึกษา (พ.ศ.)
+                           ปีการศึกษา (พ.ศ.)
                         </Label>
                         <Input id="yearBe" type="number" value={yearBe} onChange={e => setYearBe(Number(e.target.value))} className="col-span-3" />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                         <Label htmlFor="yearMode" className="text-right">
-                            ระบบภาคเรียน
-                        </Label>
-                        <Select value={yearMode} onValueChange={v => setYearMode(v as any)}>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="เลือกระบบภาคเรียน" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="PRIMARY">รายปี (ประถม)</SelectItem>
-                                <SelectItem value="SECONDARY">รายเทอม (มัธยม)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    {yearMode === 'SECONDARY' && (
-                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="termLabel" className="text-right">
-                                ภาคเรียน
-                            </Label>
-                            <Input id="termLabel" value={termLabel} onChange={e => setTermLabel(e.target.value)} placeholder="เช่น 1/2567" className="col-span-3" />
-                         </div>
-                    )}
                 </div>}
                 <DialogFooter>
                     <DialogClose asChild>
@@ -242,132 +211,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
     );
 }
 
-function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (newOfferings: Offering[]) => void }) {
-    const { toast } = useToast();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleDownloadTemplate = () => {
-        const header = 'subjectId,classId,teacherEmail,periodsPerWeek,yearBe,termLabel,yearMode\n';
-        const sampleData = 'subj1,c1,teacher.a@school.ac.th,2,2567,2567,PRIMARY\nsubj2,c2,teacher.b@school.ac.th,3,2567,1/2567,SECONDARY\n';
-        
-        const csvContent = "\uFEFF" + header + sampleData;
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `offerings_import_template.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const handleUploadClick = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.click();
-        }
-    };
-
-    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result as string;
-            try {
-                const lines = text.split('\n').slice(1); // Skip header
-                const newOfferings: Offering[] = [];
-                let importedCount = 0;
-
-                lines.forEach((line, index) => {
-                    if (line.trim() === '') return;
-                    const [subjectId, classId, teacherEmail, periodsPerWeekStr, yearBeStr, termLabel, yearMode] = line.split(',').map(item => item.trim());
-                    
-                    const subjectExists = initialSubjects.some(s => s.subjectId === subjectId);
-                    const classExists = classes.some(c => c.classId === classId);
-                    const teacherExists = users.some(u => u.email === teacherEmail);
-                    const yearBe = Number(yearBeStr);
-                    
-                    if (subjectExists && classExists && teacherExists && yearBe && termLabel && (yearMode === 'PRIMARY' || yearMode === 'SECONDARY')) {
-                         newOfferings.push({
-                            offeringId: `csv-import-${Date.now()}-${index}`,
-                            subjectId,
-                            classId,
-                            teacherEmail,
-                            yearMode: yearMode as 'PRIMARY' | 'SECONDARY',
-                            termLabel: termLabel,
-                            yearBe: yearBe,
-                            isConduct: false,
-                            periodsPerWeek: periodsPerWeekStr ? Number(periodsPerWeekStr) : undefined,
-                        });
-                        importedCount++;
-                    }
-                });
-
-                if (importedCount > 0) {
-                    onOfferingsImported(newOfferings);
-                } else {
-                     toast({
-                        variant: 'destructive',
-                        title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                        description: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์ CSV หรือข้อมูลอ้างอิงไม่ถูกต้อง (subjectId, classId, teacherEmail)',
-                    });
-                }
-            } catch (error) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'ไฟล์ไม่ถูกต้อง',
-                    description: 'ไม่สามารถประมวลผลไฟล์ CSV ได้ โปรดตรวจสอบรูปแบบไฟล์',
-                });
-            }
-        };
-        reader.readAsText(file);
-        if (event.target) {
-            event.target.value = '';
-        }
-    }
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>นำเข้ารายวิชาที่เปิดสอน (CSV)</CardTitle>
-                <CardDescription>
-                    เพิ่มข้อมูลรายวิชาที่เปิดสอนจำนวนมากผ่านไฟล์ CSV
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                    <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง
-                    </p>
-                    <Button variant="outline" onClick={handleDownloadTemplate}>
-                        <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
-                    </Button>
-                </div>
-                <div>
-                    <h4 className="font-semibold">อัปโหลดไฟล์</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
-                    </p>
-                    <Button onClick={handleUploadClick}>
-                        <Upload className="mr-2"/> เลือกไฟล์เพื่ออัปโหลด
-                    </Button>
-                    <Input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept=".csv"
-                        onChange={handleFileChange}
-                    />
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
 export default function AdminOfferingsPage() {
-    const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
     const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings.sort((a,b) => b.offeringId.localeCompare(a.offeringId)));
     const [editingOffering, setEditingOffering] = useState<Offering | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -379,7 +223,6 @@ export default function AdminOfferingsPage() {
     const handleSaveOffering = (data: Offering) => {
         const isEditing = offeringsList.some(o => o.offeringId === data.offeringId);
         
-        // Check for duplicate offering before adding/editing
         const isDuplicate = offeringsList.some(o => 
             o.offeringId !== data.offeringId &&
             o.subjectId === data.subjectId && 
@@ -419,42 +262,8 @@ export default function AdminOfferingsPage() {
         setIsDialogOpen(true);
     };
 
-    const handleOfferingsImport = (newOfferings: Offering[]) => {
-        const uniqueNewOfferings: Offering[] = [];
-        const offeringConflicts: Offering[] = [];
-        let currentOfferings = [...offeringsList];
-
-        newOfferings.forEach(newO => {
-            const isDuplicate = currentOfferings.some(
-                o => o.subjectId === newO.subjectId && o.classId === newO.classId && o.termLabel === newO.termLabel
-            );
-            if (isDuplicate) {
-                offeringConflicts.push(newO);
-            } else {
-                uniqueNewOfferings.push(newO);
-                currentOfferings.push(newO); // Add to temp array to check against duplicates within the same file
-            }
-        });
-        
-        if (offeringConflicts.length > 0) {
-            toast({
-                variant: "default",
-                title: "ตรวจพบข้อมูลซ้ำซ้อน",
-                description: `ข้ามการนำเข้ารายการที่ซ้ำซ้อน ${offeringConflicts.length} รายการ (มีวิชาในห้องเรียนนั้นแล้ว)`
-            });
-        }
-
-        if (uniqueNewOfferings.length > 0) {
-            setOfferingsList(prev => [...prev, ...uniqueNewOfferings].sort((a,b) => b.offeringId.localeCompare(a.offeringId)));
-            toast({
-                title: 'อัปโหลดสำเร็จ',
-                description: `นำเข้ารายวิชาที่เปิดสอนใหม่ ${uniqueNewOfferings.length} รายการ`,
-            });
-        }
-    };
-
     const getOfferingDetails = (offering: Offering) => {
-        const subject = subjects.find(s => s.subjectId === offering.subjectId);
+        const subject = initialSubjects.find(s => s.subjectId === offering.subjectId);
         const classInfo = classes.find(c => c.classId === offering.classId);
         const teacher = users.find(u => u.email === offering.teacherEmail);
         return { subject, classInfo, teacher };
@@ -470,30 +279,28 @@ export default function AdminOfferingsPage() {
         <div className="space-y-8">
              <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">จัดการรายวิชาที่เปิดสอน</h1>
-                    <p className="text-muted-foreground">จับคู่รายวิชา, ครูผู้สอน, และห้องเรียนสำหรับแต่ละปี/ภาคการศึกษา</p>
+                    <h1 className="text-3xl font-bold font-headline">ภาพรวมรายวิชาที่เปิดสอน</h1>
+                    <p className="text-muted-foreground">ภาพรวมการจับคู่รายวิชา, ครูผู้สอน, และห้องเรียนทั้งหมดในระบบ</p>
                 </div>
                  <div className='flex gap-2'>
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/admin/subjects/manage">
                             <BookPlus className="mr-2" />
-                            จัดการข้อมูลรายวิชา
+                            จัดการข้อมูลรายวิชาหลัก
                         </Link>
                     </Button>
                     <Button onClick={() => handleOpenDialog()}>
                         <PlusCircle className="mr-2" />
-                        เพิ่มรายวิชาที่เปิดสอน
+                        เพิ่มรายวิชาที่เปิดสอน (Admin)
                     </Button>
                  </div>
             </div>
 
-            <ImportOfferingsCard onOfferingsImported={handleOfferingsImport} />
-
             <Card>
                 <CardHeader>
-                    <CardTitle>รายชื่อวิชาที่เปิดสอน</CardTitle>
+                    <CardTitle>รายชื่อวิชาที่เปิดสอนทั้งหมด</CardTitle>
                     <CardDescription>
-                        ส่วนนี้จะแสดงตารางวิชาทั้งหมดที่เปิดสอนในแต่ละภาคเรียน
+                        ตารางนี้แสดงข้อมูลทั้งหมดที่ถูกสร้างโดยครูและผู้ดูแลระบบ
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -565,5 +372,3 @@ export default function AdminOfferingsPage() {
         </div>
     );
 }
-
-    

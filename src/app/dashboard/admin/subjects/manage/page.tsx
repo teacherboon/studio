@@ -175,7 +175,6 @@ export default function ManageSubjectsPage() {
             setAllSubjects(prev => prev.map(s => s.subjectId === data.subjectId ? data : s));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาได้รับการอัปเดตแล้ว" });
         } else {
-            // Check for duplicate subject code
             if (allSubjects.some(s => s.subjectCode.toLowerCase() === data.subjectCode.toLowerCase())) {
                  toast({
                     variant: "destructive",
@@ -191,7 +190,6 @@ export default function ManageSubjectsPage() {
     }
     
     const handleDeleteSubject = (subjectId: string) => {
-        // In a real app, you'd also check for dependencies in offerings.
         setAllSubjects(prev => prev.filter(s => s.subjectId !== subjectId));
         toast({ title: "ลบสำเร็จ", description: "รายวิชาได้ถูกลบออกจากระบบแล้ว" });
     }
@@ -212,7 +210,7 @@ export default function ManageSubjectsPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">จัดการข้อมูลรายวิชา</h1>
+                    <h1 className="text-3xl font-bold font-headline">จัดการข้อมูลรายวิชาหลัก</h1>
                     <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลรายวิชาหลักทั้งหมดในระบบ</p>
                 </div>
                 <Button onClick={() => handleOpenDialog()}>
@@ -225,7 +223,7 @@ export default function ManageSubjectsPage() {
                 <CardHeader>
                     <CardTitle>รายชื่อรายวิชาหลัก</CardTitle>
                     <CardDescription>
-                        รายวิชาทั้งหมดที่มีในระบบ สามารถนำไปใช้ในหน้า 'จัดการรายวิชาที่เปิดสอน'
+                        รายวิชาทั้งหมดที่มีในระบบเพื่อให้ครูสามารถนำไปสร้างรายวิชาที่เปิดสอนได้
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -296,5 +294,3 @@ export default function ManageSubjectsPage() {
         </div>
     )
 }
-
-    
