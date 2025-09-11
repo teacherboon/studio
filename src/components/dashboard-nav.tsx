@@ -21,7 +21,8 @@ import {
   Moon,
   Sun,
   CalendarDays,
-  CalendarPlus
+  CalendarPlus,
+  Calendar as CalendarIcon
 } from "lucide-react";
 import {
   Sidebar,
@@ -100,18 +101,32 @@ export function DashboardNav() {
           </SidebarMenuItem>
 
           {user?.role === 'STUDENT' && (
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname === "/dashboard/grades"}
-                    tooltip="My Grades"
-                >
-                    <Link href="/dashboard/grades">
-                        <FileText />
-                        <span>ผลการเรียน</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
+            <>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname === "/dashboard/grades"}
+                        tooltip="My Grades"
+                    >
+                        <Link href="/dashboard/grades">
+                            <FileText />
+                            <span>ผลการเรียน</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname === "/dashboard/schedule"}
+                        tooltip="My Schedule"
+                    >
+                        <Link href="/dashboard/schedule">
+                            <CalendarIcon />
+                            <span>ตารางสอน</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </>
           )}
 
            {(user?.role === 'TEACHER') && (

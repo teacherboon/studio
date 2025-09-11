@@ -11,11 +11,11 @@ const UserImportCard = () => {
 
     const handleDownloadTemplate = (type: 'teachers' | 'students') => {
         const header = type === 'teachers' 
-            ? 'email,displayName,thaiName\n'
-            : 'stuCode,prefixTh,firstNameTh,lastNameTh,email,homeroomEmail\n';
+            ? 'email,displayName,thaiName,homeroomClass\n'
+            : 'stuCode,prefixTh,firstNameTh,lastNameTh,email,class\n';
         const sampleData = type === 'teachers'
-            ? 'teacher.c@school.ac.th,Teacher C,ครู ซี\n'
-            : 'S006,ด.ช.,เด็กใหม่,นามสกุลดี,student.new@school.ac.th,teacher.a@school.ac.th\n';
+            ? 'teacher.c@school.ac.th,Teacher C,ครู ซี,ป.1/1\n'
+            : 'S006,ด.ช.,เด็กใหม่,นามสกุลดี,student.new@school.ac.th,ป.6/1\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

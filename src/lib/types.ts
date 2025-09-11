@@ -1,3 +1,4 @@
+
 export type UserRole = 'ADMIN' | 'TEACHER' | 'STUDENT';
 
 export interface User {
@@ -60,6 +61,7 @@ export interface Offering {
   yearMode: 'PRIMARY' | 'SECONDARY';
   termLabel: string;
   isConduct: boolean;
+  periodsPerWeek?: number;
 }
 
 export type ScoreStatusFlag = 'NORMAL' | 'ร' | '0' | 'มผ';

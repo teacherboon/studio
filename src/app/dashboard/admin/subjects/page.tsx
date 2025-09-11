@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { classes, subjects, users } from "@/lib/data";
+import { classes, subjects, users, offerings } from "@/lib/data";
+import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 
 
 export default function AdminSubjectsPage() {
@@ -101,7 +102,35 @@ export default function AdminSubjectsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">ฟังก์ชันยังไม่พร้อมใช้งาน</p>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>รหัสวิชา</TableHead>
+                                <TableHead>ชื่อวิชา</TableHead>
+                                <TableHead>ห้องเรียน</TableHead>
+                                <TableHead>ครูผู้สอน</TableHead>
+                                <TableHead className="text-center">หน่วยกิต</TableHead>
+                                <TableHead className="text-center">คาบ/สัปดาห์</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {offerings.map(offering => {
+                                const subject = subjects.find(s => s.subjectId === offering.subjectId);
+                                const classInfo = classes.find(c => c.classId === offering.classId);
+                                const teacher = users.find(u => u.email === offering.teacherEmail);
+                                return (
+                                    <TableRow key={offering.offeringId}>
+                                        <TableCell>{subject?.subjectCode}</TableCell>
+                                        <TableCell>{subject?.subjectNameTh}</TableCell>
+                                        <TableCell>ห้อง {classInfo?.level}/{classInfo?.room}</TableCell>
+                                        <TableCell>{teacher?.thaiName}</TableCell>
+                                        <TableCell className="text-center">{subject?.defaultCredits.toFixed(1)}</TableCell>
+                                        <TableCell className="text-center">{offering.periodsPerWeek || '-'}</TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
         </div>

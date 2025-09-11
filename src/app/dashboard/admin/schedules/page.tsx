@@ -96,45 +96,72 @@ function ScheduleTable() {
     )
 }
 
-
-export default function AdminSchedulesPage() {
-    const classOfferings = offerings; // In a real app, you'd filter by term
+function AddScheduleDialog() {
+    const classOfferings = offerings;
     const { toast } = useToast();
+    const [selectedOfferingId, setSelectedOfferingId] = useState('');
+    const [selectedDay, setSelectedDay] = useState('');
+    const [selectedPeriod, setSelectedPeriod] = useState('');
 
-    const handleComingSoon = () => {
-      toast({
-        title: "ฟีเจอร์ยังไม่พร้อมใช้งาน",
-        description: "ระบบจัดตารางสอนอัตโนมัติด้วย AI จะพร้อมให้ใช้งานเร็วๆ นี้"
-      });
+    const handleSave = () => {
+        if (!selectedOfferingId || !selectedDay || !selectedPeriod) {
+            toast({
+                variant: 'destructive',
+                title: 'ข้อมูลไม่ครบถ้วน',
+                description: 'กรุณาเลือกข้อมูลให้ครบทุกช่อง',
+            });
+            return;
+        }
+
+        const offering = offerings.find(o => o.offeringId === selectedOfferingId);
+        if (!offering) return;
+
+        // Check if teacher is already scheduled
+        const teacherSchedules = schedules.filter(s => {
+            const schOffering = offerings.find(o => o.offeringId === s.offeringId);
+            return schOffering?.teacherEmail === offering.teacherEmail;
+        });
+
+        const conflict = teacherSchedules.find(s => s.dayOfWeek === selectedDay && s.period === Number(selectedPeriod));
+
+        if (conflict) {
+            toast({
+                variant: 'destructive',
+                title: 'ตารางสอนซ้ำซ้อน',
+                description: `ครู ${users.find(u => u.email === offering.teacherEmail)?.thaiName} มีคาบสอนแล้วในวันและเวลาดังกล่าว`,
+            });
+            return;
+        }
+
+        // Add new schedule (in a real app, this would be an API call)
+        console.log('Saving schedule:', { selectedOfferingId, selectedDay, selectedPeriod });
+        toast({
+            title: 'บันทึกสำเร็จ',
+            description: 'เพิ่มคาบสอนใหม่ในตารางเรียบร้อยแล้ว (จำลอง)',
+        });
     }
 
     return (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline">จัดการตารางสอน</h1>
-                    <p className="text-muted-foreground">จัดตารางสอนสำหรับครู, วิชา, และห้องเรียน</p>
-                </div>
-                 <Dialog>
-                  <DialogTrigger asChild>
-                    <Button>
-                        <PlusCircle className="mr-2" />
-                        เพิ่มคาบสอน (ด้วยตนเอง)
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>เพิ่มคาบสอนในตาราง</DialogTitle>
-                      <DialogDescription>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button>
+                    <PlusCircle className="mr-2" />
+                    เพิ่มคาบสอน (ด้วยตนเอง)
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>เพิ่มคาบสอนในตาราง</DialogTitle>
+                    <DialogDescription>
                         เลือกวิชาที่เปิดสอน, วัน, และคาบเรียน
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="offering" className="text-right">
-                          วิชาที่เปิดสอน
+                            วิชาที่เปิดสอน
                         </Label>
-                         <Select>
+                        <Select onValueChange={setSelectedOfferingId}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกวิชาที่เปิดสอน" />
                             </SelectTrigger>
@@ -151,12 +178,12 @@ export default function AdminSchedulesPage() {
                                 })}
                             </SelectContent>
                         </Select>
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="day" className="text-right">
-                          วัน
+                            วัน
                         </Label>
-                        <Select>
+                        <Select onValueChange={setSelectedDay}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกวัน" />
                             </SelectTrigger>
@@ -166,12 +193,12 @@ export default function AdminSchedulesPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                      </div>
-                       <div className="grid grid-cols-4 items-center gap-4">
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="period" className="text-right">
-                          คาบเรียน
+                            คาบเรียน
                         </Label>
-                        <Select>
+                        <Select onValueChange={setSelectedPeriod}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกคาบเรียน" />
                             </SelectTrigger>
@@ -181,24 +208,45 @@ export default function AdminSchedulesPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                      </div>
                     </div>
-                     <Button type="submit" className="w-full">บันทึกข้อมูล</Button>
-                  </DialogContent>
-                </Dialog>
+                </div>
+                <Button type="submit" className="w-full" onClick={handleSave}>บันทึกข้อมูล</Button>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+export default function AdminSchedulesPage() {
+    const { toast } = useToast();
+
+    const handleComingSoon = () => {
+        toast({
+            title: "ฟีเจอร์ยังไม่พร้อมใช้งาน",
+            description: "ระบบจัดตารางสอนอัตโนมัติด้วย AI จะพร้อมให้ใช้งานเร็วๆ นี้"
+        });
+    }
+
+    return (
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold font-headline">จัดการตารางสอน</h1>
+                    <p className="text-muted-foreground">จัดตารางสอนสำหรับครู, วิชา, และห้องเรียน</p>
+                </div>
+                <AddScheduleDialog />
             </div>
 
             <Card className="border-dashed border-accent">
-                 <CardHeader>
+                <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-accent">
                         <Wand2 />
                         สร้างตารางสอนอัตโนมัติ (AI)
                     </CardTitle>
                     <CardDescription>
-                       กำหนดภาระงานสอนให้ครูแต่ละท่าน จากนั้นให้ AI ช่วยจัดตารางเรียนที่เหมาะสมที่สุดสำหรับทั้งโรงเรียน
+                        กำหนดภาระงานสอนให้ครูแต่ละท่าน จากนั้นให้ AI ช่วยจัดตารางเรียนที่เหมาะสมที่สุดสำหรับทั้งโรงเรียน
                     </CardDescription>
                 </CardHeader>
-                 <CardContent>
+                <CardContent>
                     <Button onClick={handleComingSoon}>
                         <Wand2 className="mr-2" />
                         เริ่มสร้างตารางสอนอัตโนมัติ (เร็วๆ นี้)
