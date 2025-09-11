@@ -1,5 +1,7 @@
 
 "use client";
+
+import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -10,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -17,62 +21,110 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { classes, subjects, users, offerings } from "@/lib/data";
+import { classes, subjects, users, offerings as initialOfferings, type Offering, type Subject, type Class as ClassType, type User } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
-function ActionDropdown() {
+
+function OfferingActionDropdown({ offering, onDelete }: { offering: Offering, onDelete: () => void }) {
     const { toast } = useToast();
     const showPlaceholderToast = () => {
         toast({
             title: "ยังไม่พร้อมใช้งาน",
-            description: "ฟังก์ชันแก้ไขและลบยังไม่สามารถใช้งานได้",
+            description: "ฟังก์ชันแก้ไขยังไม่สามารถใช้งานได้",
         });
     };
 
     return (
-        <Dialog>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">เปิดเมนู</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={showPlaceholderToast}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>แก้ไข</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={showPlaceholderToast} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>ลบ</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </Dialog>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">เปิดเมนู</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={showPlaceholderToast}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    <span>แก้ไข</span>
+                </DropdownMenuItem>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>ลบ</span>
+                        </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                         <AlertDialogHeader>
+                            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                คุณแน่ใจหรือไม่ว่าต้องการลบรายวิชานี้? การกระทำนี้ไม่สามารถย้อนกลับได้
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                            <AlertDialogAction onClick={onDelete}>ยืนยัน</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
-// --- Sub-component for Creating Offerings ---
-function CreateOfferingDialog() {
+function CreateOfferingDialog({ onAddOffering }: { onAddOffering: (newOffering: Offering) => void }) {
     const teachers = users.filter(u => u.role === 'TEACHER');
     const { toast } = useToast();
+    const [open, setOpen] = useState(false);
+    const [selectedSubject, setSelectedSubject] = useState('');
+    const [selectedTeacher, setSelectedTeacher] = useState('');
+    const [selectedClass, setSelectedClass] = useState('');
 
-    // In a real app, you'd use state and an onSubmit handler here
     const handleSave = () => {
-        // Placeholder for save logic
-        console.log("Saving new offering...");
+        if (!selectedSubject || !selectedTeacher || !selectedClass) {
+            toast({ variant: 'destructive', title: 'ข้อมูลไม่ครบถ้วน', description: 'กรุณาเลือกข้อมูลให้ครบทุกช่อง' });
+            return;
+        }
+
+        const newOffering: Offering = {
+            offeringId: `off${Math.floor(Math.random() * 1000)}`,
+            subjectId: selectedSubject,
+            classId: selectedClass,
+            teacherEmail: selectedTeacher,
+            yearMode: classes.find(c => c.classId === selectedClass)?.yearMode || 'PRIMARY',
+            termLabel: classes.find(c => c.classId === selectedClass)?.termLabel || '',
+            isConduct: false,
+        };
+
+        onAddOffering(newOffering);
         toast({
-            title: 'บันทึกสำเร็จ (จำลอง)',
+            title: 'บันทึกสำเร็จ',
             description: 'เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย',
         });
+        setOpen(false);
+        // Reset form
+        setSelectedSubject('');
+        setSelectedTeacher('');
+        setSelectedClass('');
     };
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2" />
@@ -91,7 +143,7 @@ function CreateOfferingDialog() {
                         <Label htmlFor="subject" className="text-right">
                             รายวิชา
                         </Label>
-                        <Select>
+                        <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกรายวิชา" />
                             </SelectTrigger>
@@ -106,7 +158,7 @@ function CreateOfferingDialog() {
                         <Label htmlFor="teacher" className="text-right">
                             ครูผู้สอน
                         </Label>
-                        <Select>
+                        <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกครูผู้สอน" />
                             </SelectTrigger>
@@ -121,7 +173,7 @@ function CreateOfferingDialog() {
                         <Label htmlFor="class" className="text-right">
                             ห้องเรียน
                         </Label>
-                        <Select>
+                        <Select value={selectedClass} onValueChange={setSelectedClass}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="เลือกห้องเรียน" />
                             </SelectTrigger>
@@ -133,13 +185,17 @@ function CreateOfferingDialog() {
                         </Select>
                     </div>
                 </div>
-                <Button type="submit" className="w-full" onClick={handleSave}>บันทึกข้อมูล</Button>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">ยกเลิก</Button>
+                    </DialogClose>
+                     <Button type="button" onClick={handleSave}>บันทึกข้อมูล</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
 
-// --- Sub-component for CSV Import ---
 function ImportOfferingsCard() {
     const { toast } = useToast();
 
@@ -197,9 +253,29 @@ function ImportOfferingsCard() {
     );
 }
 
-
-// --- Main Page Component ---
 export default function AdminSubjectsPage() {
+    const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings);
+    const { toast } = useToast();
+
+    const addOffering = (newOffering: Offering) => {
+        setOfferingsList(prev => [newOffering, ...prev]);
+    };
+
+    const deleteOffering = (offeringId: string) => {
+        setOfferingsList(prev => prev.filter(o => o.offeringId !== offeringId));
+        toast({
+            title: 'ลบรายวิชาสำเร็จ',
+            description: 'รายวิชาที่เปิดสอนได้ถูกลบออกจากระบบแล้ว',
+        })
+    };
+
+    const getOfferingDetails = (offering: Offering) => {
+        const subject = subjects.find(s => s.subjectId === offering.subjectId);
+        const classInfo = classes.find(c => c.classId === offering.classId);
+        const teacher = users.find(u => u.email === offering.teacherEmail);
+        return { subject, classInfo, teacher };
+    }
+
     return (
         <div className="space-y-8">
              <div className="flex items-center justify-between">
@@ -207,7 +283,7 @@ export default function AdminSubjectsPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดการรายวิชา</h1>
                     <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลรายวิชาทั้งหมดในระบบ</p>
                 </div>
-                <CreateOfferingDialog />
+                <CreateOfferingDialog onAddOffering={addOffering} />
             </div>
 
             <ImportOfferingsCard />
@@ -233,10 +309,8 @@ export default function AdminSubjectsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {offerings.map(offering => {
-                                const subject = subjects.find(s => s.subjectId === offering.subjectId);
-                                const classInfo = classes.find(c => c.classId === offering.classId);
-                                const teacher = users.find(u => u.email === offering.teacherEmail);
+                            {offeringsList.map(offering => {
+                                const { subject, classInfo, teacher } = getOfferingDetails(offering);
                                 return (
                                     <TableRow key={offering.offeringId}>
                                         <TableCell>{subject?.subjectCode}</TableCell>
@@ -246,7 +320,7 @@ export default function AdminSubjectsPage() {
                                         <TableCell className="text-center">{subject?.defaultCredits.toFixed(1)}</TableCell>
                                         <TableCell className="text-center">{offering.periodsPerWeek || '-'}</TableCell>
                                         <TableCell className="text-right">
-                                            <ActionDropdown />
+                                            <OfferingActionDropdown offering={offering} onDelete={() => deleteOffering(offering.offeringId)} />
                                         </TableCell>
                                     </TableRow>
                                 );

@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, ChangeEvent } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,6 +16,8 @@ export default function ClassesPage() {
     const [selectedClassId, setSelectedClassId] = useState<string>('');
     const [studentScores, setStudentScores] = useState<Record<string, number | null>>({});
     const { toast } = useToast();
+    const fileInputRef = useState<HTMLInputElement>(null);
+
 
     const studentsInClass = useMemo(() => {
         if (!selectedClassId) return [];
@@ -28,8 +31,6 @@ export default function ClassesPage() {
     useMemo(() => {
         const initialClassScores: Record<string, number | null> = {};
         studentsInClass.forEach(student => {
-            // A more complex logic would be needed to find the correct offering and score
-            // For now, we simulate finding an existing score or defaulting to null
             const existingScore = initialScores.find(s => s.studentId === student.studentId);
             initialClassScores[student.studentId] = existingScore?.rawScore ?? null;
         });
@@ -45,10 +46,18 @@ export default function ClassesPage() {
     };
 
     const handleSaveScores = () => {
+        // In a real app, you would make an API call here to persist the changes.
+        // For now, we just update the initialScores array to simulate persistence.
+        Object.entries(studentScores).forEach(([studentId, rawScore]) => {
+            const scoreIndex = initialScores.findIndex(s => s.studentId === studentId);
+            if (scoreIndex !== -1) {
+                initialScores[scoreIndex].rawScore = rawScore;
+            }
+        });
         console.log("Saving scores:", studentScores);
         toast({
             title: 'บันทึกคะแนนสำเร็จ',
-            description: 'คะแนนของนักเรียนได้รับการอัปเดตแล้ว',
+            description: 'คะแนนของนักเรียนได้รับการอัปเดตแล้ว (จำลอง)',
         });
     };
 
@@ -65,7 +74,7 @@ export default function ClassesPage() {
         const selectedClass = classes.find(c => c.classId === selectedClassId);
         const header = 'studentId,studentCode,studentName,score\n';
         const rows = studentsInClass.map(s =>
-            `${s.studentId},${s.stuCode},${s.prefixTh}${s.firstNameTh} ${s.lastNameTh},`
+            `${s.studentId},${s.stuCode},"${s.prefixTh}${s.firstNameTh} ${s.lastNameTh}",`
         ).join('\n');
         
         const csvContent = "\uFEFF" + header + rows;
@@ -80,11 +89,60 @@ export default function ClassesPage() {
     };
 
     const handleUploadClick = () => {
-        toast({
-            title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
-            description: 'การอัปโหลดไฟล์ CSV ยังไม่สามารถใช้งานได้ในเวอร์ชันนี้',
-        });
+        fileInputRef.current?.click();
     };
+
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            try {
+                const lines = text.split('\n').slice(1); // Skip header
+                const updatedScores: Record<string, number | null> = { ...studentScores };
+                let updatedCount = 0;
+
+                lines.forEach(line => {
+                    if (line.trim() === '') return;
+                    const [studentId, studentCode, studentName, scoreStr] = line.split(',');
+                    
+                    if (studentId && studentsInClass.some(s => s.studentId === studentId.trim())) {
+                        const score = scoreStr.trim() === '' ? null : Number(scoreStr.trim());
+                        if (score === null || !isNaN(score)) {
+                            updatedScores[studentId.trim()] = score;
+                            updatedCount++;
+                        }
+                    }
+                });
+
+                if (updatedCount > 0) {
+                    setStudentScores(updatedScores);
+                    toast({
+                        title: 'อัปโหลดสำเร็จ',
+                        description: `คะแนนของนักเรียน ${updatedCount} คน ถูกเตรียมสำหรับบันทึก`,
+                    });
+                } else {
+                     toast({
+                        variant: 'destructive',
+                        title: 'ไม่พบข้อมูลที่ตรงกัน',
+                        description: 'ไม่พบรหัสนักเรียนที่ตรงกับนักเรียนในห้องนี้ในไฟล์ CSV',
+                    });
+                }
+            } catch (error) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'ไฟล์ไม่ถูกต้อง',
+                    description: 'ไม่สามารถประมวลผลไฟล์ CSV ได้ โปรดตรวจสอบรูปแบบไฟล์',
+                });
+            }
+            
+        };
+        reader.readAsText(file);
+        // Reset file input
+        event.target.value = '';
+    }
 
     return (
         <div className="space-y-8">
@@ -190,6 +248,13 @@ export default function ClassesPage() {
                                         <Upload className="mr-2" />
                                         เลือกไฟล์ CSV เพื่ออัปโหลด
                                     </Button>
+                                     <Input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        className="hidden" 
+                                        accept=".csv"
+                                        onChange={handleFileChange}
+                                    />
                                 </div>
                            </TabsContent>
                        </Tabs>

@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Download, PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -9,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -19,40 +21,66 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { users } from "@/lib/data";
+import { users as initialUsers, type User } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
-function ActionDropdown() {
+function ActionDropdown({ user, onDelete }: { user: User, onDelete: () => void }) {
     const { toast } = useToast();
     const showPlaceholderToast = () => {
         toast({
             title: "ยังไม่พร้อมใช้งาน",
-            description: "ฟังก์ชันแก้ไขและลบยังไม่สามารถใช้งานได้",
+            description: `ฟังก์ชันแก้ไขสำหรับ ${user.displayName} ยังไม่สามารถใช้งานได้`,
         });
     };
 
     return (
-        <Dialog>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">เปิดเมนู</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={showPlaceholderToast}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>แก้ไข</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={showPlaceholderToast} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>ลบ</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </Dialog>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">เปิดเมนู</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={showPlaceholderToast}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    <span>แก้ไข</span>
+                </DropdownMenuItem>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                             <Trash2 className="mr-2 h-4 w-4" />
+                             <span>ลบ</span>
+                        </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ "{user.displayName}"? การกระทำนี้ไม่สามารถย้อนกลับได้
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                            <AlertDialogAction onClick={onDelete}>ยืนยัน</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -124,6 +152,17 @@ const UserImportCard = () => {
 
 
 export default function AdminUsersPage() {
+    const [userList, setUserList] = useState<User[]>(initialUsers);
+    const { toast } = useToast();
+
+    const handleDeleteUser = (userId: string) => {
+        setUserList(prev => prev.filter(u => u.userId !== userId));
+        toast({
+            title: 'ลบผู้ใช้สำเร็จ',
+            description: 'ผู้ใช้ได้ถูกลบออกจากระบบแล้ว',
+        })
+    };
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -160,12 +199,13 @@ export default function AdminUsersPage() {
                                 <TableHead>ชื่อที่แสดง</TableHead>
                                 <TableHead>อีเมล</TableHead>
                                 <TableHead>บทบาท</TableHead>
+
                                 <TableHead>สถานะ</TableHead>
                                 <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {users.map((user) => (
+                            {userList.map((user) => (
                                 <TableRow key={user.userId}>
                                     <TableCell className="font-medium">{user.displayName} ({user.thaiName})</TableCell>
                                     <TableCell>{user.email}</TableCell>
@@ -181,7 +221,7 @@ export default function AdminUsersPage() {
                                         </span>
                                     </TableCell>
                                      <TableCell className="text-right">
-                                        <ActionDropdown />
+                                        <ActionDropdown user={user} onDelete={() => handleDeleteUser(user.userId)} />
                                     </TableCell>
                                 </TableRow>
                             ))}
