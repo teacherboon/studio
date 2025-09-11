@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -80,14 +80,25 @@ function OfferingActionDropdown({ offering, onEdit, onDelete }: { offering: Offe
     );
 }
 
-function CreateOrEditOfferingDialog({ offeringData, onSave, trigger }: { offeringData?: Offering | null, onSave: (data: Offering) => void, trigger: React.ReactNode }) {
-    const [open, setOpen] = useState(false);
+function CreateOrEditOfferingDialog({ offeringData, onSave, trigger, open, onOpenChange }: { offeringData?: Offering | null, onSave: (data: Offering) => void, trigger: React.ReactNode, open: boolean, onOpenChange: (open: boolean) => void }) {
     const teachers = users.filter(u => u.role === 'TEACHER');
     const { toast } = useToast();
     
     const [selectedSubject, setSelectedSubject] = useState(offeringData?.subjectId || '');
     const [selectedTeacher, setSelectedTeacher] = useState(offeringData?.teacherEmail || '');
     const [selectedClass, setSelectedClass] = useState(offeringData?.classId || '');
+
+    useEffect(() => {
+        if (offeringData) {
+            setSelectedSubject(offeringData.subjectId);
+            setSelectedTeacher(offeringData.teacherEmail);
+            setSelectedClass(offeringData.classId);
+        } else {
+            setSelectedSubject('');
+            setSelectedTeacher('');
+            setSelectedClass('');
+        }
+    }, [offeringData, open]);
 
     const handleSave = () => {
         if (!selectedSubject || !selectedTeacher || !selectedClass) {
@@ -102,7 +113,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, trigger }: { offerin
         };
 
         const newOffering: Offering = {
-            offeringId: offeringData?.offeringId || `off${Math.random()}`,
+            offeringId: offeringData?.offeringId || `off${Date.now()}`,
             subjectId: selectedSubject,
             classId: selectedClass,
             teacherEmail: selectedTeacher,
@@ -112,22 +123,11 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, trigger }: { offerin
         };
 
         onSave(newOffering);
-        setOpen(false);
+        onOpenChange(false);
     };
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => {
-            setOpen(isOpen);
-            if(isOpen && offeringData) {
-                 setSelectedSubject(offeringData.subjectId);
-                 setSelectedTeacher(offeringData.teacherEmail);
-                 setSelectedClass(offeringData.classId);
-            } else if (!isOpen) {
-                 setSelectedSubject('');
-                 setSelectedTeacher('');
-                 setSelectedClass('');
-            }
-        }}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
@@ -254,6 +254,7 @@ function ImportOfferingsCard() {
 export default function AdminSubjectsPage() {
     const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings);
     const [editingOffering, setEditingOffering] = useState<Offering | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
 
     const handleSaveOffering = (data: Offering) => {
@@ -266,7 +267,6 @@ export default function AdminSubjectsPage() {
             setOfferingsList(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย" });
         }
-        setEditingOffering(null);
     }
 
     const deleteOffering = (offeringId: string) => {
@@ -275,6 +275,11 @@ export default function AdminSubjectsPage() {
             title: 'ลบรายวิชาสำเร็จ',
             description: 'รายวิชาที่เปิดสอนได้ถูกลบออกจากระบบแล้ว',
         })
+    };
+
+    const handleOpenDialog = (offering: Offering | null = null) => {
+        setEditingOffering(offering);
+        setIsDialogOpen(true);
     };
 
     const getOfferingDetails = (offering: Offering) => {
@@ -291,17 +296,10 @@ export default function AdminSubjectsPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดการรายวิชา</h1>
                     <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลรายวิชาทั้งหมดในระบบ</p>
                 </div>
-                 <CreateOrEditOfferingDialog
-                    key={editingOffering ? `edit-${editingOffering.offeringId}` : 'create'}
-                    offeringData={editingOffering}
-                    onSave={handleSaveOffering}
-                    trigger={
-                        <Button onClick={() => setEditingOffering(null)}>
-                            <PlusCircle className="mr-2" />
-                            เพิ่มรายวิชาที่เปิดสอน
-                        </Button>
-                    }
-                />
+                 <Button onClick={() => handleOpenDialog()}>
+                    <PlusCircle className="mr-2" />
+                    เพิ่มรายวิชาที่เปิดสอน
+                 </Button>
             </div>
 
             <ImportOfferingsCard />
@@ -340,7 +338,7 @@ export default function AdminSubjectsPage() {
                                         <TableCell className="text-right">
                                             <OfferingActionDropdown 
                                                 offering={offering} 
-                                                onEdit={() => setEditingOffering(offering)}
+                                                onEdit={() => handleOpenDialog(offering)}
                                                 onDelete={() => deleteOffering(offering.offeringId)} 
                                             />
                                         </TableCell>
@@ -351,8 +349,15 @@ export default function AdminSubjectsPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+             <CreateOrEditOfferingDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                offeringData={editingOffering}
+                onSave={handleSaveOffering}
+                trigger={<></>}
+            />
         </div>
     );
 }
 
-    
