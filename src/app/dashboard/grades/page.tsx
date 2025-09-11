@@ -28,10 +28,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from '@/ai/flows/analyze-student-scores';
 import { useToast } from '@/hooks/use-toast';
 import { GradeReportSheet } from '@/components/grade-report-sheet';
+import { cn } from '@/lib/utils';
 
 export default function StudentGradesPage() {
   const user = useUser();
-  const [selectedTerm, setSelectedTerm] = useState<string>('1/2568');
+  const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true); // Set to true to start loading initially
   const { toast } = useToast();
@@ -93,27 +94,17 @@ export default function StudentGradesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, studentScores.length]); // Depend on user and score count
 
-  if (!user || !studentData) {
-    return (
-        <div>
-            <Skeleton className="h-9 w-64 mb-2" />
-            <Skeleton className="h-5 w-80 mb-8" />
-            <Card>
-                <CardHeader><Skeleton className="h-8 w-48 mb-4"/><Skeleton className="h-10 w-64"/></CardHeader>
-                <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-        </div>
-    )
-  }
-
   const availableTerms = [...new Set(
     offerings
       .filter(o => studentScores.some(s => s.offeringId === o.offeringId))
       .map(o => o.termLabel)
-  )];
-  if(availableTerms.length > 0 && !selectedTerm) {
-    setSelectedTerm(availableTerms[0]);
-  }
+  )].sort((a,b) => b.localeCompare(a)); // Sort terms, latest first
+
+  useEffect(() => {
+    if(availableTerms.length > 0 && !selectedTerm) {
+        setSelectedTerm(availableTerms[0]);
+    }
+  }, [availableTerms, selectedTerm]);
 
   const scoresForTerm = studentScores.filter(score => {
     const offering = offerings.find(o => o.offeringId === score.offeringId);
@@ -137,10 +128,27 @@ export default function StudentGradesPage() {
     return c.classId === offering?.classId;
   });
 
-  const attributesForYear = studentAttributes.find(attr => attr.studentId === studentData.studentId && currentClass && String(attr.yearBe) === currentClass.yearBe.toString());
+  const attributesForYear = studentAttributes.find(attr => attr.studentId === studentData?.studentId && currentClass && String(attr.yearBe) === currentClass.yearBe.toString());
 
 
   const gpa = calculateGPA(scoresForTerm as Score[]);
+
+  if (!user || !studentData) {
+    return (
+        <div className="space-y-8">
+            <div>
+                <Skeleton className="h-9 w-64 mb-2" />
+                <Skeleton className="h-5 w-80" />
+            </div>
+            <Card>
+                <CardHeader><Skeleton className="h-8 w-48 mb-4"/><Skeleton className="h-10 w-64"/></CardHeader>
+                <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+            </Card>
+        </div>
+    )
+  }
+
+  const hasDataForSelectedTerm = gradeDetails.length > 0 && studentData && currentClass;
 
   return (
     <div className="space-y-8">
@@ -166,18 +174,17 @@ export default function StudentGradesPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                     <Button onClick={handlePrint} disabled={gradeDetails.length === 0}>
+                     <Button onClick={handlePrint} disabled={!hasDataForSelectedTerm}>
                         <Download className="mr-2 h-4 w-4" />
                         ดาวน์โหลด (PDF)
                     </Button>
                 </div>
             </CardHeader>
             <CardContent>
-                {gradeDetails.length > 0 && studentData && currentClass ? (
+                {hasDataForSelectedTerm ? (
                     <div className="flex justify-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
                         <div className="transform scale-[0.8] origin-top">
                            <GradeReportSheet 
-                                ref={reportRef}
                                 student={studentData} 
                                 grades={gradeDetails} 
                                 gpa={gpa}
@@ -195,6 +202,21 @@ export default function StudentGradesPage() {
                 )}
             </CardContent>
         </Card>
+        
+        {/* Hidden component for printing */}
+        <div className="hidden">
+           {hasDataForSelectedTerm && (
+                <GradeReportSheet 
+                    ref={reportRef}
+                    student={studentData} 
+                    grades={gradeDetails} 
+                    gpa={gpa}
+                    currentClass={currentClass}
+                    attributes={attributesForYear || null}
+                />
+           )}
+        </div>
+
 
         {isAnalyzing ? (
             <Card>
