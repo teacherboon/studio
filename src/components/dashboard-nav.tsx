@@ -158,24 +158,24 @@ export function DashboardNav() {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === "/dashboard/score-analysis"}
-                    tooltip="Score Analysis (AI)"
-                  >
-                    <Link href="/dashboard/score-analysis">
-                      <Wand />
-                      <span>วิเคราะห์ผลการเรียน (AI)</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
                     isActive={pathname === "/dashboard/teacher/attributes"}
                     tooltip="Evaluate Attributes"
                   >
                     <Link href="/dashboard/teacher/attributes">
                       <ClipboardEdit />
                       <span>ประเมินคุณลักษณะ</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/dashboard/score-analysis"}
+                    tooltip="Score Analysis (AI)"
+                  >
+                    <Link href="/dashboard/score-analysis">
+                      <Wand />
+                      <span>วิเคราะห์ผลการเรียน (AI)</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

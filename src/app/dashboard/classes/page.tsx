@@ -3,7 +3,6 @@
 
 import { useState, useMemo, useEffect, useRef, ChangeEvent } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,14 @@ import { Download, Upload, Users, FileText, Save, Edit, School, BookOpen, Calend
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Offering, Class } from '@/lib/types';
+import { useUser } from '@/hooks/use-user';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 interface OfferingWithDetails extends Offering {
@@ -22,6 +29,7 @@ interface OfferingWithDetails extends Offering {
 
 
 export default function ClassesPage() {
+    const user = useUser();
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
     
@@ -29,33 +37,27 @@ export default function ClassesPage() {
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const academicYears = useMemo(() => {
-        // Get all unique years from offerings and sort them descending
-        return [...new Set(offerings.map(o => o.yearBe))].sort((a, b) => b - a);
-    }, []);
-
-    const offeringsForYear = useMemo(() => {
-        if (!selectedYear) return [];
+    const offeringsForTeacher = useMemo(() => {
+        if (!user || !selectedYear) return [];
 
         return offerings
-            .filter(o => o.yearBe === Number(selectedYear))
+            .filter(o => o.teacherEmail === user.email && o.yearBe === Number(selectedYear))
             .map(o => {
                 const subject = subjects.find(s => s.subjectId === o.subjectId);
                 const classInfo = classes.find(c => c.classId === o.classId);
-                // Label for offerings can be term-based or year-based
-                const termDisplay = o.termLabel.includes('/') ? ` (เทอม ${o.termLabel})` : '';
+                const termDisplay = o.termLabel.includes('/') ? ` (เทอม ${o.termLabel})` : ` (ปีการศึกษา ${o.yearBe})`;
                 return {
                     ...o,
                     subjectName: subject?.subjectNameTh || 'N/A',
                     subjectCode: subject?.subjectCode || 'N/A',
                     className: `ห้อง ${classInfo?.level}/${classInfo?.room}${termDisplay}` || 'N/A'
                 }
-            })
-    }, [selectedYear]);
+            });
+    }, [selectedYear, user]);
 
     const selectedOffering = useMemo(() => {
-        return offeringsForYear.find(o => o.offeringId === selectedOfferingId);
-    }, [selectedOfferingId, offeringsForYear]);
+        return offeringsForTeacher.find(o => o.offeringId === selectedOfferingId);
+    }, [selectedOfferingId, offeringsForTeacher]);
 
     const studentsInClass = useMemo(() => {
         if (!selectedOffering) return [];
@@ -81,8 +83,8 @@ export default function ClassesPage() {
         setStudentScores(initialClassScores);
     }, [studentsInClass, selectedOffering]);
 
-    const handleYearChange = (year: string) => {
-        setSelectedYear(year);
+    const handleYearChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setSelectedYear(event.target.value);
         setSelectedOfferingId(''); // Reset offering selection when year changes
     }
 
@@ -208,41 +210,42 @@ export default function ClassesPage() {
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold font-headline">จัดการคะแนนรายวิชา</h1>
-                <p className="text-muted-foreground">เลือกปีการศึกษาและรายวิชาที่สอนเพื่อดูรายชื่อนักเรียนและกรอกคะแนน</p>
+                <p className="text-muted-foreground">กรอกปีการศึกษาและเลือกรายวิชาที่สอนเพื่อดูรายชื่อนักเรียนและกรอกคะแนน</p>
             </div>
 
             <Card>
                 <CardHeader>
                     <CardTitle>เลือกข้อมูลการสอน</CardTitle>
                     <CardDescription>
-                        กรุณาเลือกข้อมูลตามลำดับเพื่อค้นหารายการที่ต้องการจัดการ
+                        กรุณากรอกข้อมูลตามลำดับเพื่อค้นหารายการที่ต้องการจัดการ
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                         <Calendar className="h-5 w-5 text-muted-foreground" />
-                        <Select onValueChange={handleYearChange} value={selectedYear}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="1. เลือกปีการศึกษา..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {academicYears.map(year => (
-                                    <SelectItem key={year} value={String(year)}>
-                                        ปีการศึกษา {year}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="year-input" className="flex items-center gap-2 text-muted-foreground">
+                            <Calendar className="h-5 w-5" />
+                            1. กรอกปีการศึกษา
+                        </Label>
+                        <Input 
+                            id="year-input"
+                            type="number"
+                            placeholder="เช่น 2567"
+                            value={selectedYear}
+                            onChange={handleYearChange}
+                        />
                     </div>
 
-                     <div className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-muted-foreground" />
-                         <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedYear}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="2. เลือกรายวิชาที่สอน..." />
+                     <div className="flex flex-col gap-2">
+                        <Label htmlFor="offering-select" className="flex items-center gap-2 text-muted-foreground">
+                            <BookOpen className="h-5 w-5" />
+                            2. เลือกรายวิชาที่สอน
+                        </Label>
+                         <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedYear || offeringsForTeacher.length === 0}>
+                            <SelectTrigger id="offering-select">
+                                <SelectValue placeholder="เลือกรายวิชาที่สอน..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {offeringsForYear.map(o => (
+                                {offeringsForTeacher.map(o => (
                                     <SelectItem key={o.offeringId} value={o.offeringId}>
                                         {o.subjectCode} - {o.subjectName} ({o.className})
                                     </SelectItem>
@@ -261,7 +264,7 @@ export default function ClassesPage() {
                            รายชื่อนักเรียน
                         </CardTitle>
                         <CardDescription>
-                            {selectedOffering?.subjectName} ({selectedOffering?.subjectCode}) - {selectedOffering?.className.replace(/ \(.*\)/, '')} - มีนักเรียนทั้งหมด {studentsInClass.length} คน
+                            {selectedOffering?.subjectName} ({selectedOffering?.subjectCode}) - {selectedOffering?.className} - มีนักเรียนทั้งหมด {studentsInClass.length} คน
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -351,5 +354,3 @@ export default function ClassesPage() {
         </div>
     )
 }
-
-    
