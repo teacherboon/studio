@@ -17,8 +17,86 @@ import { classes, subjects, users, offerings } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
-export default function AdminSubjectsPage() {
+// --- Sub-component for Creating Offerings ---
+function CreateOfferingDialog() {
     const teachers = users.filter(u => u.role === 'TEACHER');
+
+    // In a real app, you'd use state and an onSubmit handler here
+    const handleSave = () => {
+        // Placeholder for save logic
+        console.log("Saving new offering...");
+    };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button>
+                    <PlusCircle className="mr-2" />
+                    สร้างรายวิชาที่เปิดสอน
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>สร้างรายวิชาที่เปิดสอน</DialogTitle>
+                    <DialogDescription>
+                        กำหนดครู, วิชา, และห้องเรียนสำหรับภาคการศึกษานี้
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="subject" className="text-right">
+                            รายวิชา
+                        </Label>
+                        <Select>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="เลือกรายวิชา" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {subjects.map(s => (
+                                    <SelectItem key={s.subjectId} value={s.subjectId}>{s.subjectCode} - {s.subjectNameTh}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="teacher" className="text-right">
+                            ครูผู้สอน
+                        </Label>
+                        <Select>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="เลือกครูผู้สอน" />
+                            </Trigger>
+                            <SelectContent>
+                                {teachers.map(t => (
+                                    <SelectItem key={t.userId} value={t.email}>{t.thaiName}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="class" className="text-right">
+                            ห้องเรียน
+                        </Label>
+                        <Select>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="เลือกห้องเรียน" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {classes.map(c => (
+                                    <SelectItem key={c.classId} value={c.classId}>ห้อง {c.level}/{c.room} ({c.termLabel})</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <Button type="submit" className="w-full" onClick={handleSave}>บันทึกข้อมูล</Button>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// --- Sub-component for CSV Import ---
+function ImportOfferingsCard() {
     const { toast } = useToast();
 
     const handleDownloadTemplate = () => {
@@ -44,106 +122,51 @@ export default function AdminSubjectsPage() {
     }
 
     return (
+        <Card>
+            <CardHeader>
+                <CardTitle>นำเข้ารายวิชาที่เปิดสอน (CSV)</CardTitle>
+                <CardDescription>
+                    เพิ่มข้อมูลรายวิชาที่เปิดสอนจำนวนมากผ่านไฟล์ CSV
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง
+                    </p>
+                    <Button variant="outline" onClick={handleDownloadTemplate}>
+                        <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
+                    </Button>
+                </div>
+                <div>
+                    <h4 className="font-semibold">อัปโหลดไฟล์</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
+                    </p>
+                    <Button onClick={handleUploadClick}>
+                        <Upload className="mr-2"/> เลือกไฟล์เพื่ออัปโหลด
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+
+// --- Main Page Component ---
+export default function AdminSubjectsPage() {
+    return (
         <div className="space-y-8">
              <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold font-headline">จัดการรายวิชา</h1>
                     <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลรายวิชาทั้งหมดในระบบ</p>
                 </div>
-                <Dialog>
-                    <DialogTrigger asChild>
-                    <Button>
-                        <PlusCircle className="mr-2" />
-                        สร้างรายวิชาที่เปิดสอน
-                    </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>สร้างรายวิชาที่เปิดสอน</DialogTitle>
-                        <DialogDescription>
-                        กำหนดครู, วิชา, และห้องเรียนสำหรับภาคการศึกษานี้
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="subject" className="text-right">
-                            รายวิชา
-                        </Label>
-                            <Select>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="เลือกรายวิชา" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {subjects.map(s => (
-                                    <SelectItem key={s.subjectId} value={s.subjectId}>{s.subjectCode} - {s.subjectNameTh}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="teacher" className="text-right">
-                            ครูผู้สอน
-                        </Label>
-                        <Select>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="เลือกครูผู้สอน" />
-                            </Trigger>
-                            <SelectContent>
-                                {teachers.map(t => (
-                                    <SelectItem key={t.userId} value={t.email}>{t.thaiName}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="class" className="text-right">
-                            ห้องเรียน
-                        </Label>
-                        <Select>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="เลือกห้องเรียน" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {classes.map(c => (
-                                    <SelectItem key={c.classId} value={c.classId}>ห้อง {c.level}/{c.room} ({c.termLabel})</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        </div>
-                    </div>
-                        <Button type="submit" className="w-full">บันทึกข้อมูล</Button>
-                    </DialogContent>
-                </Dialog>
+                <CreateOfferingDialog />
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>นำเข้ารายวิชาที่เปิดสอน (CSV)</CardTitle>
-                    <CardDescription>
-                        เพิ่มข้อมูลรายวิชาที่เปิดสอนจำนวนมากผ่านไฟล์ CSV
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
-                        <p className="text-sm text-muted-foreground mb-2">
-                            ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง
-                        </p>
-                        <Button variant="outline" onClick={handleDownloadTemplate}>
-                            <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
-                        </Button>
-                    </div>
-                    <div>
-                        <h4 className="font-semibold">อัปโหลดไฟล์</h4>
-                        <p className="text-sm text-muted-foreground mb-2">
-                            เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
-                        </p>
-                        <Button onClick={handleUploadClick}>
-                            <Upload className="mr-2"/> เลือกไฟล์เพื่ออัปโหลด
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+            <ImportOfferingsCard />
 
             <Card>
                 <CardHeader>
