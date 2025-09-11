@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, UserSquare, Upload, Download, Trash2 } from "lucide-react";
@@ -28,6 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { schedules as initialSchedules, offerings, subjects, classes, users } from '@/lib/data';
 import type { DayOfWeek, Schedule, Offering, Subject, Class as ClassType, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -78,7 +79,7 @@ function TeacherScheduleTable({
         const classInfo = classes.find(c => c.classId === offering.classId);
 
         return (
-            <div className="text-xs p-1 bg-primary/10 rounded-md relative group">
+            <div className="text-xs p-1 bg-primary/10 rounded-md relative group h-full">
                 <p className="font-bold truncate">{subject?.subjectCode}</p>
                 <p className="truncate">{subject?.subjectNameTh}</p>
                 <p className="truncate">ห้อง {classInfo?.level}/{classInfo?.room}</p>
@@ -87,7 +88,7 @@ function TeacherScheduleTable({
                          <Button
                             variant="destructive"
                             size="icon"
-                            className="absolute top-0 right-0 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             <Trash2 className="h-3 w-3" />
                         </Button>
@@ -96,7 +97,7 @@ function TeacherScheduleTable({
                         <AlertDialogHeader>
                             <AlertDialogTitle>ยืนยันการลบคาบสอน</AlertDialogTitle>
                             <AlertDialogDescription>
-                                คุณแน่ใจหรือไม่ว่าต้องการลบคาบสอนนี้?
+                                คุณแน่ใจหรือไม่ว่าต้องการลบคาบสอน "{subject?.subjectNameTh}" ของครู {users.find(u => u.email === teacherEmail)?.thaiName}?
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -166,17 +167,14 @@ function AddScheduleDialog({ onAddSchedule }: { onAddSchedule: (schedule: Schedu
         }
 
         const newSchedule: Schedule = {
-            scheduleId: `sch${Math.random()}`,
+            scheduleId: `sch${Date.now()}`,
             offeringId: selectedOfferingId,
             dayOfWeek: selectedDay as DayOfWeek,
             period: Number(selectedPeriod),
         };
 
         onAddSchedule(newSchedule);
-        toast({
-            title: 'บันทึกสำเร็จ',
-            description: 'เพิ่มคาบสอนใหม่ในตารางเรียบร้อยแล้ว',
-        });
+        
         setOpen(false);
         // Reset form
         setSelectedOfferingId('');
@@ -264,15 +262,16 @@ function AddScheduleDialog({ onAddSchedule }: { onAddSchedule: (schedule: Schedu
     );
 }
 
-function ImportSchedulesCard() {
+function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (newSchedules: Schedule[]) => void }) {
     const { toast } = useToast();
+    const fileInputRef = useState<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
         const header = 'offeringId,dayOfWeek,period\n';
         const sampleData = 'off1,MONDAY,1\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-t;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
@@ -281,12 +280,66 @@ function ImportSchedulesCard() {
         link.click();
         document.body.removeChild(link);
     };
-
+    
     const handleUploadClick = () => {
-        toast({
-            title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
-            description: 'การอัปโหลดไฟล์ CSV ยังไม่สามารถใช้งานได้ในเวอร์ชันนี้',
-        });
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            try {
+                const lines = text.split('\n').slice(1); // Skip header
+                const newSchedules: Schedule[] = [];
+                let importedCount = 0;
+
+                lines.forEach((line, index) => {
+                    if (line.trim() === '') return;
+                    const [offeringId, dayOfWeek, periodStr] = line.split(',');
+                    
+                    const period = Number(periodStr.trim());
+                    const validOffering = offerings.some(o => o.offeringId === offeringId.trim());
+                    const validDay = daysOfWeek.some(d => d.value === dayOfWeek.trim());
+                    const validPeriod = periods.some(p => p.period === period);
+
+                    if (validOffering && validDay && validPeriod) {
+                        newSchedules.push({
+                            scheduleId: `csv-import-${Date.now()}-${index}`,
+                            offeringId: offeringId.trim(),
+                            dayOfWeek: dayOfWeek.trim() as DayOfWeek,
+                            period: period,
+                        });
+                        importedCount++;
+                    }
+                });
+
+                if (importedCount > 0) {
+                    onSchedulesImported(newSchedules);
+                    toast({
+                        title: 'อัปโหลดสำเร็จ',
+                        description: `นำเข้าตารางสอนใหม่ ${importedCount} รายการ`,
+                    });
+                } else {
+                     toast({
+                        variant: 'destructive',
+                        title: 'ไม่พบข้อมูลที่ถูกต้อง',
+                        description: 'ไม่พบข้อมูลตารางสอนที่ถูกต้องในไฟล์ CSV',
+                    });
+                }
+            } catch (error) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'ไฟล์ไม่ถูกต้อง',
+                    description: 'ไม่สามารถประมวลผลไฟล์ CSV ได้ โปรดตรวจสอบรูปแบบไฟล์',
+                });
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     }
 
     return (
@@ -294,7 +347,7 @@ function ImportSchedulesCard() {
             <CardHeader>
                 <CardTitle>นำเข้าตารางสอน (CSV)</CardTitle>
                 <CardDescription>
-                    เพิ่มข้อมูลตารางสอนจำนวนมากผ่านไฟล์ CSV
+                    เพิ่มหรืออัปเดตข้อมูลตารางสอนจำนวนมากผ่านไฟล์ CSV
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -315,6 +368,13 @@ function ImportSchedulesCard() {
                     <Button onClick={handleUploadClick}>
                         <Upload className="mr-2"/> เลือกไฟล์เพื่ออัปโหลด
                     </Button>
+                     <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept=".csv"
+                        onChange={handleFileChange}
+                    />
                 </div>
             </CardContent>
         </Card>
@@ -333,9 +393,11 @@ export default function AdminSchedulesPage() {
         const offering = offerings.find(o => o.offeringId === schedule.offeringId);
         if (!offering) return;
 
+        const teacherForOffering = offering.teacherEmail;
+
         const teacherSchedules = allSchedules.filter(s => {
             const schOffering = offerings.find(o => o.offeringId === s.offeringId);
-            return schOffering?.teacherEmail === offering.teacherEmail;
+            return schOffering?.teacherEmail === teacherForOffering;
         });
 
         const conflict = teacherSchedules.some(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period);
@@ -344,12 +406,16 @@ export default function AdminSchedulesPage() {
             toast({
                 variant: 'destructive',
                 title: 'ตารางสอนซ้ำซ้อน',
-                description: `ครู ${users.find(u => u.email === offering.teacherEmail)?.thaiName} มีคาบสอนแล้วในวันและเวลาดังกล่าว`,
+                description: `ครู ${users.find(u => u.email === teacherForOffering)?.thaiName} มีคาบสอนแล้วในวันและเวลาดังกล่าว`,
             });
             return;
         }
 
         setAllSchedules(prev => [...prev, schedule]);
+        toast({
+            title: 'บันทึกสำเร็จ',
+            description: 'เพิ่มคาบสอนใหม่ในตารางเรียบร้อยแล้ว',
+        });
     }
     
     const handleDeleteSchedule = (scheduleId: string) => {
@@ -358,6 +424,23 @@ export default function AdminSchedulesPage() {
             title: 'ลบสำเร็จ',
             description: 'คาบสอนได้ถูกลบออกจากตารางแล้ว',
         })
+    }
+
+    const handleSchedulesImport = (newSchedules: Schedule[]) => {
+        // Simple merge: add new schedules, could be enhanced with conflict checking
+        setAllSchedules(prevSchedules => {
+            const existingIds = new Set(prevSchedules.map(s => `${s.offeringId}-${s.dayOfWeek}-${s.period}`));
+            const uniqueNewSchedules = newSchedules.filter(ns => !existingIds.has(`${ns.offeringId}-${ns.dayOfWeek}-${ns.period}`));
+            
+            if (uniqueNewSchedules.length < newSchedules.length) {
+                toast({
+                    variant: 'default',
+                    title: 'ตรวจพบข้อมูลซ้ำซ้อน',
+                    description: `ระบบได้ข้ามการนำเข้ารายการที่ซ้ำซ้อนจำนวน ${newSchedules.length - uniqueNewSchedules.length} รายการ`
+                })
+            }
+            return [...prevSchedules, ...uniqueNewSchedules];
+        });
     }
 
     return (
@@ -370,7 +453,7 @@ export default function AdminSchedulesPage() {
                 <AddScheduleDialog onAddSchedule={handleAddSchedule} />
             </div>
 
-            <ImportSchedulesCard />
+            <ImportSchedulesCard onSchedulesImported={handleSchedulesImport} />
 
              <Card>
                 <CardHeader>
@@ -379,7 +462,7 @@ export default function AdminSchedulesPage() {
                         ตารางสอนรายบุคคล
                     </CardTitle>
                     <CardDescription>
-                        เลือกคุณครูที่ต้องการดูตารางสอน
+                        เลือกคุณครูที่ต้องการดูตารางสอน (คุณสามารถลบคาบสอนได้โดยการคลิกที่ไอคอนถังขยะ)
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
