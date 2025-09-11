@@ -201,16 +201,10 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             const lines = text.split('\n');
             const header = lines[0].trim().split(',');
 
-            // Basic header check to guess file type
             if (header.includes('studentId')) {
-                // Process student file
                 processStudentCsv(text);
             } else if (header.includes('homeroomClassId')) {
-                // Process teacher file
-                 toast({
-                    title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
-                    description: 'การอัปโหลดไฟล์ CSV สำหรับครูยังไม่สามารถใช้งานได้',
-                });
+                processTeacherCsv(text);
             } else {
                 toast({
                     variant: 'destructive',
@@ -271,6 +265,56 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             });
         }
     };
+    
+    const processTeacherCsv = (csvText: string) => {
+        try {
+            const lines = csvText.split('\n').slice(1);
+            const newUsers: User[] = [];
+            let importedCount = 0;
+
+            lines.forEach((line) => {
+                if (line.trim() === '') return;
+                const [email, displayName, thaiName, password, homeroomClassId] = line.split(',').map(s => s.trim());
+
+                if (email && displayName && thaiName && password) {
+                    newUsers.push({
+                        userId: `user-csv-${Date.now()}-${importedCount}`,
+                        role: 'TEACHER',
+                        email,
+                        displayName,
+                        thaiName,
+                        password,
+                        homeroomClassId: homeroomClassId || undefined,
+                        status: 'ACTIVE',
+                        createdAt: new Date().toISOString(),
+                    });
+                    importedCount++;
+                }
+            });
+            
+            if (importedCount > 0) {
+                onUsersImported(newUsers);
+                toast({
+                    title: 'อัปโหลดสำเร็จ',
+                    description: `นำเข้าข้อมูลครูใหม่ ${importedCount} คน`,
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'ไม่พบข้อมูลที่ถูกต้อง',
+                    description: 'ไม่พบข้อมูลครูที่ถูกต้องในไฟล์ CSV',
+                });
+            }
+
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'ประมวลผลไฟล์ล้มเหลว',
+                description: 'เกิดข้อผิดพลาดในการอ่านข้อมูลจากไฟล์ CSV ของครู',
+            });
+        }
+    };
+
 
     return (
         <Card>
@@ -298,7 +342,7 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                  <div>
                     <h4 className="font-semibold">อัปโหลดไฟล์</h4>
                     <p className="text-sm text-muted-foreground mb-2">
-                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ (รองรับไฟล์นักเรียน)
+                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
                     </p>
                     <Button onClick={handleUploadClick}>
                         <Upload className="mr-2"/> อัปโหลดไฟล์ CSV
@@ -420,3 +464,5 @@ export default function AdminUsersPage() {
         </div>
     )
 }
+
+    
