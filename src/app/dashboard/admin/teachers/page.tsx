@@ -27,7 +27,7 @@ const periods = [
     { period: 6, time: '14:30-15:30' },
 ];
 
-function TeacherScheduleTable({ teacherEmail }: { teacherEmail: string }) {
+export function TeacherScheduleTable({ teacherEmail }: { teacherEmail: string }) {
     const getScheduleForCell = (day: DayOfWeek, period: number) => {
         const offeringForTeacher = offerings.filter(o => o.teacherEmail === teacherEmail);
         const scheduleEntry = schedules.find(s => 
@@ -150,3 +150,5 @@ export default function AdminTeachersPage() {
         </div>
     )
 }
+
+    

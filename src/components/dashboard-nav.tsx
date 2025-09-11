@@ -221,27 +221,22 @@ export function DashboardNav() {
                     <SidebarMenu className="ml-4 my-1 border-l pl-4">
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/users"} tooltip="Users">
-                              <Link href="/dashboard/admin/users">ผู้ใช้งาน</Link>
-                          </SidebarMenuButton>
-                       </SidebarMenuItem>
-                       <SidebarMenuItem>
-                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/teachers"} tooltip="Teachers">
-                              <Link href="/dashboard/admin/teachers">คุณครู</Link>
+                              <Link href="/dashboard/admin/users">เพิ่ม/นำเข้าผู้ใช้งาน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/classes"} tooltip="Classes">
-                              <Link href="/dashboard/admin/classes">ห้องเรียน</Link>
+                              <Link href="/dashboard/admin/classes">เพิ่มห้องเรียน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/subjects"} tooltip="Subjects">
-                              <Link href="/dashboard/admin/subjects">รายวิชา</Link>
+                              <Link href="/dashboard/admin/subjects">เพิ่มรายวิชา</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/schedules"} tooltip="Schedules">
-                              <Link href="/dashboard/admin/schedules">ตารางสอน</Link>
+                              <Link href="/dashboard/admin/schedules">จัดการตารางสอน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                     </SidebarMenu>
@@ -298,3 +293,5 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
+
+    

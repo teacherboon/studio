@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, UserSquare } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { schedules, offerings, subjects, classes, users } from '@/lib/data';
 import type { DayOfWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { TeacherScheduleTable } from '@/app/dashboard/admin/teachers/page';
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
     { value: 'MONDAY', label: 'วันจันทร์' },
@@ -217,6 +218,10 @@ function AddScheduleDialog() {
 }
 
 export default function AdminSchedulesPage() {
+    const [selectedTeacherEmail, setSelectedTeacherEmail] = useState<string>('');
+    const allTeachers = users.filter(u => u.role === 'TEACHER');
+    const selectedTeacher = allTeachers.find(t => t.email === selectedTeacherEmail);
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -238,6 +243,50 @@ export default function AdminSchedulesPage() {
                     <ScheduleTable />
                 </CardContent>
             </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <UserSquare />
+                        ตารางสอนรายบุคคล
+                    </CardTitle>
+                    <CardDescription>
+                        เลือกคุณครูที่ต้องการดูตารางสอน
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <Select onValueChange={setSelectedTeacherEmail} value={selectedTeacherEmail}>
+                        <SelectTrigger className="w-full md:w-[320px]">
+                            <SelectValue placeholder="เลือกคุณครู..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {allTeachers.map(t => (
+                                <SelectItem key={t.userId} value={t.email}>
+                                    {t.thaiName} ({t.email})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </CardContent>
+            </Card>
+
+            {selectedTeacher && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>
+                           ตารางสอนของ {selectedTeacher.thaiName}
+                        </CardTitle>
+                        <CardDescription>
+                           ภาพรวมคาบสอนทั้งหมดในสัปดาห์
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <TeacherScheduleTable teacherEmail={selectedTeacher.email} />
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 }
+
+    

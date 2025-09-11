@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Download } from "lucide-react";
+import { Upload, Download, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const UserImportCard = () => {
@@ -38,7 +38,7 @@ const UserImportCard = () => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>นำเข้าข้อมูลผู้ใช้</CardTitle>
+                <CardTitle>นำเข้าข้อมูลผู้ใช้ (CSV)</CardTitle>
                 <CardDescription>
                     เพิ่มข้อมูลครูและนักเรียนจำนวนมากผ่านไฟล์ CSV
                 </CardDescription>
@@ -64,7 +64,7 @@ const UserImportCard = () => {
                         เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
                     </p>
                     <Button onClick={handleUploadClick}>
-                        <Upload className="mr-2"/> เลือกไฟล์เพื่ออัปโหลด
+                        <Upload className="mr-2"/> อัปโหลดไฟล์ CSV
                     </Button>
                 </div>
             </CardContent>
@@ -76,10 +76,11 @@ const UserImportCard = () => {
 export default function AdminUsersPage() {
     return (
         <div className="space-y-8">
-            <div>
+            <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold font-headline">จัดการผู้ใช้งาน</h1>
-                <p className="text-muted-foreground">เพิ่ม, แก้ไข, และดูบัญชีผู้ใช้ในระบบ</p>
+                <Button><PlusCircle className="mr-2" /> เพิ่มผู้ใช้งานใหม่</Button>
             </div>
+            <p className="text-muted-foreground">เพิ่ม, แก้ไข, และดูบัญชีผู้ใช้ทั้งหมดในระบบ</p>
 
             <UserImportCard />
 
@@ -97,3 +98,5 @@ export default function AdminUsersPage() {
         </div>
     )
 }
+
+    

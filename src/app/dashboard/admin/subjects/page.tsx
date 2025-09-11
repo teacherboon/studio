@@ -32,12 +32,12 @@ function CreateOfferingDialog() {
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2" />
-                    สร้างรายวิชาที่เปิดสอน
+                    เพิ่มรายวิชาที่เปิดสอน
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>สร้างรายวิชาที่เปิดสอน</DialogTitle>
+                    <DialogTitle>เพิ่มรายวิชาที่เปิดสอน</DialogTitle>
                     <DialogDescription>
                         กำหนดครู, วิชา, และห้องเรียนสำหรับภาคการศึกษานี้
                     </DialogDescription>
@@ -210,3 +210,5 @@ export default function AdminSubjectsPage() {
         </div>
     );
 }
+
+    
