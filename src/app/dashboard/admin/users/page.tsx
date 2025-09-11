@@ -45,10 +45,15 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
     const [thaiName, setThaiName] = useState(userData?.thaiName || '');
     const [email, setEmail] = useState(userData?.email || '');
     const [role, setRole] = useState<UserRole>(userData?.role || 'STUDENT');
+    const [password, setPassword] = useState('');
 
     const handleSave = () => {
         if (!displayName || !thaiName || !email || !role) {
             alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
+        }
+        if (!userData && !password) {
+            alert('กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่');
             return;
         }
 
@@ -60,7 +65,7 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
             role,
             status: userData?.status || 'ACTIVE',
             createdAt: userData?.createdAt || new Date().toISOString(),
-            password: userData?.password || 'password', // Default password for new users
+            password: password || userData?.password,
         };
 
         onSave(finalUserData);
@@ -81,6 +86,17 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">อีเมล</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="password" className="text-right">รหัสผ่าน</Label>
+                    <Input 
+                        id="password" 
+                        type="password" 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        className="col-span-3" 
+                        placeholder={userData ? "(ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน)" : "กำหนดรหัสผ่าน..."}
+                    />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="role" className="text-right">บทบาท</Label>
@@ -175,7 +191,7 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             ? 'teacher.c@school.ac.th,Teacher C,ครู ซี,password123,c2\n'
             : 'stu6,ด.ช.,เด็กใหม่,ดีเด่น,student.new@school.ac.th,password123\n';
         
-        const csvContent = "\uFEFF" + header + sampleData;
+        const csvContent = "﻿" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
