@@ -30,6 +30,7 @@ export default function ClassesPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const academicYears = useMemo(() => {
+        // Get all unique years from offerings and sort them descending
         return [...new Set(offerings.map(o => o.yearBe))].sort((a, b) => b - a);
     }, []);
 
@@ -41,11 +42,13 @@ export default function ClassesPage() {
             .map(o => {
                 const subject = subjects.find(s => s.subjectId === o.subjectId);
                 const classInfo = classes.find(c => c.classId === o.classId);
+                // Label for offerings can be term-based or year-based
+                const termDisplay = o.termLabel.includes('/') ? ` (เทอม ${o.termLabel})` : '';
                 return {
                     ...o,
                     subjectName: subject?.subjectNameTh || 'N/A',
                     subjectCode: subject?.subjectCode || 'N/A',
-                    className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A'
+                    className: `ห้อง ${classInfo?.level}/${classInfo?.room}${termDisplay}` || 'N/A'
                 }
             })
     }, [selectedYear]);
@@ -59,7 +62,9 @@ export default function ClassesPage() {
         const studentIdsInClass = enrollments
             .filter(e => e.classId === selectedOffering.classId)
             .map(e => e.studentId);
-        return students.filter(s => studentIdsInClass.includes(s.studentId));
+        return students
+            .filter(s => studentIdsInClass.includes(s.studentId))
+            .sort((a, b) => (a.classNumber || 999) - (b.classNumber || 999));
     }, [selectedOffering]);
 
     // Effect to initialize scores when class changes
@@ -78,7 +83,7 @@ export default function ClassesPage() {
 
     const handleYearChange = (year: string) => {
         setSelectedYear(year);
-        setSelectedOfferingId('');
+        setSelectedOfferingId(''); // Reset offering selection when year changes
     }
 
     const handleScoreChange = (studentId: string, score: string) => {
@@ -98,7 +103,18 @@ export default function ClassesPage() {
                  // TODO: Update letterGrade and gradePoint based on gradeScale
             } else {
                  // In a real app, this would be a new score record
-                console.log(`Creating new score for ${studentId} in ${selectedOffering.offeringId}`);
+                 initialScores.push({
+                    scoreId: `new-score-${Date.now()}-${studentId}`,
+                    offeringId: selectedOffering.offeringId,
+                    studentId: studentId,
+                    rawScore: rawScore,
+                    letterGrade: null, // Should be calculated
+                    gradePoint: null, // Should be calculated
+                    credits: subjects.find(s => s.subjectId === selectedOffering.subjectId)?.defaultCredits || 0,
+                    statusFlag: 'NORMAL',
+                    updatedBy: 'teacher.a@school.ac.th', // Should be current user
+                    updatedAt: new Date().toISOString(),
+                });
             }
         });
         toast({
@@ -192,7 +208,7 @@ export default function ClassesPage() {
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold font-headline">จัดการคะแนนรายวิชา</h1>
-                <p className="text-muted-foreground">เลือกปีการศึกษา, ภาคเรียน, และรายวิชาเพื่อดูรายชื่อนักเรียนและกรอกคะแนน</p>
+                <p className="text-muted-foreground">เลือกปีการศึกษาและรายวิชาที่สอนเพื่อดูรายชื่อนักเรียนและกรอกคะแนน</p>
             </div>
 
             <Card>
@@ -207,7 +223,7 @@ export default function ClassesPage() {
                          <Calendar className="h-5 w-5 text-muted-foreground" />
                         <Select onValueChange={handleYearChange} value={selectedYear}>
                             <SelectTrigger>
-                                <SelectValue placeholder="เลือกปีการศึกษา..." />
+                                <SelectValue placeholder="1. เลือกปีการศึกษา..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {academicYears.map(year => (
@@ -223,7 +239,7 @@ export default function ClassesPage() {
                         <BookOpen className="h-5 w-5 text-muted-foreground" />
                          <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedYear}>
                             <SelectTrigger>
-                                <SelectValue placeholder="เลือกรายวิชา..." />
+                                <SelectValue placeholder="2. เลือกรายวิชาที่สอน..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {offeringsForYear.map(o => (
@@ -245,7 +261,7 @@ export default function ClassesPage() {
                            รายชื่อนักเรียน
                         </CardTitle>
                         <CardDescription>
-                            {selectedOffering?.subjectName} ({selectedOffering?.subjectCode}) - {selectedOffering?.className} - มีนักเรียนทั้งหมด {studentsInClass.length} คน
+                            {selectedOffering?.subjectName} ({selectedOffering?.subjectCode}) - {selectedOffering?.className.replace(/ \(.*\)/, '')} - มีนักเรียนทั้งหมด {studentsInClass.length} คน
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -264,6 +280,7 @@ export default function ClassesPage() {
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
+                                                    <TableHead className="w-[80px]">เลขที่</TableHead>
                                                     <TableHead className="w-[150px]">รหัสนักเรียน</TableHead>
                                                     <TableHead>ชื่อ-สกุล</TableHead>
                                                     <TableHead className="text-center w-[120px]">คะแนน (เต็ม 100)</TableHead>
@@ -272,6 +289,7 @@ export default function ClassesPage() {
                                             <TableBody>
                                                 {studentsInClass.map((student) => (
                                                     <TableRow key={student.studentId}>
+                                                        <TableCell>{student.classNumber || '-'}</TableCell>
                                                         <TableCell className="font-medium">{student.stuCode}</TableCell>
                                                         <TableCell>{`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}</TableCell>
                                                         <TableCell className="text-center">
@@ -333,5 +351,3 @@ export default function ClassesPage() {
         </div>
     )
 }
-
-    
