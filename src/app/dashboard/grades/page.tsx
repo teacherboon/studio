@@ -11,21 +11,12 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { scores, offerings, subjects, classes, students } from "@/lib/data";
@@ -144,32 +135,9 @@ export default function StudentGradesPage() {
   });
 
   const gpa = calculateGPA(scoresForTerm as Score[]);
-  const totalCredits = scoresForTerm.reduce((acc, score) => acc + (score.statusFlag !== 'ร' && score.statusFlag !== 'มผ' ? score.credits : 0), 0);
-
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-        case 'ร':
-        case '0':
-        case 'มผ':
-            return 'destructive';
-        default:
-            return 'secondary';
-    }
-  }
 
   return (
     <div className="space-y-8">
-        <div style={{ display: 'none' }}>
-            <div ref={reportRef}>
-                {studentData && currentClass && <GradeReportSheet 
-                    student={studentData} 
-                    grades={gradeDetails} 
-                    gpa={gpa}
-                    currentClass={currentClass}
-                />}
-            </div>
-        </div>
-
         <div>
             <h1 className="text-3xl font-bold font-headline">ผลการเรียน</h1>
             <p className="text-muted-foreground">ดูคะแนน, เกรด, และเกรดเฉลี่ยของคุณในแต่ละภาคเรียน</p>
@@ -181,47 +149,35 @@ export default function StudentGradesPage() {
                     <CardTitle>ผลการเรียนภาคเรียน</CardTitle>
                     <CardDescription>เลือกภาคเรียนเพื่อดูรายละเอียด</CardDescription>
                 </div>
-                <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-                    <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="เลือกภาคเรียน" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availableTerms.map(term => (
-                            <SelectItem key={term} value={term}>{term.includes('/') ? `เทอม ${term}` : `ปีการศึกษา ${term}`}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                 <div className="flex flex-col sm:flex-row gap-2">
+                    <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                        <SelectTrigger className="w-full md:w-[180px]">
+                            <SelectValue placeholder="เลือกภาคเรียน" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableTerms.map(term => (
+                                <SelectItem key={term} value={term}>{term.includes('/') ? `เทอม ${term}` : `ปีการศึกษา ${term}`}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                     <Button onClick={handlePrint} disabled={gradeDetails.length === 0}>
+                        <Download className="mr-2 h-4 w-4" />
+                        ดาวน์โหลด (PDF)
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
-                {gradeDetails.length > 0 ? (
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[100px]">รหัสวิชา</TableHead>
-                        <TableHead>ชื่อวิชา</TableHead>
-                        <TableHead className="text-center">หน่วยกิต</TableHead>
-                        <TableHead className="text-center">คะแนน</TableHead>
-                        <TableHead className="text-center">เกรด</TableHead>
-                        <TableHead className="text-right">สถานะ</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {gradeDetails.map((grade) => (
-                        <TableRow key={grade.scoreId}>
-                            <TableCell className="font-medium">{grade.subjectCode}</TableCell>
-                            <TableCell>{grade.subjectName}</TableCell>
-                            <TableCell className="text-center">{grade.credits.toFixed(1)}</TableCell>
-                            <TableCell className="text-center">{grade.rawScore ?? '-'}</TableCell>
-                            <TableCell className="text-center font-bold">{grade.letterGrade ?? '-'}</TableCell>
-                            <TableCell className="text-right">
-                                <Badge variant={getBadgeVariant(grade.statusFlag)}>
-                                    {grade.statusFlag}
-                                </Badge>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
+                {gradeDetails.length > 0 && studentData && currentClass ? (
+                    <div className="flex justify-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                        <div ref={reportRef} className="transform scale-[0.8] origin-top">
+                           <GradeReportSheet 
+                                student={studentData} 
+                                grades={gradeDetails} 
+                                gpa={gpa}
+                                currentClass={currentClass}
+                            />
+                        </div>
+                    </div>
                 ) : (
                     <div className="text-center py-10">
                         <FileWarning className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -230,22 +186,6 @@ export default function StudentGradesPage() {
                     </div>
                 )}
             </CardContent>
-             <CardFooter className="flex-col items-start gap-4 pt-6 md:flex-row md:justify-between">
-                <div className="grid grid-cols-2 gap-4 rounded-lg border p-4 w-full md:w-auto">
-                    <div>
-                        <p className="text-sm font-medium text-muted-foreground">หน่วยกิตรวม</p>
-                        <p className="text-2xl font-bold">{totalCredits.toFixed(1)}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-muted-foreground">เกรดเฉลี่ย (GPA)</p>
-                        <p className="text-2xl font-bold text-primary">{gpa}</p>
-                    </div>
-                </div>
-                <Button onClick={handlePrint} disabled={gradeDetails.length === 0}>
-                    <Download className="mr-2 h-4 w-4" />
-                    ดาวน์โหลดใบแสดงผลการเรียน (PDF)
-                </Button>
-            </CardFooter>
         </Card>
 
         {isAnalyzing ? (
@@ -294,5 +234,7 @@ export default function StudentGradesPage() {
     </div>
   );
 }
+
+    
 
     
