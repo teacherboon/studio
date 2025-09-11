@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Wand2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -18,6 +18,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { schedules, offerings, subjects, classes, users } from '@/lib/data';
 import type { DayOfWeek } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
     { value: 'MONDAY', label: 'วันจันทร์' },
@@ -27,7 +28,15 @@ const daysOfWeek: { value: DayOfWeek; label: string }[] = [
     { value: 'FRIDAY', label: 'วันศุกร์' },
 ];
 
-const periods = Array.from({ length: 8 }, (_, i) => i + 1); // 8 periods
+const periods = [
+    { period: 1, time: '8:30-9:30' },
+    { period: 2, time: '9:30-10:30' },
+    { period: 3, time: '10:30-11:30' },
+    { period: null, time: '11:30-12:30' }, // Lunch Break
+    { period: 4, time: '12:30-13:30' },
+    { period: 5, time: '13:30-14:30' },
+    { period: 6, time: '14:30-15:30' },
+];
 
 function ScheduleTable() {
     const getScheduleForCell = (day: DayOfWeek, period: number) => {
@@ -52,23 +61,34 @@ function ScheduleTable() {
 
     return (
         <div className="overflow-x-auto">
-            <Table className="border">
+            <Table className="border min-w-full">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-[100px] border-r">คาบ/วัน</TableHead>
-                        {daysOfWeek.map(day => <TableHead key={day.value} className="text-center border-r">{day.label}</TableHead>)}
+                        <TableHead className="w-[120px] border-r text-center">เวลา</TableHead>
+                        <TableHead className="w-[80px] border-r text-center">คาบที่</TableHead>
+                        {daysOfWeek.map(day => <TableHead key={day.value} className="text-center border-r min-w-[150px]">{day.label}</TableHead>)}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {periods.map(period => (
-                        <TableRow key={period}>
-                            <TableCell className="font-medium border-r text-center">{period}</TableCell>
-                            {daysOfWeek.map(day => (
-                                <TableCell key={day.value} className="p-1 border-r align-top h-[70px]">
-                                    {getScheduleForCell(day.value, period)}
+                    {periods.map(({ period, time }, index) => (
+                        period ? (
+                            <TableRow key={period}>
+                                <TableCell className="font-medium border-r text-center">{time}</TableCell>
+                                <TableCell className="font-medium border-r text-center">{period}</TableCell>
+                                {daysOfWeek.map(day => (
+                                    <TableCell key={day.value} className="p-1 border-r align-top h-[70px]">
+                                        {getScheduleForCell(day.value, period)}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ) : (
+                            <TableRow key={`break-${index}`} className="bg-muted/50">
+                                <TableCell className="font-medium border-r text-center">{time}</TableCell>
+                                <TableCell colSpan={daysOfWeek.length + 1} className="text-center font-semibold text-muted-foreground">
+                                    พักกลางวัน
                                 </TableCell>
-                            ))}
-                        </TableRow>
+                            </TableRow>
+                        )
                     ))}
                 </TableBody>
             </Table>
@@ -79,6 +99,14 @@ function ScheduleTable() {
 
 export default function AdminSchedulesPage() {
     const classOfferings = offerings; // In a real app, you'd filter by term
+    const { toast } = useToast();
+
+    const handleComingSoon = () => {
+      toast({
+        title: "ฟีเจอร์ยังไม่พร้อมใช้งาน",
+        description: "ระบบจัดตารางสอนอัตโนมัติด้วย AI จะพร้อมให้ใช้งานเร็วๆ นี้"
+      });
+    }
 
     return (
         <div className="space-y-8">
@@ -91,7 +119,7 @@ export default function AdminSchedulesPage() {
                   <DialogTrigger asChild>
                     <Button>
                         <PlusCircle className="mr-2" />
-                        เพิ่มคาบสอน
+                        เพิ่มคาบสอน (ด้วยตนเอง)
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px]">
@@ -149,7 +177,7 @@ export default function AdminSchedulesPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 {periods.map(p => (
-                                    <SelectItem key={p} value={String(p)}>คาบที่ {p}</SelectItem>
+                                    p.period && <SelectItem key={p.period} value={String(p.period)}>คาบที่ {p.period}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -160,11 +188,29 @@ export default function AdminSchedulesPage() {
                 </Dialog>
             </div>
 
+            <Card className="border-dashed border-accent">
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-accent">
+                        <Wand2 />
+                        สร้างตารางสอนอัตโนมัติ (AI)
+                    </CardTitle>
+                    <CardDescription>
+                       กำหนดภาระงานสอนให้ครูแต่ละท่าน จากนั้นให้ AI ช่วยจัดตารางเรียนที่เหมาะสมที่สุดสำหรับทั้งโรงเรียน
+                    </CardDescription>
+                </CardHeader>
+                 <CardContent>
+                    <Button onClick={handleComingSoon}>
+                        <Wand2 className="mr-2" />
+                        เริ่มสร้างตารางสอนอัตโนมัติ (เร็วๆ นี้)
+                    </Button>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>ตารางสอนรวม</CardTitle>
                     <CardDescription>
-                        ภาพรวมตารางสอนทั้งหมดในสัปดาห์
+                        ภาพรวมตารางสอนทั้งหมดในสัปดาห์ (จัดด้วยตนเอง)
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

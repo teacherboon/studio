@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -75,9 +76,9 @@ export function DashboardNav() {
     >
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="shrink-0 h-10 w-10" asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 h-12 w-12" asChild>
                 <Link href="/dashboard">
-                    <Logo className="h-8 w-8 text-primary" />
+                    <Logo className="h-10 w-10 text-primary" />
                 </Link>
             </Button>
             <h2 className="text-lg font-semibold font-headline">โรงเรียนวัดทองสัมฤทธิ์</h2>

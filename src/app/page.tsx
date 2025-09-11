@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { LoginForm } from '@/components/login-form';
 import { Logo } from '@/components/logo';
@@ -9,7 +10,7 @@ export default function LoginPage() {
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
             <div className="flex justify-center items-center gap-4">
-                <Logo className="h-12 w-12 text-primary" />
+                <Logo className="h-14 w-14 text-primary" />
                 <h1 className="text-3xl font-bold font-headline">โรงเรียนวัดทองสัมฤทธิ์</h1>
             </div>
             <p className="text-balance text-muted-foreground">
@@ -38,5 +39,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
