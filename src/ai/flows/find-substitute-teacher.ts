@@ -25,7 +25,7 @@ const ScheduleSchema = z.object({
     period: z.number(),
 });
 
-export const FindSubstituteTeacherInputSchema = z.object({
+const FindSubstituteTeacherInputSchema = z.object({
     requestingTeacher: TeacherSchema.describe("The teacher who is requesting leave."),
     leaveDate: z.string().describe("The date of the leave in YYYY-MM-DD format."),
     leaveReason: z.string().describe("The reason for the leave."),
@@ -36,7 +36,7 @@ export const FindSubstituteTeacherInputSchema = z.object({
 
 export type FindSubstituteTeacherInput = z.infer<typeof FindSubstituteTeacherInputSchema>;
 
-export const FindSubstituteTeacherOutputSchema = z.object({
+const FindSubstituteTeacherOutputSchema = z.object({
   substituteTeacher: TeacherSchema.describe("The selected substitute teacher."),
   justification: z.string().describe("A brief explanation in Thai for why this teacher was chosen."),
   notificationMessage: z.string().describe("A message in Thai to be sent to the substitute teacher, informing them of the assignment details (date, periods, reason for original teacher's absence)."),
