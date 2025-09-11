@@ -47,8 +47,9 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
     const [level, setLevel] = useState(classData?.level || '');
     const [room, setRoom] = useState(classData?.room || '');
     const [yearMode, setYearMode] = useState<'PRIMARY' | 'SECONDARY' | ''>(classData?.yearMode || '');
-    const [term1Label, setTerm1Label] = useState(classData?.yearMode === 'SECONDARY' ? classData.termLabel.split(',')[0] : '');
-    const [term2Label, setTerm2Label] = useState(classData?.yearMode === 'SECONDARY' ? classData.termLabel.split(',')[1] : '');
+    const [term1Label, setTerm1Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[0] || '') : '');
+    const [term2Label, setTerm2Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[1] || '') : '');
+
 
     const handleSave = () => {
         // Basic validation
@@ -80,7 +81,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                 level,
                 room,
                 yearMode,
-                termLabel: `${term1Label},${term2Label}`, // We'll handle splitting this later
+                termLabel: `${term1Label},${term2Label}`,
                 isActive: classData?.isActive ?? true,
             };
         }
@@ -153,11 +154,9 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
     )
 }
 
-function CreateOrEditClassDialog({ classData, onSave, trigger }: { classData?: Class, onSave: (data: Class) => void, trigger: React.ReactNode }) {
-    const [open, setOpen] = useState(false);
-    
+function CreateOrEditClassDialog({ classData, onSave, trigger, open, onOpenChange }: { classData?: Class | null, onSave: (data: Class) => void, trigger: React.ReactNode, open: boolean, onOpenChange: (open: boolean) => void }) {
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
                  {trigger}
             </DialogTrigger>
@@ -168,7 +167,7 @@ function CreateOrEditClassDialog({ classData, onSave, trigger }: { classData?: C
                         {classData ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนสำหรับปีการศึกษาใหม่'}
                     </DialogDescription>
                 </DialogHeader>
-                <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => setOpen(false)} />
+                <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />
             </DialogContent>
         </Dialog>
     )
@@ -215,7 +214,8 @@ function ActionDropdown({ classItem, onEdit, onDelete }: { classItem: Class, onE
 
 export default function AdminClassesPage() {
     const [allClasses, setAllClasses] = useState<Class[]>(initialClasses);
-    const [editingClass, setEditingClass] = useState<Class | undefined>(undefined);
+    const [editingClass, setEditingClass] = useState<Class | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
 
     const handleSaveClass = (data: Class) => {
@@ -228,13 +228,17 @@ export default function AdminClassesPage() {
             setAllClasses(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
-        setEditingClass(undefined);
     }
     
     const handleDeleteClass = (classId: string) => {
         setAllClasses(prev => prev.filter(c => c.classId !== classId));
         toast({ title: "ลบสำเร็จ", description: "ห้องเรียนได้ถูกลบออกจากระบบแล้ว" });
     }
+
+    const handleOpenDialog = (classItem: Class | null = null) => {
+        setEditingClass(classItem);
+        setIsDialogOpen(true);
+    };
 
     return (
         <div className="space-y-8">
@@ -243,24 +247,10 @@ export default function AdminClassesPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดการห้องเรียน</h1>
                     <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลห้องเรียนทั้งหมดในระบบ</p>
                 </div>
-                <CreateOrEditClassDialog
-                    key="create" 
-                    onSave={handleSaveClass}
-                    trigger={
-                        <Button>
-                            <PlusCircle className="mr-2" />
-                            สร้างห้องเรียนใหม่
-                        </Button>
-                    }
-                />
-                 {editingClass && (
-                    <CreateOrEditClassDialog
-                        key={editingClass.classId}
-                        classData={editingClass}
-                        onSave={handleSaveClass}
-                        trigger={<div />} 
-                    />
-                 )}
+                <Button onClick={() => handleOpenDialog()}>
+                    <PlusCircle className="mr-2" />
+                    สร้างห้องเรียนใหม่
+                </Button>
             </div>
 
             <Card>
@@ -293,16 +283,10 @@ export default function AdminClassesPage() {
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                       <CreateOrEditClassDialog
-                                            classData={c}
-                                            onSave={handleSaveClass}
-                                            trigger={
-                                                 <ActionDropdown 
-                                                    classItem={c} 
-                                                    onEdit={() => setEditingClass(c)}
-                                                    onDelete={() => handleDeleteClass(c.classId)}
-                                                />
-                                            }
+                                       <ActionDropdown 
+                                            classItem={c} 
+                                            onEdit={() => handleOpenDialog(c)}
+                                            onDelete={() => handleDeleteClass(c.classId)}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -311,6 +295,16 @@ export default function AdminClassesPage() {
                     </Table>
                 </CardContent>
             </Card>
+            
+            <CreateOrEditClassDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                classData={editingClass}
+                onSave={handleSaveClass}
+                trigger={<></>}
+            />
         </div>
     )
 }
+
+    

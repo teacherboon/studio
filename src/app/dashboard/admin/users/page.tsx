@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -32,20 +33,99 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { users as initialUsers, type User } from "@/lib/data";
+import { users as initialUsers, type User, type UserRole } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
-function ActionDropdown({ user, onDelete }: { user: User, onDelete: () => void }) {
-    const { toast } = useToast();
-    const showPlaceholderToast = () => {
-        toast({
-            title: "ยังไม่พร้อมใช้งาน",
-            description: `ฟังก์ชันแก้ไขสำหรับ ${user.displayName} ยังไม่สามารถใช้งานได้`,
-        });
+function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> | null, onSave: (userData: User) => void, closeDialog: () => void }) {
+    const [displayName, setDisplayName] = useState(userData?.displayName || '');
+    const [thaiName, setThaiName] = useState(userData?.thaiName || '');
+    const [email, setEmail] = useState(userData?.email || '');
+    const [role, setRole] = useState<UserRole>(userData?.role || 'STUDENT');
+
+    const handleSave = () => {
+        if (!displayName || !thaiName || !email || !role) {
+            alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
+        }
+
+        const finalUserData: User = {
+            userId: userData?.userId || `user${Math.random()}`,
+            displayName,
+            thaiName,
+            email,
+            role,
+            status: userData?.status || 'ACTIVE',
+            createdAt: userData?.createdAt || new Date().toISOString(),
+            password: userData?.password || 'password', // Default password for new users
+        };
+
+        onSave(finalUserData);
+        closeDialog();
     };
 
+    return (
+        <>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="displayName" className="text-right">ชื่อที่แสดง</Label>
+                    <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="thaiName" className="text-right">ชื่อภาษาไทย</Label>
+                    <Input id="thaiName" value={thaiName} onChange={(e) => setThaiName(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">อีเมล</Label>
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="role" className="text-right">บทบาท</Label>
+                    <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="เลือกบทบาท" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ADMIN">ผู้ดูแลระบบ (ADMIN)</SelectItem>
+                            <SelectItem value="TEACHER">ครู (TEACHER)</SelectItem>
+                            <SelectItem value="STUDENT">นักเรียน (STUDENT)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">ยกเลิก</Button>
+                </DialogClose>
+                <Button type="button" onClick={handleSave}>{userData ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างผู้ใช้'}</Button>
+            </DialogFooter>
+        </>
+    );
+}
+
+
+function CreateOrEditUserDialog({ user, onSave, trigger, open, onOpenChange }: { user?: User | null, onSave: (data: User) => void, trigger: React.ReactNode, open: boolean, onOpenChange: (open: boolean) => void }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{user ? 'แก้ไขผู้ใช้งาน' : 'สร้างผู้ใช้งานใหม่'}</DialogTitle>
+                    <DialogDescription>
+                        {user ? 'แก้ไขข้อมูลผู้ใช้ในระบบ' : 'กรอกข้อมูลเพื่อสร้างผู้ใช้ใหม่'}
+                    </DialogDescription>
+                </DialogHeader>
+                <UserForm userData={user || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
+function ActionDropdown({ user, onEdit, onDelete }: { user: User, onEdit: () => void, onDelete: () => void }) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -55,7 +135,7 @@ function ActionDropdown({ user, onDelete }: { user: User, onDelete: () => void }
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={showPlaceholderToast}>
+                <DropdownMenuItem onClick={onEdit}>
                     <Pencil className="mr-2 h-4 w-4" />
                     <span>แก้ไข</span>
                 </DropdownMenuItem>
@@ -153,7 +233,21 @@ const UserImportCard = () => {
 
 export default function AdminUsersPage() {
     const [userList, setUserList] = useState<User[]>(initialUsers);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
+
+    const handleSaveUser = (data: User) => {
+        const isEditing = userList.some(u => u.userId === data.userId);
+
+        if (isEditing) {
+            setUserList(prev => prev.map(u => u.userId === data.userId ? data : u));
+            toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลผู้ใช้ได้รับการอัปเดตแล้ว" });
+        } else {
+            setUserList(prev => [data, ...prev]);
+            toast({ title: "สร้างสำเร็จ", description: "ผู้ใช้ใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
+        }
+    };
 
     const handleDeleteUser = (userId: string) => {
         setUserList(prev => prev.filter(u => u.userId !== userId));
@@ -162,24 +256,17 @@ export default function AdminUsersPage() {
             description: 'ผู้ใช้ได้ถูกลบออกจากระบบแล้ว',
         })
     };
+    
+    const handleOpenDialog = (user: User | null = null) => {
+        setEditingUser(user);
+        setIsDialogOpen(true);
+    };
 
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold font-headline">จัดการผู้ใช้งาน</h1>
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button><PlusCircle className="mr-2" /> เพิ่มผู้ใช้งานใหม่</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>เพิ่มผู้ใช้งานใหม่</DialogTitle>
-                            <DialogDescription>
-                                ฟังก์ชันนี้ยังไม่พร้อมใช้งานในเวอร์ชันนี้
-                            </DialogDescription>
-                        </DialogHeader>
-                    </DialogContent>
-                </Dialog>
+                <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2" /> เพิ่มผู้ใช้งานใหม่</Button>
             </div>
             <p className="text-muted-foreground">เพิ่ม, แก้ไข, และดูบัญชีผู้ใช้ทั้งหมดในระบบ</p>
 
@@ -199,7 +286,6 @@ export default function AdminUsersPage() {
                                 <TableHead>ชื่อที่แสดง</TableHead>
                                 <TableHead>อีเมล</TableHead>
                                 <TableHead>บทบาท</TableHead>
-
                                 <TableHead>สถานะ</TableHead>
                                 <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
@@ -221,7 +307,11 @@ export default function AdminUsersPage() {
                                         </span>
                                     </TableCell>
                                      <TableCell className="text-right">
-                                        <ActionDropdown user={user} onDelete={() => handleDeleteUser(user.userId)} />
+                                        <ActionDropdown 
+                                            user={user} 
+                                            onEdit={() => handleOpenDialog(user)}
+                                            onDelete={() => handleDeleteUser(user.userId)} 
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -229,6 +319,16 @@ export default function AdminUsersPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <CreateOrEditUserDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                user={editingUser}
+                onSave={handleSaveUser}
+                trigger={<></>}
+            />
         </div>
     )
 }
+
+    
