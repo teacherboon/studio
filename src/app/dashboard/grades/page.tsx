@@ -207,7 +207,7 @@ export default function StudentGradesPage() {
         
         <div className="hidden">
             <div ref={reportRef}>
-               {hasDataForSelectedTerm && (
+               {hasDataForSelectedTerm && studentData && currentClass ? (
                     <GradeReportSheet 
                         student={studentData} 
                         grades={gradeDetails} 
@@ -215,6 +215,8 @@ export default function StudentGradesPage() {
                         currentClass={currentClass}
                         attributes={attributesForYear || null}
                     />
+               ) : (
+                    <div>กรุณาเลือกข้อมูลเพื่อสร้างรายงาน</div>
                )}
             </div>
         </div>
