@@ -27,15 +27,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
-import { scores, offerings, subjects, classes } from "@/lib/data";
+import { scores, offerings, subjects } from "@/lib/data";
 import { calculateGPA } from "@/lib/utils";
 import type { StudentGradeDetails, Score } from '@/lib/types';
-import { Download, FileWarning } from 'lucide-react';
+import { Download, FileWarning, Wand, Loader2, BarChart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from '@/ai/flows/analyze-student-scores';
+import { useToast } from '@/hooks/use-toast';
 
 export default function StudentGradesPage() {
   const user = useUser();
   const [selectedTerm, setSelectedTerm] = useState<string>('2568');
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { toast } = useToast();
   
   if (!user || !user.studentId) {
     return (
@@ -86,6 +91,49 @@ export default function StudentGradesPage() {
             return 'secondary';
     }
   }
+
+  const handleAnalyzeScores = async () => {
+    if (!user || !user.studentId) return;
+
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    try {
+        const allStudentScoresForAnalysis = studentScores.map(s => {
+            const offeringInfo = offerings.find(o => o.offeringId === s.offeringId);
+            const subjectInfo = subjects.find(sub => sub.subjectId === offeringInfo?.subjectId);
+            return {
+              subjectName: subjectInfo?.subjectNameTh || 'N/A',
+              term: offeringInfo?.termLabel || 'N/A',
+              rawScore: s.rawScore,
+              letterGrade: s.letterGrade,
+            };
+        });
+
+        const input = {
+            student: {
+                studentId: user.studentId,
+                studentName: user.thaiName
+            },
+            scores: allStudentScoresForAnalysis
+        };
+        const result = await analyzeStudentScores(input);
+        setAnalysisResult(result);
+        toast({
+            title: "วิเคราะห์ผลการเรียนสำเร็จ",
+            description: "AI ได้ให้คำแนะนำสำหรับผลการเรียนของคุณแล้ว"
+        });
+    } catch (error) {
+        console.error("Error analyzing scores:", error);
+        toast({
+            variant: "destructive",
+            title: "เกิดข้อผิดพลาด",
+            description: "ไม่สามารถวิเคราะห์ผลการเรียนได้ โปรดลองอีกครั้ง"
+        });
+    } finally {
+        setIsAnalyzing(false);
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -166,6 +214,58 @@ export default function StudentGradesPage() {
                 </Button>
             </CardFooter>
         </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>วิเคราะห์ผลการเรียนด้วย AI</CardTitle>
+                <CardDescription>รับคำแนะนำเพื่อพัฒนาผลการเรียนของคุณจาก AI โดยวิเคราะห์จากผลการเรียนทั้งหมด</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Button onClick={handleAnalyzeScores} disabled={isAnalyzing}>
+                    {isAnalyzing ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            กำลังวิเคราะห์...
+                        </>
+                    ) : (
+                        <>
+                            <Wand className="mr-2 h-4 w-4" />
+                            เริ่มการวิเคราะห์
+                        </>
+                    )}
+                </Button>
+            </CardContent>
+        </Card>
+
+        {analysisResult && (
+            <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart className="text-primary" />
+                    ผลการวิเคราะห์สำหรับ {analysisResult.studentName}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div>
+                        <h3 className="font-semibold text-lg">สรุปผลการเรียน</h3>
+                        <p className="text-muted-foreground">{analysisResult.summary}</p>
+                    </div>
+                     <div>
+                        <h3 className="font-semibold text-lg">จุดแข็ง</h3>
+                        <p className="text-muted-foreground">{analysisResult.strengths}</p>
+                    </div>
+                     <div>
+                        <h3 className="font-semibold text-lg">จุดที่ควรพัฒนา</h3>
+                        <p className="text-muted-foreground">{analysisResult.areasForImprovement}</p>
+                    </div>
+                     <div>
+                        <h3 className="font-semibold text-lg">คำแนะนำ</h3>
+                        <p className="text-muted-foreground">{analysisResult.recommendations}</p>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
+
     </div>
   );
 }
