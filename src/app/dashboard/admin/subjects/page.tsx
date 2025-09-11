@@ -116,12 +116,6 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
             return;
         }
 
-        const classDetails = classes.find(c => c.classId === selectedClass);
-        if (!classDetails) {
-            toast({ variant: 'destructive', title: 'ไม่พบข้อมูลห้องเรียน', description: 'ไม่สามารถหารายละเอียดห้องเรียนได้' });
-            return
-        };
-
         const newOffering: Offering = {
             offeringId: offeringData?.offeringId || `off-${Date.now()}`,
             subjectId: selectedSubject,
@@ -220,8 +214,8 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
-        const header = 'subjectId,classId,teacherEmail,periodsPerWeek,yearBe,termLabel,yearMode\n';
-        const sampleData = 'subj1,c1,teacher.a@school.ac.th,2,2568,2568,PRIMARY\n';
+        const header = 'subjectId,classId,teacherEmail,periodsPerWeek,yearBe\n';
+        const sampleData = 'subj1,c1,teacher.a@school.ac.th,2,2568\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -252,21 +246,22 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
 
                 lines.forEach((line, index) => {
                     if (line.trim() === '') return;
-                    const [subjectId, classId, teacherEmail, periodsPerWeekStr, yearBeStr, termLabel, yearMode] = line.split(',').map(item => item.trim());
+                    const [subjectId, classId, teacherEmail, periodsPerWeekStr, yearBeStr] = line.split(',').map(item => item.trim());
                     
-                    const classDetails = classes.find(c => c.classId === classId);
                     const subjectExists = initialSubjects.some(s => s.subjectId === subjectId);
+                    const classExists = classes.some(c => c.classId === classId);
                     const teacherExists = users.some(u => u.email === teacherEmail);
+                    const yearBe = Number(yearBeStr);
 
-                    if (classDetails && subjectExists && teacherExists && yearBeStr && termLabel && yearMode) {
+                    if (subjectExists && classExists && teacherExists && yearBe) {
                          newOfferings.push({
                             offeringId: `csv-import-${Date.now()}-${index}`,
                             subjectId,
                             classId,
                             teacherEmail,
-                            yearMode: yearMode as 'PRIMARY' | 'SECONDARY',
-                            termLabel,
-                            yearBe: Number(yearBeStr),
+                            yearMode: 'PRIMARY',
+                            termLabel: String(yearBe),
+                            yearBe: yearBe,
                             isConduct: false,
                             periodsPerWeek: periodsPerWeekStr ? Number(periodsPerWeekStr) : undefined,
                         });
@@ -280,7 +275,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
                      toast({
                         variant: 'destructive',
                         title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                        description: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์ CSV หรือข้อมูลอ้างอิงไม่ถูกต้อง (subjectId, classId, teacherEmail, yearBe, termLabel, yearMode)',
+                        description: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์ CSV หรือข้อมูลอ้างอิงไม่ถูกต้อง (subjectId, classId, teacherEmail, yearBe)',
                     });
                 }
             } catch (error) {
@@ -309,7 +304,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
                 <div>
                     <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
                     <p className="text-sm text-muted-foreground mb-2">
-                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectId, classId, teacherEmail, periodsPerWeek, yearBe, termLabel, yearMode)
+                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectId, classId, teacherEmail, periodsPerWeek, yearBe)
                     </p>
                     <Button variant="outline" onClick={handleDownloadTemplate}>
                         <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
@@ -536,3 +531,5 @@ export default function AdminOfferingsPage() {
         </div>
     );
 }
+
+    

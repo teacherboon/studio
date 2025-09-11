@@ -199,8 +199,10 @@ function EditStudentDialog({
 
 function StudentImportCard({ 
     onImport,
+    allClassesData,
 }: { 
-    onImport: (data: { newUsers: User[], newStudents: Student[], newEnrollments: Enrollment[] }) => void 
+    onImport: (data: { newUsers: User[], newStudents: Student[], newEnrollments: Enrollment[] }) => void,
+    allClassesData: Class[],
 }) {
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -238,14 +240,12 @@ function StudentImportCard({
                 const newEnrollments: Enrollment[] = [];
                 let importedCount = 0;
 
-                const existingClasses = initialClasses;
-
                 lines.forEach((line, index) => {
                     if (line.trim() === '') return;
-                    const [studentId, stuCode, prefixTh, firstNameTh, lastNameTh, email, password, level, room, classNumber] = line.split(',').map(s => s.trim());
+                    const [studentId, stuCode, prefixTh, firstNameTh, lastNameTh, email, password, level, room, classNumberStr] = line.split(',').map(s => s.trim());
                     
-                    const classTarget = existingClasses.find(c => c.level === level && c.room === room && c.isActive);
-
+                    const classTarget = allClassesData.find(c => c.level === level && c.room === room && c.isActive);
+                    
                     if (studentId && stuCode && firstNameTh && lastNameTh && email && password && classTarget) {
                         const now = new Date().toISOString();
                         const userId = `user-csv-${Date.now()}-${index}`;
@@ -270,7 +270,7 @@ function StudentImportCard({
                             lastNameTh,
                             level,
                             room,
-                            classNumber: classNumber ? parseInt(classNumber) : undefined,
+                            classNumber: classNumberStr ? parseInt(classNumberStr) : undefined,
                             homeroomEmail: classTarget.homeroomTeacherEmail || '',
                             status: 'ACTIVE',
                             admitYearBe: classTarget.yearBe,
@@ -305,7 +305,7 @@ function StudentImportCard({
             }
         };
         reader.readAsText(file, 'UTF-8');
-        event.target.value = '';
+        if(event.target) event.target.value = '';
     }
 
     return (
@@ -577,7 +577,7 @@ export default function AdminClassesPage() {
                 </Button>
             </div>
 
-            <StudentImportCard onImport={handleStudentImport} />
+            <StudentImportCard onImport={handleStudentImport} allClassesData={allClasses} />
 
             <Card>
                 <CardHeader>
@@ -701,3 +701,5 @@ export default function AdminClassesPage() {
         </div>
     )
 }
+
+    

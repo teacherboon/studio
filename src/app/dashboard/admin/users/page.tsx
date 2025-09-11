@@ -260,7 +260,7 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
             }
         };
         reader.readAsText(file, 'UTF-8');
-        event.target.value = '';
+        if(event.target) event.target.value = '';
     }
 
     return (

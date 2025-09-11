@@ -504,18 +504,18 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
 
                 lines.forEach((line, index) => {
                     if (line.trim() === '') return;
-                    const [offeringId, dayOfWeek, periodStr] = line.split(',');
+                    const [offeringId, dayOfWeek, periodStr] = line.split(',').map(s => s.trim());
                     
-                    const period = Number(periodStr.trim());
-                    const validOffering = initialOfferings.some(o => o.offeringId === offeringId.trim());
-                    const validDay = daysOfWeek.some(d => d.value === dayOfWeek.trim());
+                    const period = Number(periodStr);
+                    const validOffering = initialOfferings.some(o => o.offeringId === offeringId);
+                    const validDay = daysOfWeek.some(d => d.value === dayOfWeek);
                     const validPeriod = periods.some(p => p.period === period);
 
                     if (validOffering && validDay && validPeriod) {
                         newSchedules.push({
                             scheduleId: `csv-import-${Date.now()}-${index}`,
-                            offeringId: offeringId.trim(),
-                            dayOfWeek: dayOfWeek.trim() as DayOfWeek,
+                            offeringId: offeringId,
+                            dayOfWeek: dayOfWeek as DayOfWeek,
                             period: period,
                         });
                         importedCount++;
@@ -524,7 +524,6 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
 
                 if (importedCount > 0) {
                     onSchedulesImported(newSchedules);
-                    
                 } else {
                      toast({
                         variant: 'destructive',
@@ -541,7 +540,7 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
             }
         };
         reader.readAsText(file);
-        event.target.value = '';
+        if(event.target) event.target.value = '';
     }
 
     return (
@@ -769,3 +768,5 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
+
+    

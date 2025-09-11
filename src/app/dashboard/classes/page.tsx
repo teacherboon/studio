@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, ChangeEvent } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +12,6 @@ import { Download, Upload, Users, FileText, Save, Edit, School, BookOpen, Calend
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Offering, Class } from '@/lib/types';
-import { useRef, ChangeEvent } from 'react';
 
 
 interface OfferingWithDetails extends Offering {
@@ -24,7 +23,6 @@ interface OfferingWithDetails extends Offering {
 
 export default function ClassesPage() {
     const [selectedYear, setSelectedYear] = useState<string>('');
-    const [selectedTerm, setSelectedTerm] = useState<string>('');
     const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
     
     const [studentScores, setStudentScores] = useState<Record<string, number | null>>({});
@@ -35,16 +33,11 @@ export default function ClassesPage() {
         return [...new Set(offerings.map(o => o.yearBe))].sort((a, b) => b - a);
     }, []);
 
-    const termsForYear = useMemo(() => {
+    const offeringsForYear = useMemo(() => {
         if (!selectedYear) return [];
-        return [...new Set(offerings.filter(o => o.yearBe === Number(selectedYear)).map(o => o.termLabel))];
-    }, [selectedYear]);
-
-    const offeringsForTerm = useMemo(() => {
-        if (!selectedTerm || !selectedYear) return [];
 
         return offerings
-            .filter(o => o.yearBe === Number(selectedYear) && o.termLabel === selectedTerm)
+            .filter(o => o.yearBe === Number(selectedYear))
             .map(o => {
                 const subject = subjects.find(s => s.subjectId === o.subjectId);
                 const classInfo = classes.find(c => c.classId === o.classId);
@@ -55,11 +48,11 @@ export default function ClassesPage() {
                     className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A'
                 }
             })
-    }, [selectedTerm, selectedYear]);
+    }, [selectedYear]);
 
     const selectedOffering = useMemo(() => {
-        return offeringsForTerm.find(o => o.offeringId === selectedOfferingId);
-    }, [selectedOfferingId, offeringsForTerm]);
+        return offeringsForYear.find(o => o.offeringId === selectedOfferingId);
+    }, [selectedOfferingId, offeringsForYear]);
 
     const studentsInClass = useMemo(() => {
         if (!selectedOffering) return [];
@@ -85,15 +78,8 @@ export default function ClassesPage() {
 
     const handleYearChange = (year: string) => {
         setSelectedYear(year);
-        setSelectedTerm('');
         setSelectedOfferingId('');
     }
-
-    const handleTermChange = (term: string) => {
-        setSelectedTerm(term);
-        setSelectedOfferingId('');
-    }
-
 
     const handleScoreChange = (studentId: string, score: string) => {
         const newScore = score === '' ? null : Number(score);
@@ -131,7 +117,7 @@ export default function ClassesPage() {
             return;
         }
 
-        const header = 'studentId,studentCode,studentName,score\n';
+        const header = 'studentId,stuCode,studentName,score\n';
         const rows = studentsInClass.map(s =>
             `${s.studentId},${s.stuCode},"${s.prefixTh}${s.firstNameTh} ${s.lastNameTh}",`
         ).join('\n');
@@ -141,7 +127,7 @@ export default function ClassesPage() {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `scores_template_${selectedOffering.subjectCode}.csv`);
+        link.setAttribute('download', `scores_template_${selectedOffering.subjectCode}_${selectedOffering.classId}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -165,12 +151,12 @@ export default function ClassesPage() {
 
                 lines.forEach(line => {
                     if (line.trim() === '') return;
-                    const [studentId, studentCode, studentName, scoreStr] = line.split(',');
+                    const [studentId, studentCode, studentName, scoreStr] = line.split(',').map(s => s.trim());
                     
-                    if (studentId && studentsInClass.some(s => s.studentId === studentId.trim())) {
-                        const score = scoreStr.trim() === '' ? null : Number(scoreStr.trim());
+                    if (studentId && studentsInClass.some(s => s.studentId === studentId)) {
+                        const score = scoreStr === '' ? null : Number(scoreStr);
                         if (score === null || !isNaN(score)) {
-                            updatedScores[studentId.trim()] = score;
+                            updatedScores[studentId] = score;
                             updatedCount++;
                         }
                     }
@@ -198,11 +184,8 @@ export default function ClassesPage() {
             }
             
         };
-        reader.readAsText(file);
-        // Reset file input
-        if (event.target) {
-            event.target.value = '';
-        }
+        reader.readAsText(file, 'UTF-8');
+        if(event.target) event.target.value = '';
     }
 
     return (
@@ -243,18 +226,7 @@ export default function ClassesPage() {
                                 <SelectValue placeholder="เลือกรายวิชา..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {offerings
-                                    .filter(o => o.yearBe === Number(selectedYear))
-                                    .map(o => {
-                                        const subject = subjects.find(s => s.subjectId === o.subjectId);
-                                        const classInfo = classes.find(c => c.classId === o.classId);
-                                        return {
-                                            ...o,
-                                            subjectName: subject?.subjectNameTh || 'N/A',
-                                            subjectCode: subject?.subjectCode || 'N/A',
-                                            className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A'
-                                        }
-                                    }).map(o => (
+                                {offeringsForYear.map(o => (
                                     <SelectItem key={o.offeringId} value={o.offeringId}>
                                         {o.subjectCode} - {o.subjectName} ({o.className})
                                     </SelectItem>
@@ -361,3 +333,5 @@ export default function ClassesPage() {
         </div>
     )
 }
+
+    
