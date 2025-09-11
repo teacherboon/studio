@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'ADMIN' | 'TEACHER' | 'STUDENT';
 
 export interface User {
@@ -11,6 +12,7 @@ export interface User {
   studentId?: string;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
+  homeroomClassId?: string;
 }
 
 export interface Student {
@@ -35,6 +37,7 @@ export interface Class {
   termLabel: string; // e.g., '2568' or '1/2568'
   yearBe: number;
   isActive: boolean;
+  homeroomTeacherEmail?: string;
 }
 
 export interface Enrollment {
@@ -93,6 +96,7 @@ export interface GradeScale {
 export interface StudentGradeDetails extends Score {
   subjectName: string;
   subjectCode: string;
+  subjectType: 'พื้นฐาน' | 'เพิ่มเติม';
 }
 
 export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY';
@@ -117,4 +121,18 @@ export interface LeaveRequest {
     status: LeaveStatus;
     substituteTeacherEmail?: string;
     createdAt: string;
+}
+
+export type AttributeLevel = 3 | 2 | 1; // 3: ดีเยี่ยม, 2: ดี, 1: ผ่าน
+export type ActivityStatus = 'ผ่าน' | 'ไม่ผ่าน';
+
+export interface StudentAttributes {
+  studentId: string;
+  yearBe: number;
+  desirableCharacteristics: AttributeLevel; // คุณลักษณะอันพึงประสงค์
+  readingThinkingWriting: AttributeLevel; // การอ่าน คิด วิเคราะห์และเขียน
+  guidanceActivity: ActivityStatus; // กิจกรรมแนะแนว
+  clubActivity: ActivityStatus; // กิจกรรมชุมนุม
+  scoutActivity: ActivityStatus; // กิจกรรมลูกเสือ
+  socialServiceActivity: ActivityStatus; // กิจกรรมเพื่อสังคมฯ
 }

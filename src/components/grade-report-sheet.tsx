@@ -1,23 +1,30 @@
 
 import React from 'react';
 import { Logo } from '@/components/logo';
-import { Student, StudentGradeDetails, Class } from '@/lib/types';
+import { Student, StudentGradeDetails, Class, Subject, StudentAttributes } from '@/lib/types';
+import { subjects } from '@/lib/data';
 
 interface GradeReportSheetProps {
     student: Student;
     grades: StudentGradeDetails[];
     gpa: string;
     currentClass: Class;
+    attributes: StudentAttributes | null;
 }
 
 export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportSheetProps>((props, ref) => {
-    const { student, grades, gpa, currentClass } = props;
-    
-    const basicSubjects = grades.filter(g => subjectsInfo[g.subjectCode]?.type === 'พื้นฐาน');
-    const additionalSubjects = grades.filter(g => subjectsInfo[g.subjectCode]?.type === 'เพิ่มเติม');
+    const { student, grades, gpa, currentClass, attributes } = props;
 
-    const totalBasicCredits = basicSubjects.reduce((sum, g) => sum + (subjectsInfo[g.subjectCode]?.credits || 0), 0)
-    const totalAdditionalCredits = additionalSubjects.reduce((sum, g) => sum + (subjectsInfo[g.subjectCode]?.credits || 0), 0)
+    const subjectsInfo: Record<string, Subject> = subjects.reduce((acc, s) => {
+        acc[s.subjectId] = s;
+        return acc;
+    }, {} as Record<string, Subject>);
+    
+    const basicSubjects = grades.filter(g => g.subjectType === 'พื้นฐาน');
+    const additionalSubjects = grades.filter(g => g.subjectType === 'เพิ่มเติม');
+
+    const totalBasicCredits = basicSubjects.reduce((sum, g) => sum + g.credits, 0)
+    const totalAdditionalCredits = additionalSubjects.reduce((sum, g) => sum + g.credits, 0)
     const totalCredits = totalBasicCredits + totalAdditionalCredits;
 
 
@@ -59,13 +66,12 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 </thead>
                 <tbody>
                     {grades.map(grade => {
-                         const info = subjectsInfo[grade.subjectCode];
                          return (
                             <tr key={grade.scoreId}>
                                 <td className="border border-black p-1 text-center">{grade.subjectCode}</td>
                                 <td className="border border-black p-1">{grade.subjectName}</td>
-                                <td className="border border-black p-1 text-center">{info?.type || ''}</td>
-                                <td className="border border-black p-1 text-center">{info?.credits || ''}</td>
+                                <td className="border border-black p-1 text-center">{grade.subjectType}</td>
+                                <td className="border border-black p-1 text-center">{grade.credits.toFixed(1)}</td>
                                 <td className="border border-black p-1 text-center">{grade.rawScore}</td>
                                 <td className="border border-black p-1 text-center">{grade.gradePoint}</td>
                                 <td className="border border-black p-1 text-center">{grade.statusFlag === 'ร' ? 'ร' : ''}</td>
@@ -113,11 +119,11 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <tbody>
                             <tr>
                                 <td className="border border-black p-1">คุณลักษณะอันพึงประสงค์ของสถานศึกษา</td>
-                                <td className="border border-black p-1 text-center">3</td>
+                                <td className="border border-black p-1 text-center">{attributes?.desirableCharacteristics || '-'}</td>
                             </tr>
                              <tr>
                                 <td className="border border-black p-1">การอ่าน คิด วิเคราะห์และเขียน</td>
-                                <td className="border border-black p-1 text-center">3</td>
+                                <td className="border border-black p-1 text-center">{attributes?.readingThinkingWriting || '-'}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -128,10 +134,10 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td className="border border-black p-1">กิจกรรมแนะแนว</td><td className="border border-black p-1 text-center">ผ่าน</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมชุมนุม</td><td className="border border-black p-1 text-center">ผ่าน</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black p-1 text-center">ผ่าน</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black p-1 text-center">ผ่าน</td></tr>
+                            <tr><td className="border border-black p-1">กิจกรรมแนะแนว</td><td className="border border-black p-1 text-center">{attributes?.guidanceActivity || '-'}</td></tr>
+                            <tr><td className="border border-black p-1">กิจกรรมชุมนุม</td><td className="border border-black p-1 text-center">{attributes?.clubActivity || '-'}</td></tr>
+                            <tr><td className="border border-black p-1">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black p-1 text-center">{attributes?.scoutActivity || '-'}</td></tr>
+                            <tr><td className="border border-black p-1">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black p-1 text-center">{attributes?.socialServiceActivity || '-'}</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -163,19 +169,3 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 });
 
 GradeReportSheet.displayName = 'GradeReportSheet';
-
-
-const subjectsInfo: Record<string, { type: string; credits: number }> = {
-    "ท12101": { type: "พื้นฐาน", credits: 200/100*1.5 }, // Assuming 1.5 credits per 100
-    "ค12101": { type: "พื้นฐาน", credits: 200/100*1.5 },
-    "ว12101": { type: "พื้นฐาน", credits: 80/100*1.0 },
-    "ส12101": { type: "พื้นฐาน", credits: 80/100*1.0 },
-    "ส12102": { type: "พื้นฐาน", credits: 40/100*0.5 },
-    "พ12101": { type: "พื้นฐาน", credits: 80/100*1.0 },
-    "ศ12101": { type: "พื้นฐาน", credits: 80/100*1.0 },
-    "ง12101": { type: "พื้นฐาน", credits: 40/100*0.5 },
-    "อ12101": { type: "พื้นฐาน", credits: 40/100*0.5 },
-    "อ12201": { type: "เพิ่มเติม", credits: 160/100*1.0 },
-    "ส12201": { type: "เพิ่มเติม", credits: 40/100*0.5 },
-    "ว12201": { type: "เพิ่มเติม", credits: 40/100*0.5 }
-};

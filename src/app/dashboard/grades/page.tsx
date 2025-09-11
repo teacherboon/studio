@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -19,9 +20,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
-import { scores, offerings, subjects, classes, students } from "@/lib/data";
+import { scores, offerings, subjects, classes, students, studentAttributes } from "@/lib/data";
 import { calculateGPA } from "@/lib/utils";
-import type { StudentGradeDetails, Score } from '@/lib/types';
+import type { StudentGradeDetails, Score, StudentAttributes } from '@/lib/types';
 import { Download, FileWarning, Wand, Loader2, BarChart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from '@/ai/flows/analyze-student-scores';
@@ -126,6 +127,7 @@ export default function StudentGradesPage() {
       ...score,
       subjectName: subject?.subjectNameTh || 'N/A',
       subjectCode: subject?.subjectCode || 'N/A',
+      subjectType: subject?.type || 'พื้นฐาน',
     };
   });
   
@@ -133,6 +135,9 @@ export default function StudentGradesPage() {
     const offering = offerings.find(o => o.offeringId === scoresForTerm[0]?.offeringId);
     return c.classId === offering?.classId;
   });
+
+  const attributesForYear = studentAttributes.find(attr => attr.studentId === studentData.studentId && String(attr.yearBe) === currentClass?.yearBe.toString());
+
 
   const gpa = calculateGPA(scoresForTerm as Score[]);
 
@@ -175,6 +180,7 @@ export default function StudentGradesPage() {
                                 grades={gradeDetails} 
                                 gpa={gpa}
                                 currentClass={currentClass}
+                                attributes={attributesForYear || null}
                             />
                         </div>
                     </div>
@@ -234,7 +240,3 @@ export default function StudentGradesPage() {
     </div>
   );
 }
-
-    
-
-    

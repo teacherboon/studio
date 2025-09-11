@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -10,6 +11,7 @@ export interface UserInfo {
   displayName: string;
   thaiName: string;
   studentId?: string;
+  homeroomClassId?: string;
 }
 
 export function useUser() {
@@ -25,7 +27,8 @@ export function useUser() {
           email: foundUser.email,
           displayName: foundUser.displayName,
           thaiName: foundUser.thaiName,
-          studentId: foundUser.studentId
+          studentId: foundUser.studentId,
+          homeroomClassId: foundUser.homeroomClassId
         });
       }
     }

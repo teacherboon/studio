@@ -1,10 +1,11 @@
 
-import type { User, Student, Class, Enrollment, Subject, Offering, Score, GradeScale, Schedule, LeaveRequest } from './types';
+
+import type { User, Student, Class, Enrollment, Subject, Offering, Score, GradeScale, Schedule, LeaveRequest, StudentAttributes } from './types';
 
 export const users: User[] = [
   { userId: 'user1', role: 'ADMIN', email: 'admin@school.ac.th', displayName: 'Admin User', thaiName: 'ผู้ดูแลระบบ', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
-  { userId: 'user2', role: 'TEACHER', email: 'teacher.a@school.ac.th', displayName: 'Teacher A', thaiName: 'ครู เอ', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
-  { userId: 'user3', role: 'TEACHER', email: 'teacher.b@school.ac.th', displayName: 'Teacher B', thaiName: 'ครู บี', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
+  { userId: 'user2', role: 'TEACHER', email: 'teacher.a@school.ac.th', displayName: 'Teacher A', thaiName: 'ครู เอ', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString(), homeroomClassId: 'c1' },
+  { userId: 'user3', role: 'TEACHER', email: 'teacher.b@school.ac.th', displayName: 'Teacher B', thaiName: 'ครู บี', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString(), homeroomClassId: 'c2' },
   { userId: 'user4', role: 'STUDENT', email: 'student.1@school.ac.th', studentId: 'stu1', displayName: 'Student 1', thaiName: 'นักเรียน หนึ่ง', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
   { userId: 'user5', role: 'STUDENT', email: 'student.2@school.ac.th', studentId: 'stu2', displayName: 'Student 2', thaiName: 'นักเรียน สอง', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
   { userId: 'user-teacher-c', role: 'TEACHER', email: 'teacher.c@school.ac.th', displayName: 'Teacher C', thaiName: 'ครู ซี', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
@@ -20,8 +21,8 @@ export const students: Student[] = [
 ];
 
 export const classes: Class[] = [
-  { classId: 'c1', level: 'ป.6', room: '1', yearMode: 'PRIMARY', termLabel: '2568', yearBe: 2568, isActive: true },
-  { classId: 'c2', level: 'ม.1', room: '2', yearMode: 'SECONDARY', termLabel: '1/2568', yearBe: 2568, isActive: true },
+  { classId: 'c1', level: 'ป.6', room: '1', yearMode: 'PRIMARY', termLabel: '2568', yearBe: 2568, isActive: true, homeroomTeacherEmail: 'teacher.a@school.ac.th' },
+  { classId: 'c2', level: 'ม.1', room: '2', yearMode: 'SECONDARY', termLabel: '1/2568', yearBe: 2568, isActive: true, homeroomTeacherEmail: 'teacher.b@school.ac.th' },
 ];
 
 export const enrollments: Enrollment[] = [
@@ -53,6 +54,42 @@ export const scores: Score[] = [
   { scoreId: 's4', offeringId: 'off3', studentId: 'stu2', rawScore: null, letterGrade: null, gradePoint: null, credits: 0.5, statusFlag: 'ร', updatedBy: 'teacher.a@school.ac.th', updatedAt: new Date().toISOString() },
   // Student 3 (มานะ) - ม.1/2, เทอม 1/2568
   { scoreId: 's5', offeringId: 'off2', studentId: 'stu3', rawScore: 68, letterGrade: 'C+', gradePoint: 2.5, credits: 0.5, statusFlag: 'NORMAL', updatedBy: 'teacher.b@school.ac.th', updatedAt: new Date().toISOString() },
+];
+
+export const studentAttributes: StudentAttributes[] = [
+    // Data for stu1 for year 2568
+    {
+        studentId: 'stu1',
+        yearBe: 2568,
+        desirableCharacteristics: 3,
+        readingThinkingWriting: 3,
+        guidanceActivity: 'ผ่าน',
+        clubActivity: 'ผ่าน',
+        scoutActivity: 'ผ่าน',
+        socialServiceActivity: 'ผ่าน',
+    },
+    // Data for stu2 for year 2568
+    {
+        studentId: 'stu2',
+        yearBe: 2568,
+        desirableCharacteristics: 2,
+        readingThinkingWriting: 2,
+        guidanceActivity: 'ผ่าน',
+        clubActivity: 'ผ่าน',
+        scoutActivity: 'ไม่ผ่าน',
+        socialServiceActivity: 'ผ่าน',
+    },
+    // Data for stu3 for year 2568
+    {
+        studentId: 'stu3',
+        yearBe: 2568,
+        desirableCharacteristics: 3,
+        readingThinkingWriting: 3,
+        guidanceActivity: 'ผ่าน',
+        clubActivity: 'ผ่าน',
+        scoutActivity: 'ผ่าน',
+        socialServiceActivity: 'ผ่าน',
+    }
 ];
 
 export const gradeScale: GradeScale[] = [
