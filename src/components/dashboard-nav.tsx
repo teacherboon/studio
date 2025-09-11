@@ -225,12 +225,7 @@ export function DashboardNav() {
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/schedules"} tooltip="Schedules">
-                              <Link href="/dashboard/admin/schedules">จัดการตารางสอน</Link>
-                          </SidebarMenuButton>
-                       </SidebarMenuItem>
-                       <SidebarMenuItem>
-                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/teachers"} tooltip="Teachers">
-                              <Link href="/dashboard/admin/teachers">จัดการครู</Link>
+                              <Link href="/dashboard/admin/schedules">จัดตารางสอนครู</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                     </SidebarMenu>

@@ -4,8 +4,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, UserSquare } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PlusCircle, UserSquare, Upload, Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -38,64 +37,6 @@ const periods = [
     { period: 5, time: '13:30-14:30' },
     { period: 6, time: '14:30-15:30' },
 ];
-
-function ScheduleTable() {
-    const getScheduleForCell = (day: DayOfWeek, period: number) => {
-        const scheduleEntry = schedules.find(s => s.dayOfWeek === day && s.period === period);
-        if (!scheduleEntry) return null;
-
-        const offering = offerings.find(o => o.offeringId === scheduleEntry.offeringId);
-        if (!offering) return null;
-
-        const subject = subjects.find(s => s.subjectId === offering.subjectId);
-        const classInfo = classes.find(c => c.classId === offering.classId);
-        const teacher = users.find(u => u.email === offering.teacherEmail);
-
-        return (
-            <div className="text-xs p-1 bg-primary/10 rounded-md">
-                <p className="font-bold truncate">{subject?.subjectCode}</p>
-                <p className="truncate">อ. {teacher?.thaiName.split(' ')[0]}</p>
-                <p className="truncate">ห้อง {classInfo?.level}/{classInfo?.room}</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="overflow-x-auto">
-            <Table className="border min-w-full">
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[120px] border-r text-center">เวลา</TableHead>
-                        <TableHead className="w-[80px] border-r text-center">คาบที่</TableHead>
-                        {daysOfWeek.map(day => <TableHead key={day.value} className="text-center border-r min-w-[150px]">{day.label}</TableHead>)}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {periods.map(({ period, time }, index) => (
-                        period ? (
-                            <TableRow key={period}>
-                                <TableCell className="font-medium border-r text-center">{time}</TableCell>
-                                <TableCell className="font-medium border-r text-center">{period}</TableCell>
-                                {daysOfWeek.map(day => (
-                                    <TableCell key={day.value} className="p-1 border-r align-top h-[70px]">
-                                        {getScheduleForCell(day.value, period)}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ) : (
-                            <TableRow key={`break-${index}`} className="bg-muted/50">
-                                <TableCell className="font-medium border-r text-center">{time}</TableCell>
-                                <TableCell colSpan={daysOfWeek.length + 1} className="text-center font-semibold text-muted-foreground">
-                                    พักกลางวัน
-                                </TableCell>
-                            </TableRow>
-                        )
-                    ))}
-                </TableBody>
-            </Table>
-        </div>
-    )
-}
 
 function AddScheduleDialog() {
     const classOfferings = offerings;
@@ -217,6 +158,64 @@ function AddScheduleDialog() {
     );
 }
 
+function ImportSchedulesCard() {
+    const { toast } = useToast();
+
+    const handleDownloadTemplate = () => {
+        const header = 'offeringId,dayOfWeek,period\n';
+        const sampleData = 'off1,MONDAY,1\n';
+        
+        const csvContent = "\uFEFF" + header + sampleData;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `schedules_import_template.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleUploadClick = () => {
+        toast({
+            title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
+            description: 'การอัปโหลดไฟล์ CSV ยังไม่สามารถใช้งานได้ในเวอร์ชันนี้',
+        });
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>นำเข้าตารางสอน (CSV)</CardTitle>
+                <CardDescription>
+                    เพิ่มข้อมูลตารางสอนจำนวนมากผ่านไฟล์ CSV
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง
+                    </p>
+                    <Button variant="outline" onClick={handleDownloadTemplate}>
+                        <Download className="mr-2"/> เทมเพลตสำหรับตารางสอน
+                    </Button>
+                </div>
+                <div>
+                    <h4 className="font-semibold">อัปโหลดไฟล์</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
+                    </p>
+                    <Button onClick={handleUploadClick}>
+                        <Upload className="mr-2"/> เลือกไฟล์เพื่ออัปโหลด
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+
 export default function AdminSchedulesPage() {
     const [selectedTeacherEmail, setSelectedTeacherEmail] = useState<string>('');
     const allTeachers = users.filter(u => u.role === 'TEACHER');
@@ -226,23 +225,13 @@ export default function AdminSchedulesPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">จัดการตารางสอน</h1>
-                    <p className="text-muted-foreground">จัดตารางสอนสำหรับครู, วิชา, และห้องเรียน</p>
+                    <h1 className="text-3xl font-bold font-headline">จัดตารางสอนครู</h1>
+                    <p className="text-muted-foreground">ดูและจัดการตารางสอนสำหรับครูแต่ละคน</p>
                 </div>
                 <AddScheduleDialog />
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>ตารางสอนรวม</CardTitle>
-                    <CardDescription>
-                        ภาพรวมตารางสอนทั้งหมดในสัปดาห์
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ScheduleTable />
-                </CardContent>
-            </Card>
+            <ImportSchedulesCard />
 
              <Card>
                 <CardHeader>
@@ -288,5 +277,3 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
-
-    
