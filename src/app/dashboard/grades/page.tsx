@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import {
   Card,
@@ -41,7 +41,7 @@ export default function StudentGradesPage() {
   const user = useUser();
   const [selectedTerm, setSelectedTerm] = useState<string>('1/2568');
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(true); // Set to true to start loading initially
   const { toast } = useToast();
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -51,7 +51,57 @@ export default function StudentGradesPage() {
     documentTitle: `grade-report-${user?.studentId}-${selectedTerm}`,
   });
   
-  if (!user || !user.studentId) {
+  const studentData = user ? students.find(s => s.studentId === user.studentId) : null;
+  const studentScores = user ? scores.filter(s => s.studentId === user.studentId) : [];
+
+  useEffect(() => {
+    const handleAnalyzeScores = async () => {
+      if (!user || !user.studentId) return;
+  
+      setIsAnalyzing(true);
+      try {
+          const allStudentScoresForAnalysis = studentScores.map(s => {
+              const offeringInfo = offerings.find(o => o.offeringId === s.offeringId);
+              const subjectInfo = subjects.find(sub => sub.subjectId === offeringInfo?.subjectId);
+              return {
+                subjectName: subjectInfo?.subjectNameTh || 'N/A',
+                term: offeringInfo?.termLabel || 'N/A',
+                rawScore: s.rawScore,
+                letterGrade: s.letterGrade,
+              };
+          });
+  
+          const input = {
+              student: {
+                  studentId: user.studentId,
+                  studentName: user.thaiName
+              },
+              scores: allStudentScoresForAnalysis
+          };
+          const result = await analyzeStudentScores(input);
+          setAnalysisResult(result);
+      } catch (error) {
+          console.error("Error analyzing scores:", error);
+          toast({
+              variant: "destructive",
+              title: "เกิดข้อผิดพลาด",
+              description: "ไม่สามารถวิเคราะห์ผลการเรียนได้ โปรดลองอีกครั้ง"
+          });
+      } finally {
+          setIsAnalyzing(false);
+      }
+    };
+
+    if (user && studentScores.length > 0) {
+        handleAnalyzeScores();
+    } else if (user) {
+        // No scores to analyze
+        setIsAnalyzing(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, studentScores.length]); // Depend on user and score count
+
+  if (!user || !studentData) {
     return (
         <div>
             <Skeleton className="h-9 w-64 mb-2" />
@@ -64,9 +114,6 @@ export default function StudentGradesPage() {
     )
   }
 
-  const studentData = students.find(s => s.studentId === user.studentId);
-  const studentScores = scores.filter(s => s.studentId === user.studentId);
-  
   const availableTerms = [...new Set(
     offerings
       .filter(o => studentScores.some(s => s.offeringId === o.offeringId))
@@ -109,49 +156,6 @@ export default function StudentGradesPage() {
             return 'secondary';
     }
   }
-
-  const handleAnalyzeScores = async () => {
-    if (!user || !user.studentId) return;
-
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
-    try {
-        const allStudentScoresForAnalysis = studentScores.map(s => {
-            const offeringInfo = offerings.find(o => o.offeringId === s.offeringId);
-            const subjectInfo = subjects.find(sub => sub.subjectId === offeringInfo?.subjectId);
-            return {
-              subjectName: subjectInfo?.subjectNameTh || 'N/A',
-              term: offeringInfo?.termLabel || 'N/A',
-              rawScore: s.rawScore,
-              letterGrade: s.letterGrade,
-            };
-        });
-
-        const input = {
-            student: {
-                studentId: user.studentId,
-                studentName: user.thaiName
-            },
-            scores: allStudentScoresForAnalysis
-        };
-        const result = await analyzeStudentScores(input);
-        setAnalysisResult(result);
-        toast({
-            title: "วิเคราะห์ผลการเรียนสำเร็จ",
-            description: "AI ได้ให้คำแนะนำสำหรับผลการเรียนของคุณแล้ว"
-        });
-    } catch (error) {
-        console.error("Error analyzing scores:", error);
-        toast({
-            variant: "destructive",
-            title: "เกิดข้อผิดพลาด",
-            description: "ไม่สามารถวิเคราะห์ผลการเรียนได้ โปรดลองอีกครั้ง"
-        });
-    } finally {
-        setIsAnalyzing(false);
-    }
-  };
-
 
   return (
     <div className="space-y-8">
@@ -244,35 +248,28 @@ export default function StudentGradesPage() {
             </CardFooter>
         </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>วิเคราะห์ผลการเรียนด้วย AI</CardTitle>
-                <CardDescription>รับคำแนะนำเพื่อพัฒนาผลการเรียนของคุณจาก AI โดยวิเคราะห์จากผลการเรียนทั้งหมด</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <Button onClick={handleAnalyzeScores} disabled={isAnalyzing}>
-                    {isAnalyzing ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            กำลังวิเคราะห์...
-                        </>
-                    ) : (
-                        <>
-                            <Wand className="mr-2 h-4 w-4" />
-                            เริ่มการวิเคราะห์
-                        </>
-                    )}
-                </Button>
-            </CardContent>
-        </Card>
-
-        {analysisResult && (
+        {isAnalyzing ? (
+            <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    กำลังวิเคราะห์ผลการเรียนด้วย AI
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                </CardContent>
+            </Card>
+        ) : analysisResult && (
             <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart className="text-primary" />
                     ผลการวิเคราะห์สำหรับ {analysisResult.studentName}
                   </CardTitle>
+                  <CardDescription>AI ได้ให้คำแนะนำสำหรับผลการเรียนของคุณแล้ว</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
@@ -294,7 +291,8 @@ export default function StudentGradesPage() {
                 </CardContent>
             </Card>
         )}
-
     </div>
   );
 }
+
+    

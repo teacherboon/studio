@@ -8,9 +8,9 @@ export default function LoginPage() {
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
-            <div className="flex justify-center items-center gap-2">
-                <Logo className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold font-headline">Thai Grade Vision</h1>
+            <div className="flex justify-center items-center gap-4">
+                <Logo className="h-12 w-12 text-primary" />
+                <h1 className="text-3xl font-bold font-headline">โรงเรียนวัดทองสัมฤทธิ์</h1>
             </div>
             <p className="text-balance text-muted-foreground">
               เข้าสู่ระบบเพื่อจัดการและดูผลการเรียน
@@ -38,3 +38,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

@@ -72,13 +72,13 @@ export function DashboardNav() {
       variant="sidebar"
     >
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="shrink-0" asChild>
+        <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="shrink-0 h-10 w-10" asChild>
                 <Link href="/dashboard">
-                    <Logo className="h-6 w-6 text-primary" />
+                    <Logo className="h-8 w-8 text-primary" />
                 </Link>
             </Button>
-            <h2 className="text-lg font-semibold font-headline">Grade Vision</h2>
+            <h2 className="text-lg font-semibold font-headline">โรงเรียนวัดทองสัมฤทธิ์</h2>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -245,3 +245,5 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
+
+    
