@@ -90,6 +90,10 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
     const [selectedTeacher, setSelectedTeacher] = useState(offeringData?.teacherEmail || '');
     const [selectedClass, setSelectedClass] = useState(offeringData?.classId || '');
     const [periodsPerWeek, setPeriodsPerWeek] = useState(offeringData?.periodsPerWeek || 0);
+    const [yearBe, setYearBe] = useState(offeringData?.yearBe || new Date().getFullYear() + 543);
+    const [termLabel, setTermLabel] = useState(offeringData?.termLabel || '');
+    const [yearMode, setYearMode] = useState<'PRIMARY' | 'SECONDARY'>(offeringData?.yearMode || 'PRIMARY');
+
 
     useEffect(() => {
         if (open) { // Reset form when dialog opens
@@ -98,18 +102,24 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                 setSelectedTeacher(offeringData.teacherEmail);
                 setSelectedClass(offeringData.classId);
                 setPeriodsPerWeek(offeringData.periodsPerWeek || 0);
+                setYearBe(offeringData.yearBe);
+                setTermLabel(offeringData.termLabel);
+                setYearMode(offeringData.yearMode);
             } else {
                 setSelectedSubject('');
                 setSelectedTeacher('');
                 setSelectedClass('');
                 setPeriodsPerWeek(0);
+                setYearBe(new Date().getFullYear() + 543);
+                setTermLabel('');
+                setYearMode('PRIMARY');
             }
         }
     }, [offeringData, open]);
 
     const handleSave = () => {
-        if (!selectedSubject || !selectedTeacher || !selectedClass) {
-            toast({ variant: 'destructive', title: 'ข้อมูลไม่ครบถ้วน', description: 'กรุณาเลือกข้อมูลให้ครบทุกช่อง' });
+        if (!selectedSubject || !selectedTeacher || !selectedClass || !yearBe || !termLabel) {
+            toast({ variant: 'destructive', title: 'ข้อมูลไม่ครบถ้วน', description: 'กรุณากรอกข้อมูลให้ครบทุกช่อง' });
             return;
         }
 
@@ -124,8 +134,9 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
             subjectId: selectedSubject,
             classId: selectedClass,
             teacherEmail: selectedTeacher,
-            yearMode: classDetails.yearMode,
-            termLabel: classDetails.termLabel,
+            yearMode,
+            termLabel,
+            yearBe,
             isConduct: offeringData?.isConduct || false,
             periodsPerWeek: periodsPerWeek,
         };
@@ -136,7 +147,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{offeringData ? 'แก้ไขรายวิชาที่เปิดสอน' : 'เพิ่มรายวิชาที่เปิดสอน'}</DialogTitle>
                     <DialogDescription>
@@ -144,6 +155,26 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                     </DialogDescription>
                 </DialogHeader>
                 {open && <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="year" className="text-right">ปีการศึกษา</Label>
+                        <Input id="year" type="number" value={yearBe} onChange={e => setYearBe(Number(e.target.value))} className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="yearMode" className="text-right">ระบบภาคเรียน</Label>
+                         <Select value={yearMode} onValueChange={(v) => setYearMode(v as any)}>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="เลือกระบบ" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="PRIMARY">ระบบปีการศึกษา (ประถม)</SelectItem>
+                                <SelectItem value="SECONDARY">ระบบภาคเรียน (มัธยม)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="termLabel" className="text-right">ป้ายภาคเรียน</Label>
+                        <Input id="termLabel" value={termLabel} onChange={e => setTermLabel(e.target.value)} placeholder="เช่น 2568 หรือ 1/2568" className="col-span-3" />
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="subject" className="text-right">
                             รายวิชา
@@ -184,7 +215,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                             </SelectTrigger>
                             <SelectContent>
                                 {classes.map(c => (
-                                    <SelectItem key={c.classId} value={c.classId}>ห้อง {c.level}/{c.room} ({c.termLabel})</SelectItem>
+                                    <SelectItem key={c.classId} value={c.classId}>ห้อง {c.level}/{c.room}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -212,8 +243,8 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
-        const header = 'subjectId,classId,teacherEmail,periodsPerWeek\n';
-        const sampleData = 'subj1,c1,teacher.a@school.ac.th,2\n';
+        const header = 'subjectId,classId,teacherEmail,periodsPerWeek,yearBe,termLabel,yearMode\n';
+        const sampleData = 'subj1,c1,teacher.a@school.ac.th,2,2568,2568,PRIMARY\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -244,20 +275,21 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
 
                 lines.forEach((line, index) => {
                     if (line.trim() === '') return;
-                    const [subjectId, classId, teacherEmail, periodsPerWeekStr] = line.split(',').map(item => item.trim());
+                    const [subjectId, classId, teacherEmail, periodsPerWeekStr, yearBeStr, termLabel, yearMode] = line.split(',').map(item => item.trim());
                     
                     const classDetails = classes.find(c => c.classId === classId);
                     const subjectExists = initialSubjects.some(s => s.subjectId === subjectId);
                     const teacherExists = users.some(u => u.email === teacherEmail);
 
-                    if (classDetails && subjectExists && teacherExists) {
+                    if (classDetails && subjectExists && teacherExists && yearBeStr && termLabel && yearMode) {
                          newOfferings.push({
                             offeringId: `csv-import-${Date.now()}-${index}`,
                             subjectId,
                             classId,
                             teacherEmail,
-                            yearMode: classDetails.yearMode,
-                            termLabel: classDetails.termLabel,
+                            yearMode: yearMode as 'PRIMARY' | 'SECONDARY',
+                            termLabel,
+                            yearBe: Number(yearBeStr),
                             isConduct: false,
                             periodsPerWeek: periodsPerWeekStr ? Number(periodsPerWeekStr) : undefined,
                         });
@@ -271,7 +303,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
                      toast({
                         variant: 'destructive',
                         title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                        description: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์ CSV หรือข้อมูลอ้างอิงไม่ถูกต้อง (subjectId, classId, teacherEmail)',
+                        description: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์ CSV หรือข้อมูลอ้างอิงไม่ถูกต้อง (subjectId, classId, teacherEmail, yearBe, termLabel, yearMode)',
                     });
                 }
             } catch (error) {
@@ -298,7 +330,7 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
                 <div>
                     <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
                     <p className="text-sm text-muted-foreground mb-2">
-                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectId, classId, teacherEmail, periodsPerWeek)
+                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectId, classId, teacherEmail, periodsPerWeek, yearBe, termLabel, yearMode)
                     </p>
                     <Button variant="outline" onClick={handleDownloadTemplate}>
                         <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
@@ -342,14 +374,16 @@ export default function AdminOfferingsPage() {
         const isDuplicate = offeringsList.some(o => 
             o.offeringId !== data.offeringId &&
             o.subjectId === data.subjectId && 
-            o.classId === data.classId
+            o.classId === data.classId &&
+            o.yearBe === data.yearBe &&
+            o.termLabel === data.termLabel
         );
 
         if (isDuplicate) {
             toast({
                 variant: "destructive",
                 title: "สร้างไม่สำเร็จ",
-                description: `รายวิชานี้ถูกเปิดสอนให้ห้องนี้แล้ว (อาจจะโดยครูท่านอื่น)`,
+                description: `รายวิชานี้ถูกเปิดสอนให้ห้องนี้ในปีการศึกษาและเทอมนี้แล้ว`,
             });
             return;
         }
@@ -384,7 +418,7 @@ export default function AdminOfferingsPage() {
 
         newOfferings.forEach(newO => {
             const isDuplicate = currentOfferings.some(
-                o => o.subjectId === newO.subjectId && o.classId === newO.classId
+                o => o.subjectId === newO.subjectId && o.classId === newO.classId && o.yearBe === newO.yearBe && o.termLabel === newO.termLabel
             );
             if (isDuplicate) {
                 offeringConflicts.push(newO);
@@ -429,7 +463,7 @@ export default function AdminOfferingsPage() {
              <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold font-headline">จัดการรายวิชาที่เปิดสอน</h1>
-                    <p className="text-muted-foreground">จับคู่รายวิชา, ครูผู้สอน, และห้องเรียน</p>
+                    <p className="text-muted-foreground">จับคู่รายวิชา, ครูผู้สอน, และห้องเรียนสำหรับแต่ละปี/ภาคการศึกษา</p>
                 </div>
                  <div className='flex gap-2'>
                     <Button variant="outline" asChild>
@@ -458,12 +492,11 @@ export default function AdminOfferingsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>ปี/เทอม</TableHead>
                                 <TableHead>รหัสวิชา</TableHead>
                                 <TableHead>ชื่อวิชา</TableHead>
-                                <TableHead>ประเภท</TableHead>
                                 <TableHead>ห้องเรียน</TableHead>
                                 <TableHead>ครูผู้สอน</TableHead>
-                                <TableHead className="text-center">หน่วยกิต</TableHead>
                                 <TableHead className="text-center">คาบ/สัปดาห์</TableHead>
                                 <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
@@ -473,12 +506,11 @@ export default function AdminOfferingsPage() {
                                 const { subject, classInfo, teacher } = getOfferingDetails(offering);
                                 return (
                                     <TableRow key={offering.offeringId}>
+                                        <TableCell>{offering.termLabel}</TableCell>
                                         <TableCell>{subject?.subjectCode}</TableCell>
                                         <TableCell>{subject?.subjectNameTh}</TableCell>
-                                        <TableCell>{subject?.type}</TableCell>
                                         <TableCell>ห้อง {classInfo?.level}/{classInfo?.room}</TableCell>
                                         <TableCell>{teacher?.thaiName}</TableCell>
-                                        <TableCell className="text-center">{subject?.defaultCredits.toFixed(1)}</TableCell>
                                         <TableCell className="text-center">{offering.periodsPerWeek || '-'}</TableCell>
                                         <TableCell className="text-right">
                                             <OfferingActionDropdown 

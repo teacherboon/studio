@@ -35,55 +35,27 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { classes as initialClasses } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import type { Class } from '@/lib/types';
 
 
-function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Class> | null, onSave: (classData: Class) => void, closeDialog: () => void }) {
-    const [year, setYear] = useState(classData?.yearBe || new Date().getFullYear() + 543);
+function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Class> | null, onSave: (classData: Omit<Class, 'yearBe' | 'yearMode' | 'termLabel' | 'isActive'>) => void, closeDialog: () => void }) {
     const [level, setLevel] = useState(classData?.level || '');
     const [room, setRoom] = useState(classData?.room || '');
-    const [yearMode, setYearMode] = useState<'PRIMARY' | 'SECONDARY' | ''>(classData?.yearMode || '');
-    const [term1Label, setTerm1Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[0] || '') : '');
-    const [term2Label, setTerm2Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[1] || '') : '');
-    const isEditing = !!classData?.classId;
 
     const handleSave = () => {
         // Basic validation
-        if (!year || !level || !room || !yearMode) {
+        if (!level || !room) {
              alert('กรุณากรอกข้อมูลให้ครบถ้วน');
              return;
         }
 
-        let finalClassData: Class;
-
-        if (yearMode === 'PRIMARY') {
-            finalClassData = {
-                classId: classData?.classId || `c${Date.now()}`,
-                yearBe: year,
-                level,
-                room,
-                yearMode,
-                termLabel: String(year),
-                isActive: classData?.isActive ?? true,
-            };
-        } else { // SECONDARY
-            if (!term1Label || !term2Label) {
-                 alert('กรุณากรอกป้ายภาคเรียนสำหรับมัธยม');
-                 return;
-            }
-             finalClassData = {
-                classId: classData?.classId || `c${Date.now()}`,
-                yearBe: year,
-                level,
-                room,
-                yearMode,
-                termLabel: `${term1Label},${term2Label}`,
-                isActive: classData?.isActive ?? true,
-            };
-        }
+        const finalClassData: Omit<Class, 'yearBe' | 'yearMode' | 'termLabel' | 'isActive'> = {
+            classId: classData?.classId || `c${Date.now()}`,
+            level,
+            room,
+        };
         
         onSave(finalClassData);
         closeDialog();
@@ -92,12 +64,6 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
     return (
         <>
             <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="year" className="text-right">
-                        ปีการศึกษา
-                    </Label>
-                    <Input id="year" type="number" value={year} onChange={e => setYear(Number(e.target.value))} placeholder="เช่น 2568" className="col-span-3" readOnly={isEditing} />
-                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="level" className="text-right">
                         ระดับชั้น
@@ -110,38 +76,6 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                     </Label>
                     <Input id="room" value={room} onChange={e => setRoom(e.target.value)} placeholder="เช่น 1 หรือ 2" className="col-span-3" />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="yearMode" className="text-right">
-                        ระบบภาคเรียน
-                    </Label>
-                    <Select value={yearMode} onValueChange={(value) => setYearMode(value as any)}>
-                            <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="เลือกระบบ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="PRIMARY">ระบบปีการศึกษา (ประถม)</SelectItem>
-                            <SelectItem value="SECONDARY">ระบบภาคเรียน (มัธยม)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {yearMode === 'SECONDARY' && (
-                        <>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="term1_label" className="text-right">
-                                ป้ายภาคเรียน 1
-                            </Label>
-                            <Input id="term1_label" value={term1Label} onChange={e => setTerm1Label(e.target.value)} placeholder="เช่น 1/2568" className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="term2_label" className="text-right">
-                                ป้ายภาคเรียน 2
-                            </Label>
-                            <Input id="term2_label" value={term2Label} onChange={e => setTerm2Label(e.target.value)} placeholder="เช่น 2/2568" className="col-span-3" />
-                        </div>
-                        </>
-                )}
-
             </div>
             <DialogFooter>
                  <DialogClose asChild>
@@ -154,16 +88,29 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
 }
 
 function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { classData?: Class | null, onSave: (data: Class) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    
+    const handleFullSave = (data: Omit<Class, 'yearBe' | 'yearMode' | 'termLabel' | 'isActive'>) => {
+        // Add back the default/unchanged properties
+        const fullData: Class = {
+            ...data,
+            yearBe: classData?.yearBe || 0, // No longer relevant, can be defaulted
+            yearMode: classData?.yearMode || 'PRIMARY', // No longer relevant
+            termLabel: classData?.termLabel || '', // No longer relevant
+            isActive: classData?.isActive ?? true,
+        };
+        onSave(fullData);
+    }
+    
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{classData?.classId ? 'แก้ไขห้องเรียน' : 'สร้างห้องเรียนใหม่'}</DialogTitle>
                     <DialogDescription>
-                        {classData?.classId ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนสำหรับปีการศึกษาใหม่'}
+                        {classData?.classId ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนในระบบ'}
                     </DialogDescription>
                 </DialogHeader>
-                {open && <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
+                {open && <ClassForm classData={classData || null} onSave={handleFullSave} closeDialog={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
     )
@@ -209,7 +156,7 @@ function ActionDropdown({ classItem, onEdit, onDelete }: { classItem: Class, onE
 }
 
 export default function AdminClassesPage() {
-    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses.sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level)));
+    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses.sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
     const [editingClass, setEditingClass] = useState<Class | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
@@ -221,22 +168,22 @@ export default function AdminClassesPage() {
 
         if (isEditing) {
             setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c)
-                .sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level)));
+                .sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลห้องเรียนได้รับการอัปเดตแล้ว" });
         } else {
             // Check for duplicates before adding
             const isDuplicate = allClasses.some(
-                c => c.yearBe === data.yearBe && c.level === data.level && c.room === data.room
+                c => c.level === data.level && c.room === data.room
             );
             if (isDuplicate) {
                 toast({
                     variant: "destructive",
                     title: "สร้างไม่สำเร็จ",
-                    description: `ห้องเรียน ${data.level}/${data.room} สำหรับปีการศึกษา ${data.yearBe} มีอยู่แล้ว`,
+                    description: `ห้องเรียน ${data.level}/${data.room} มีอยู่แล้ว`,
                 });
                 return;
             }
-            setAllClasses(prev => [data, ...prev].sort((a, b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level)));
+            setAllClasses(prev => [data, ...prev].sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsDialogOpen(false);
@@ -263,7 +210,7 @@ export default function AdminClassesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold font-headline">จัดการห้องเรียน</h1>
-                    <p className="text-muted-foreground">สร้าง, แก้ไข, และดูข้อมูลห้องเรียนทั้งหมดในระบบ</p>
+                    <p className="text-muted-foreground">สร้างและแก้ไขข้อมูลห้องเรียนทั้งหมดในระบบ</p>
                 </div>
                 <Button onClick={() => handleOpenDialog()}>
                     <PlusCircle className="mr-2" />
@@ -275,33 +222,23 @@ export default function AdminClassesPage() {
                 <CardHeader>
                     <CardTitle>รายชื่อห้องเรียน</CardTitle>
                     <CardDescription>
-                        ห้องเรียนทั้งหมดที่เปิดใช้งานในระบบ
+                        ห้องเรียนทั้งหมดที่มีอยู่ในระบบ
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>ปีการศึกษา</TableHead>
                                 <TableHead>ระดับชั้น</TableHead>
                                 <TableHead>ห้อง</TableHead>
-                                <TableHead>ภาคเรียน/ปีการศึกษา</TableHead>
-                                <TableHead>สถานะ</TableHead>
                                 <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedClasses.map((c) => (
                                 <TableRow key={c.classId}>
-                                    <TableCell>{c.yearBe}</TableCell>
                                     <TableCell>{c.level}</TableCell>
                                     <TableCell>{c.room}</TableCell>
-                                    <TableCell>{c.termLabel.replace(',', ', ')}</TableCell>
-                                    <TableCell>
-                                        <span className={`px-2 py-1 text-xs rounded-full ${c.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                            {c.isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
-                                        </span>
-                                    </TableCell>
                                     <TableCell className="text-right">
                                        <ActionDropdown 
                                             classItem={c} 
@@ -346,7 +283,3 @@ export default function AdminClassesPage() {
         </div>
     )
 }
-
-    
-
-    

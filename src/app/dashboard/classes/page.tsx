@@ -31,19 +31,18 @@ export default function ClassesPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const academicYears = useMemo(() => {
-        return [...new Set(classes.map(c => c.yearBe))].sort((a, b) => b - a);
+        return [...new Set(offerings.map(o => o.yearBe))].sort((a, b) => b - a);
     }, []);
 
     const termsForYear = useMemo(() => {
         if (!selectedYear) return [];
         const terms = new Set<string>();
         offerings.forEach(o => {
-            const classInfo = classes.find(c => c.classId === o.classId);
-            if (classInfo?.yearBe === Number(selectedYear)) {
-                if (classInfo.yearMode === 'PRIMARY') {
-                    terms.add(classInfo.termLabel);
+            if (o.yearBe === Number(selectedYear)) {
+                if (o.yearMode === 'PRIMARY') {
+                    terms.add(o.termLabel);
                 } else { // SECONDARY
-                    classInfo.termLabel.split(',').forEach(term => terms.add(term));
+                    o.termLabel.split(',').forEach(term => terms.add(term));
                 }
             }
         });
@@ -51,21 +50,19 @@ export default function ClassesPage() {
     }, [selectedYear]);
 
     const offeringsForTerm = useMemo(() => {
-        if (!selectedTerm) return [];
+        if (!selectedTerm || !selectedYear) return [];
 
         const isPrimaryTerm = !selectedTerm.includes('/');
 
         return offerings
             .filter(o => {
-                const classInfo = classes.find(c => c.classId === o.classId);
-                if (!classInfo) return false;
-
                 const termMatch = o.termLabel.includes(selectedTerm);
+                const yearMatch = o.yearBe === Number(selectedYear);
                 
                 if (isPrimaryTerm) {
-                    return termMatch && classInfo.yearMode === 'PRIMARY';
+                    return termMatch && yearMatch && o.yearMode === 'PRIMARY';
                 } else {
-                    return termMatch && classInfo.yearMode === 'SECONDARY';
+                    return termMatch && yearMatch && o.yearMode === 'SECONDARY';
                 }
             })
             .map(o => {
@@ -78,7 +75,7 @@ export default function ClassesPage() {
                     className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A'
                 }
             })
-    }, [selectedTerm]);
+    }, [selectedTerm, selectedYear]);
 
     const selectedOffering = useMemo(() => {
         return offeringsForTerm.find(o => o.offeringId === selectedOfferingId);

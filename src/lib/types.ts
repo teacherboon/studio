@@ -33,9 +33,9 @@ export interface Class {
   classId: string;
   level: string;
   room: string;
-  yearMode: 'PRIMARY' | 'SECONDARY';
-  termLabel: string; // e.g., '2568' or '1/2568'
-  yearBe: number;
+  yearMode: 'PRIMARY' | 'SECONDARY'; // This might become less relevant
+  termLabel: string; // This might become less relevant
+  yearBe: number; // This might become less relevant
   isActive: boolean;
   homeroomTeacherEmail?: string;
 }
@@ -67,6 +67,7 @@ export interface Offering {
   termLabel: string;
   isConduct: boolean;
   periodsPerWeek?: number;
+  yearBe: number; // Added year to offering
 }
 
 export type ScoreStatusFlag = 'NORMAL' | 'ร' | '0' | 'มผ';

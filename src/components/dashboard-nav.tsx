@@ -247,14 +247,6 @@ export function DashboardNav() {
                               <Link href="/dashboard/admin/schedules">จัดตารางสอนครู</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
-                        <SidebarMenuItem>
-                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/end-of-year"} tooltip="End of Year">
-                              <Link href="/dashboard/admin/end-of-year">
-                                <Milestone className="mr-2" />
-                                <span>สิ้นปีการศึกษา</span>
-                              </Link>
-                          </SidebarMenuButton>
-                       </SidebarMenuItem>
                     </SidebarMenu>
                 </CollapsibleContent>
             </Collapsible>
@@ -316,5 +308,3 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
-
-    
