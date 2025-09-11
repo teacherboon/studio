@@ -132,11 +132,12 @@ export default function StudentGradesPage() {
   });
   
   const currentClass = classes.find(c => {
+    if (scoresForTerm.length === 0) return false;
     const offering = offerings.find(o => o.offeringId === scoresForTerm[0]?.offeringId);
     return c.classId === offering?.classId;
   });
 
-  const attributesForYear = studentAttributes.find(attr => attr.studentId === studentData.studentId && String(attr.yearBe) === currentClass?.yearBe.toString());
+  const attributesForYear = studentAttributes.find(attr => attr.studentId === studentData.studentId && currentClass && String(attr.yearBe) === currentClass.yearBe.toString());
 
 
   const gpa = calculateGPA(scoresForTerm as Score[]);
@@ -155,7 +156,7 @@ export default function StudentGradesPage() {
                     <CardDescription>เลือกภาคเรียนเพื่อดูรายละเอียด</CardDescription>
                 </div>
                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                    <Select value={selectedTerm} onValueChange={setSelectedTerm} disabled={availableTerms.length === 0}>
                         <SelectTrigger className="w-full md:w-[180px]">
                             <SelectValue placeholder="เลือกภาคเรียน" />
                         </SelectTrigger>
@@ -174,8 +175,9 @@ export default function StudentGradesPage() {
             <CardContent>
                 {gradeDetails.length > 0 && studentData && currentClass ? (
                     <div className="flex justify-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                        <div ref={reportRef} className="transform scale-[0.8] origin-top">
+                        <div className="transform scale-[0.8] origin-top">
                            <GradeReportSheet 
+                                ref={reportRef}
                                 student={studentData} 
                                 grades={gradeDetails} 
                                 gpa={gpa}
