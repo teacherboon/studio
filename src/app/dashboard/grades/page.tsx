@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
 import {
   Card,
   CardContent,
@@ -27,20 +28,28 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
-import { scores, offerings, subjects } from "@/lib/data";
+import { scores, offerings, subjects, classes, students } from "@/lib/data";
 import { calculateGPA } from "@/lib/utils";
 import type { StudentGradeDetails, Score } from '@/lib/types';
 import { Download, FileWarning, Wand, Loader2, BarChart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from '@/ai/flows/analyze-student-scores';
 import { useToast } from '@/hooks/use-toast';
+import { GradeReportSheet } from '@/components/grade-report-sheet';
 
 export default function StudentGradesPage() {
   const user = useUser();
-  const [selectedTerm, setSelectedTerm] = useState<string>('2568');
+  const [selectedTerm, setSelectedTerm] = useState<string>('1/2568');
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
+
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    content: () => reportRef.current,
+    documentTitle: `grade-report-${user?.studentId}-${selectedTerm}`,
+  });
   
   if (!user || !user.studentId) {
     return (
@@ -55,6 +64,7 @@ export default function StudentGradesPage() {
     )
   }
 
+  const studentData = students.find(s => s.studentId === user.studentId);
   const studentScores = scores.filter(s => s.studentId === user.studentId);
   
   const availableTerms = [...new Set(
@@ -62,6 +72,9 @@ export default function StudentGradesPage() {
       .filter(o => studentScores.some(s => s.offeringId === o.offeringId))
       .map(o => o.termLabel)
   )];
+  if(availableTerms.length > 0 && !selectedTerm) {
+    setSelectedTerm(availableTerms[0]);
+  }
 
   const scoresForTerm = studentScores.filter(score => {
     const offering = offerings.find(o => o.offeringId === score.offeringId);
@@ -78,6 +91,11 @@ export default function StudentGradesPage() {
     };
   });
   
+  const currentClass = classes.find(c => {
+    const offering = offerings.find(o => o.offeringId === scoresForTerm[0]?.offeringId);
+    return c.classId === offering?.classId;
+  });
+
   const gpa = calculateGPA(scoresForTerm as Score[]);
   const totalCredits = scoresForTerm.reduce((acc, score) => acc + (score.statusFlag !== 'ร' && score.statusFlag !== 'มผ' ? score.credits : 0), 0);
 
@@ -137,6 +155,16 @@ export default function StudentGradesPage() {
 
   return (
     <div className="space-y-8">
+        <div style={{ display: 'none' }}>
+            {studentData && currentClass && <GradeReportSheet 
+                ref={reportRef} 
+                student={studentData} 
+                grades={gradeDetails} 
+                gpa={gpa}
+                currentClass={currentClass}
+            />}
+        </div>
+
         <div>
             <h1 className="text-3xl font-bold font-headline">ผลการเรียน</h1>
             <p className="text-muted-foreground">ดูคะแนน, เกรด, และเกรดเฉลี่ยของคุณในแต่ละภาคเรียน</p>
@@ -208,7 +236,7 @@ export default function StudentGradesPage() {
                         <p className="text-2xl font-bold text-primary">{gpa}</p>
                     </div>
                 </div>
-                <Button>
+                <Button onClick={handlePrint} disabled={gradeDetails.length === 0}>
                     <Download className="mr-2 h-4 w-4" />
                     ดาวน์โหลดใบแสดงผลการเรียน (PDF)
                 </Button>
