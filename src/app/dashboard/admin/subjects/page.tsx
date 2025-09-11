@@ -84,7 +84,7 @@ const CreateOfferingDialog = () => {
                 <Button type="submit" className="w-full">บันทึกข้อมูล</Button>
             </DialogContent>
         </Dialog>
-    )
+    );
 }
 
 function ImportOfferingsCardClient() {
