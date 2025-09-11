@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, ChangeEvent } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { classes, subjects, users, offerings as initialOfferings, type Offering, type Subject, type Class as ClassType, type User } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
@@ -89,14 +90,16 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, trigger, open, onOpe
     const [selectedClass, setSelectedClass] = useState(offeringData?.classId || '');
 
     useEffect(() => {
-        if (offeringData) {
-            setSelectedSubject(offeringData.subjectId);
-            setSelectedTeacher(offeringData.teacherEmail);
-            setSelectedClass(offeringData.classId);
-        } else {
-            setSelectedSubject('');
-            setSelectedTeacher('');
-            setSelectedClass('');
+        if (open) { // Reset form when dialog opens
+            if (offeringData) {
+                setSelectedSubject(offeringData.subjectId);
+                setSelectedTeacher(offeringData.teacherEmail);
+                setSelectedClass(offeringData.classId);
+            } else {
+                setSelectedSubject('');
+                setSelectedTeacher('');
+                setSelectedClass('');
+            }
         }
     }, [offeringData, open]);
 
@@ -194,12 +197,13 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, trigger, open, onOpe
     );
 }
 
-function ImportOfferingsCard() {
+function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (newOfferings: Offering[]) => void }) {
     const { toast } = useToast();
+    const fileInputRef = useState<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
-        const header = 'subjectCode,subjectNameTh,credits,periodsPerWeek,class,teacherEmail\n';
-        const sampleData = 'ค16101,คณิตศาสตร์พื้นฐาน,1.0,2,ป.6/1,teacher.a@school.ac.th\n';
+        const header = 'subjectId,classId,teacherEmail\n';
+        const sampleData = 'subj1,c1,teacher.a@school.ac.th\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -213,10 +217,66 @@ function ImportOfferingsCard() {
     };
 
     const handleUploadClick = () => {
-        toast({
-            title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
-            description: 'การอัปโหลดไฟล์ CSV ยังไม่สามารถใช้งานได้ในเวอร์ชันนี้',
-        });
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            try {
+                const lines = text.split('\n').slice(1); // Skip header
+                const newOfferings: Offering[] = [];
+                let importedCount = 0;
+
+                lines.forEach((line, index) => {
+                    if (line.trim() === '') return;
+                    const [subjectId, classId, teacherEmail] = line.split(',').map(item => item.trim());
+                    
+                    const classDetails = classes.find(c => c.classId === classId);
+                    const subjectExists = subjects.some(s => s.subjectId === subjectId);
+                    const teacherExists = users.some(u => u.email === teacherEmail);
+
+                    if (classDetails && subjectExists && teacherExists) {
+                         newOfferings.push({
+                            offeringId: `csv-import-${Date.now()}-${index}`,
+                            subjectId,
+                            classId,
+                            teacherEmail,
+                            yearMode: classDetails.yearMode,
+                            termLabel: classDetails.termLabel,
+                            isConduct: false,
+                        });
+                        importedCount++;
+                    }
+                });
+
+                if (importedCount > 0) {
+                    onOfferingsImported(newOfferings);
+                    toast({
+                        title: 'อัปโหลดสำเร็จ',
+                        description: `นำเข้ารายวิชาที่เปิดสอนใหม่ ${importedCount} รายการ`,
+                    });
+                } else {
+                     toast({
+                        variant: 'destructive',
+                        title: 'ไม่พบข้อมูลที่ถูกต้อง',
+                        description: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์ CSV หรือข้อมูลอ้างอิงไม่ถูกต้อง (subjectId, classId, teacherEmail)',
+                    });
+                }
+            } catch (error) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'ไฟล์ไม่ถูกต้อง',
+                    description: 'ไม่สามารถประมวลผลไฟล์ CSV ได้ โปรดตรวจสอบรูปแบบไฟล์',
+                });
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     }
 
     return (
@@ -231,7 +291,7 @@ function ImportOfferingsCard() {
                 <div>
                     <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
                     <p className="text-sm text-muted-foreground mb-2">
-                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง
+                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectId, classId, teacherEmail)
                     </p>
                     <Button variant="outline" onClick={handleDownloadTemplate}>
                         <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
@@ -245,6 +305,13 @@ function ImportOfferingsCard() {
                     <Button onClick={handleUploadClick}>
                         <Upload className="mr-2"/> เลือกไฟล์เพื่ออัปโหลด
                     </Button>
+                    <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept=".csv"
+                        onChange={handleFileChange}
+                    />
                 </div>
             </CardContent>
         </Card>
@@ -282,6 +349,10 @@ export default function AdminSubjectsPage() {
         setIsDialogOpen(true);
     };
 
+    const handleOfferingsImport = (newOfferings: Offering[]) => {
+        setOfferingsList(prev => [...prev, ...newOfferings]);
+    };
+
     const getOfferingDetails = (offering: Offering) => {
         const subject = subjects.find(s => s.subjectId === offering.subjectId);
         const classInfo = classes.find(c => c.classId === offering.classId);
@@ -302,7 +373,7 @@ export default function AdminSubjectsPage() {
                  </Button>
             </div>
 
-            <ImportOfferingsCard />
+            <ImportOfferingsCard onOfferingsImported={handleOfferingsImport} />
 
             <Card>
                 <CardHeader>
@@ -360,4 +431,3 @@ export default function AdminSubjectsPage() {
         </div>
     );
 }
-

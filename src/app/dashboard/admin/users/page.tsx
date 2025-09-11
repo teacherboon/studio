@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Download, PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -164,16 +164,17 @@ function ActionDropdown({ user, onEdit, onDelete }: { user: User, onEdit: () => 
     );
 }
 
-const UserImportCard = () => {
+const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[]) => void }) => {
     const { toast } = useToast();
+    const fileInputRef = useState<HTMLInputElement>(null);
 
     const handleDownloadTemplate = (type: 'teachers' | 'students') => {
         const header = type === 'teachers' 
-            ? 'email,displayName,thaiName,password,homeroomClass\n'
-            : 'stuCode,classNumber,prefixTh,firstNameTh,lastNameTh,email,password,class\n';
+            ? 'email,displayName,thaiName,password,homeroomClassId\n'
+            : 'studentId,prefixTh,firstNameTh,lastNameTh,email,password\n';
         const sampleData = type === 'teachers'
-            ? 'teacher.c@school.ac.th,Teacher C,ครู ซี,password123,ป.1/1\n'
-            : 'S006,4,ด.ช.,เด็กใหม่,นามสกุลดี,student.new@school.ac.th,password123,ป.6/1\n';
+            ? 'teacher.c@school.ac.th,Teacher C,ครู ซี,password123,c2\n'
+            : 'stu6,ด.ช.,เด็กใหม่,ดีเด่น,student.new@school.ac.th,password123\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -187,11 +188,89 @@ const UserImportCard = () => {
     };
 
     const handleUploadClick = () => {
-        toast({
-            title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
-            description: 'การอัปโหลดไฟล์ CSV ยังไม่สามารถใช้งานได้ในเวอร์ชันนี้',
-        });
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            const lines = text.split('\n');
+            const header = lines[0].trim().split(',');
+
+            // Basic header check to guess file type
+            if (header.includes('studentId')) {
+                // Process student file
+                processStudentCsv(text);
+            } else if (header.includes('homeroomClassId')) {
+                // Process teacher file
+                 toast({
+                    title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
+                    description: 'การอัปโหลดไฟล์ CSV สำหรับครูยังไม่สามารถใช้งานได้',
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'ไฟล์ไม่ถูกต้อง',
+                    description: 'ไม่รู้จักรูปแบบของไฟล์ CSV',
+                });
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     }
+
+    const processStudentCsv = (csvText: string) => {
+        try {
+            const lines = csvText.split('\n').slice(1);
+            const newUsers: User[] = [];
+            let importedCount = 0;
+
+            lines.forEach((line) => {
+                if (line.trim() === '') return;
+                const [studentId, prefixTh, firstNameTh, lastNameTh, email, password] = line.split(',').map(s => s.trim());
+
+                if (studentId && email && password) {
+                    newUsers.push({
+                        userId: `user-csv-${Date.now()}-${importedCount}`,
+                        role: 'STUDENT',
+                        email,
+                        displayName: `${firstNameTh} ${lastNameTh}`,
+                        thaiName: `${prefixTh}${firstNameTh} ${lastNameTh}`,
+                        password,
+                        studentId,
+                        status: 'ACTIVE',
+                        createdAt: new Date().toISOString(),
+                    });
+                    importedCount++;
+                }
+            });
+            
+            if (importedCount > 0) {
+                onUsersImported(newUsers);
+                toast({
+                    title: 'อัปโหลดสำเร็จ',
+                    description: `นำเข้าข้อมูลนักเรียนใหม่ ${importedCount} คน`,
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'ไม่พบข้อมูลที่ถูกต้อง',
+                    description: 'ไม่พบข้อมูลนักเรียนที่ถูกต้องในไฟล์ CSV',
+                });
+            }
+
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'ประมวลผลไฟล์ล้มเหลว',
+                description: 'เกิดข้อผิดพลาดในการอ่านข้อมูลจากไฟล์ CSV',
+            });
+        }
+    };
 
     return (
         <Card>
@@ -219,11 +298,18 @@ const UserImportCard = () => {
                  <div>
                     <h4 className="font-semibold">อัปโหลดไฟล์</h4>
                     <p className="text-sm text-muted-foreground mb-2">
-                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
+                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ (รองรับไฟล์นักเรียน)
                     </p>
                     <Button onClick={handleUploadClick}>
                         <Upload className="mr-2"/> อัปโหลดไฟล์ CSV
                     </Button>
+                     <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept=".csv"
+                        onChange={handleFileChange}
+                    />
                 </div>
             </CardContent>
         </Card>
@@ -262,6 +348,10 @@ export default function AdminUsersPage() {
         setIsDialogOpen(true);
     };
 
+    const handleUsersImport = (newUsers: User[]) => {
+        setUserList(prev => [...prev, ...newUsers]);
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -270,7 +360,7 @@ export default function AdminUsersPage() {
             </div>
             <p className="text-muted-foreground">เพิ่ม, แก้ไข, และดูบัญชีผู้ใช้ทั้งหมดในระบบ</p>
 
-            <UserImportCard />
+            <UserImportCard onUsersImported={handleUsersImport}/>
 
             <Card>
                 <CardHeader>
@@ -330,5 +420,3 @@ export default function AdminUsersPage() {
         </div>
     )
 }
-
-    
