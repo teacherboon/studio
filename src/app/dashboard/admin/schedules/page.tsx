@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, UserSquare, Upload, Download, Trash2 } from "lucide-react";
+import { PlusCircle, UserSquare, Upload, Download, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { schedules as initialSchedules, offerings, subjects, classes, users } from '@/lib/data';
+import { schedules as initialSchedules, offerings as initialOfferings, subjects, classes, users } from '@/lib/data';
 import type { DayOfWeek, Schedule, Offering, Subject, Class as ClassType, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -53,6 +53,73 @@ const periods = [
     { period: 6, time: '14:30-15:30' },
 ];
 
+function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], offerings: Offering[] }) {
+    const summaryData = useMemo(() => {
+        return offerings.map(offering => {
+            const requiredPeriods = offering.periodsPerWeek || 0;
+            const scheduledPeriods = schedules.filter(s => s.offeringId === offering.offeringId).length;
+            const remaining = requiredPeriods - scheduledPeriods;
+            
+            const subject = subjects.find(s => s.subjectId === offering.subjectId);
+            const classInfo = classes.find(c => c.classId === offering.classId);
+            const teacher = users.find(u => u.email === offering.teacherEmail);
+
+            return {
+                offeringId: offering.offeringId,
+                subjectName: subject?.subjectNameTh || 'N/A',
+                className: `${classInfo?.level}/${classInfo?.room}`,
+                teacherName: teacher?.thaiName || 'N/A',
+                requiredPeriods,
+                scheduledPeriods,
+                remaining,
+            }
+        });
+    }, [schedules, offerings]);
+
+     return (
+        <Card>
+            <CardHeader>
+                <CardTitle>สรุปการจัดตารางสอน</CardTitle>
+                <CardDescription>
+                    ตรวจสอบว่ารายวิชาทั้งหมดได้ถูกจัดคาบสอนครบถ้วนตามที่กำหนดหรือไม่
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>รายวิชา</TableHead>
+                            <TableHead>ห้อง</TableHead>
+                            <TableHead>ครูผู้สอน</TableHead>
+                            <TableHead className="text-center">คาบที่ต้องการ</TableHead>
+                            <TableHead className="text-center">คาบที่จัดแล้ว</TableHead>
+                            <TableHead className="text-center">คงเหลือ</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {summaryData.map(item => (
+                            <TableRow key={item.offeringId}>
+                                <TableCell>{item.subjectName}</TableCell>
+                                <TableCell>{item.className}</TableCell>
+                                <TableCell>{item.teacherName}</TableCell>
+                                <TableCell className="text-center">{item.requiredPeriods}</TableCell>
+                                <TableCell className="text-center">{item.scheduledPeriods}</TableCell>
+                                <TableCell className={`text-center font-bold ${item.remaining > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                    <div className="flex items-center justify-center gap-2">
+                                        {item.remaining > 0 ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                                        {item.remaining}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
+
 function TeacherScheduleTable({ 
     teacherEmail, 
     schedules, 
@@ -63,7 +130,7 @@ function TeacherScheduleTable({
     onDelete: (scheduleId: string) => void,
 }) {
     const getScheduleForCell = (day: DayOfWeek, period: number) => {
-        const offeringForTeacher = offerings.filter(o => o.teacherEmail === teacherEmail);
+        const offeringForTeacher = initialOfferings.filter(o => o.teacherEmail === teacherEmail);
         const scheduleEntry = schedules.find(s => 
             s.dayOfWeek === day && 
             s.period === period &&
@@ -72,7 +139,7 @@ function TeacherScheduleTable({
 
         if (!scheduleEntry) return null;
 
-        const offering = offerings.find(o => o.offeringId === scheduleEntry.offeringId);
+        const offering = initialOfferings.find(o => o.offeringId === scheduleEntry.offeringId);
         if (!offering) return null;
 
         const subject = subjects.find(s => s.subjectId === offering.subjectId);
@@ -150,7 +217,7 @@ function TeacherScheduleTable({
 
 function AddScheduleDialog({ onAddSchedule }: { onAddSchedule: (schedule: Schedule) => void }) {
     const [open, setOpen] = useState(false);
-    const classOfferings = offerings;
+    const classOfferings = initialOfferings;
     const { toast } = useToast();
     const [selectedOfferingId, setSelectedOfferingId] = useState('');
     const [selectedDay, setSelectedDay] = useState('');
@@ -302,7 +369,7 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
                     const [offeringId, dayOfWeek, periodStr] = line.split(',');
                     
                     const period = Number(periodStr.trim());
-                    const validOffering = offerings.some(o => o.offeringId === offeringId.trim());
+                    const validOffering = initialOfferings.some(o => o.offeringId === offeringId.trim());
                     const validDay = daysOfWeek.some(d => d.value === dayOfWeek.trim());
                     const validPeriod = periods.some(p => p.period === period);
 
@@ -387,26 +454,46 @@ export default function AdminSchedulesPage() {
     const { toast } = useToast();
 
     const handleAddSchedule = (schedule: Schedule) => {
-        const offering = offerings.find(o => o.offeringId === schedule.offeringId);
+        const offering = initialOfferings.find(o => o.offeringId === schedule.offeringId);
         if (!offering) return;
 
         const teacherForOffering = offering.teacherEmail;
 
+        // Check for teacher conflict
         const teacherSchedules = allSchedules.filter(s => {
-            const schOffering = offerings.find(o => o.offeringId === s.offeringId);
+            const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
             return schOffering?.teacherEmail === teacherForOffering;
         });
 
-        const conflict = teacherSchedules.some(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period);
+        const teacherConflict = teacherSchedules.some(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period);
 
-        if (conflict) {
+        if (teacherConflict) {
             toast({
                 variant: 'destructive',
-                title: 'ตารางสอนซ้ำซ้อน',
+                title: 'ตารางสอนซ้ำซ้อน (ครู)',
                 description: `ครู ${users.find(u => u.email === teacherForOffering)?.thaiName} มีคาบสอนแล้วในวันและเวลาดังกล่าว`,
             });
             return;
         }
+
+        // Check for class conflict
+         const classSchedules = allSchedules.filter(s => {
+            const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
+            return schOffering?.classId === offering.classId;
+        });
+
+         const classConflict = classSchedules.some(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period);
+
+         if (classConflict) {
+             const conflictingOffering = initialOfferings.find(o => o.offeringId === classSchedules.find(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period)!.offeringId);
+             const conflictingSubject = subjects.find(s => s.subjectId === conflictingOffering?.subjectId);
+              toast({
+                variant: 'destructive',
+                title: 'ตารางสอนซ้ำซ้อน (ห้องเรียน)',
+                description: `ห้องเรียนนี้มีคาบสอนวิชา "${conflictingSubject?.subjectNameTh}" ในวันและเวลาดังกล่าวแล้ว`,
+            });
+            return;
+         }
 
         setAllSchedules(prev => [...prev, schedule]);
         toast({
@@ -424,23 +511,34 @@ export default function AdminSchedulesPage() {
     }
 
     const handleSchedulesImport = (newSchedules: Schedule[]) => {
-        const schedulesWithConflicts: Schedule[] = [];
-        const uniqueNewSchedules: Schedule[] = [];
+        let schedulesWithConflicts: Schedule[] = [];
+        let uniqueNewSchedules: Schedule[] = [];
+        let currentSchedules = [...allSchedules];
 
         newSchedules.forEach(ns => {
-            const offering = offerings.find(o => o.offeringId === ns.offeringId);
+            const offering = initialOfferings.find(o => o.offeringId === ns.offeringId);
             if (!offering) return;
-            const teacherEmail = offering.teacherEmail;
 
-            const hasConflict = allSchedules.some(s => {
-                 const existingOffering = offerings.find(o => o.offeringId === s.offeringId);
-                 return existingOffering?.teacherEmail === teacherEmail && s.dayOfWeek === ns.dayOfWeek && s.period === ns.period;
+            // Check teacher conflict
+            const teacherForOffering = offering.teacherEmail;
+            const teacherSchedules = currentSchedules.filter(s => {
+                const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
+                return schOffering?.teacherEmail === teacherForOffering;
             });
+            const teacherConflict = teacherSchedules.some(s => s.dayOfWeek === ns.dayOfWeek && s.period === ns.period);
+
+            // Check class conflict
+            const classSchedules = currentSchedules.filter(s => {
+                const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
+                return schOffering?.classId === offering.classId;
+            });
+            const classConflict = classSchedules.some(s => s.dayOfWeek === ns.dayOfWeek && s.period === ns.period);
             
-            if (hasConflict) {
+            if (teacherConflict || classConflict) {
                 schedulesWithConflicts.push(ns);
             } else {
                 uniqueNewSchedules.push(ns);
+                currentSchedules.push(ns); // Add to current check list to prevent duplicates within the same file
             }
         });
 
@@ -448,7 +546,7 @@ export default function AdminSchedulesPage() {
             toast({
                 variant: "destructive",
                 title: "ตรวจพบข้อมูลซ้ำซ้อน",
-                description: `ไม่สามารถนำเข้า ${schedulesWithConflicts.length} รายการ เนื่องจากครูมีคาบสอนในเวลาดังกล่าวแล้ว`
+                description: `ไม่สามารถนำเข้า ${schedulesWithConflicts.length} รายการ เนื่องจากมีคาบสอนในเวลาดังกล่าวแล้ว (ครูหรือห้องเรียนไม่ว่าง)`
             });
         }
         
@@ -471,7 +569,9 @@ export default function AdminSchedulesPage() {
                 <AddScheduleDialog onAddSchedule={handleAddSchedule} />
             </div>
 
+            <ScheduleSummaryCard schedules={allSchedules} offerings={initialOfferings} />
             <ImportSchedulesCard onSchedulesImported={handleSchedulesImport} />
+
 
              <Card>
                 <CardHeader>

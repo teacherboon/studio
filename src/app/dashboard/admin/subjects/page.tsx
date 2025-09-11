@@ -335,19 +335,27 @@ export default function AdminOfferingsPage() {
     const handleSaveOffering = (data: Offering) => {
         const isEditing = offeringsList.some(o => o.offeringId === data.offeringId);
         
+        // Check for duplicate offering before adding/editing
+        const isDuplicate = offeringsList.some(o => 
+            o.offeringId !== data.offeringId &&
+            o.subjectId === data.subjectId && 
+            o.classId === data.classId && 
+            o.teacherEmail === data.teacherEmail
+        );
+
+        if (isDuplicate) {
+            toast({
+                variant: "destructive",
+                title: "สร้างไม่สำเร็จ",
+                description: `รายวิชานี้ถูกเปิดสอนให้ห้องนี้และครูท่านนี้แล้ว`,
+            });
+            return;
+        }
+
         if(isEditing) {
             setOfferingsList(prev => prev.map(o => o.offeringId === data.offeringId ? data : o));
              toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาที่เปิดสอนได้รับการอัปเดตแล้ว" });
         } else {
-             // Check for duplicate offering
-            if (offeringsList.some(o => o.subjectId === data.subjectId && o.classId === data.classId && o.teacherEmail === data.teacherEmail)) {
-                toast({
-                    variant: "destructive",
-                    title: "สร้างไม่สำเร็จ",
-                    description: `รายวิชานี้ถูกเปิดสอนให้ห้องนี้และครูท่านนี้แล้ว`,
-                });
-                return;
-            }
             setOfferingsList(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย" });
         }
