@@ -56,6 +56,8 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
             room,
             yearBe: classData?.yearBe || new Date().getFullYear() + 543,
             isActive: classData?.isActive ?? true,
+            yearMode: 'PRIMARY', // Simplified
+            termLabel: String(new Date().getFullYear() + 543), // Simplified
         };
         
         onSave(finalClassData);
@@ -102,6 +104,97 @@ function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { cl
             </DialogContent>
         </Dialog>
     )
+}
+
+function EditStudentDialog({ 
+    student, 
+    user, 
+    onSave, 
+    open, 
+    onOpenChange 
+}: { 
+    student: Student | null, 
+    user: User | null,
+    onSave: (studentData: Student, userData: User) => void,
+    open: boolean, 
+    onOpenChange: (open: boolean) => void 
+}) {
+    const [prefixTh, setPrefixTh] = useState(student?.prefixTh || '');
+    const [firstNameTh, setFirstNameTh] = useState(student?.firstNameTh || '');
+    const [lastNameTh, setLastNameTh] = useState(student?.lastNameTh || '');
+    const [classNumber, setClassNumber] = useState(student?.classNumber || '');
+    const [email, setEmail] = useState(user?.email || '');
+    const [password, setPassword] = useState('');
+    
+    if (!open) return null;
+
+    const handleSave = () => {
+        if (!prefixTh || !firstNameTh || !lastNameTh || !email || !student || !user) {
+            alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
+        }
+        
+        const updatedStudent: Student = {
+            ...student,
+            prefixTh,
+            firstNameTh,
+            lastNameTh,
+            classNumber: Number(classNumber) || undefined,
+        };
+
+        const updatedUser: User = {
+            ...user,
+            email,
+            password: password || user.password,
+            displayName: `${firstNameTh} ${lastNameTh}`,
+            thaiName: `${prefixTh}${firstNameTh} ${lastNameTh}`,
+        };
+
+        onSave(updatedStudent, updatedUser);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>แก้ไขข้อมูลนักเรียน</DialogTitle>
+                    <DialogDescription>แก้ไขข้อมูลสำหรับ {student?.firstNameTh} {student?.lastNameTh}</DialogDescription>
+                </DialogHeader>
+                 <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="prefix" className="text-right">คำนำหน้า</Label>
+                        <Input id="prefix" value={prefixTh} onChange={e => setPrefixTh(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="firstName" className="text-right">ชื่อจริง</Label>
+                        <Input id="firstName" value={firstNameTh} onChange={e => setFirstNameTh(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="lastName" className="text-right">นามสกุล</Label>
+                        <Input id="lastName" value={lastNameTh} onChange={e => setLastNameTh(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="classNumber" className="text-right">เลขที่</Label>
+                        <Input id="classNumber" type="number" value={classNumber} onChange={e => setClassNumber(e.target.value)} className="col-span-3" />
+                    </div>
+                    <hr className="col-span-4 my-2" />
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">อีเมล</Label>
+                        <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="password" className="text-right">รหัสผ่านใหม่</Label>
+                        <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="col-span-3" placeholder="(ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน)" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="secondary">ยกเลิก</Button></DialogClose>
+                    <Button onClick={handleSave}>บันทึกการเปลี่ยนแปลง</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function StudentImportCard({ 
@@ -297,6 +390,26 @@ function ActionDropdown({ classItem, onEdit, onDelete, onViewStudents }: { class
     );
 }
 
+function StudentActionDropdown({ student, user, onEdit }: { student: Student, user: User | null, onEdit: () => void }) {
+     return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">เปิดเมนู</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEdit}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    <span>แก้ไข</span>
+                </DropdownMenuItem>
+                {/* Delete student functionality could be added here */}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
 export default function AdminClassesPage() {
     const [allClasses, setAllClasses] = useState<Class[]>(initialClasses.sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
     const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
@@ -305,7 +418,11 @@ export default function AdminClassesPage() {
     
     const [editingClass, setEditingClass] = useState<Class | null>(null);
     const [viewingClass, setViewingClass] = useState<Class | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
+    
+    const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+    const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
+
     const { toast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
@@ -323,9 +440,20 @@ export default function AdminClassesPage() {
         const studentIds = allEnrollments
             .filter(e => e.classId === viewingClass.classId)
             .map(e => e.studentId);
-        return allStudents.filter(s => studentIds.includes(s.studentId));
+        return allStudents
+            .filter(s => studentIds.includes(s.studentId))
+            .sort((a,b) => (a.classNumber || 999) - (b.classNumber || 999));
     }, [viewingClass, allEnrollments, allStudents]);
 
+    const usersByStudentId = useMemo(() => {
+        const map = new Map<string, User>();
+        allUsers.forEach(u => {
+            if (u.studentId) {
+                map.set(u.studentId, u);
+            }
+        });
+        return map;
+    }, [allUsers]);
 
     const handleSaveClass = (data: Class) => {
         const isEditing = allClasses.some(c => c.classId === data.classId);
@@ -349,7 +477,7 @@ export default function AdminClassesPage() {
             setAllClasses(prev => [data, ...prev].sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
-        setIsDialogOpen(false);
+        setIsClassDialogOpen(false);
     }
     
     const handleDeleteClass = (classId: string) => {
@@ -358,9 +486,9 @@ export default function AdminClassesPage() {
         toast({ title: "ลบสำเร็จ", description: "ห้องเรียนและข้อมูลการลงทะเบียนได้ถูกลบแล้ว" });
     }
 
-    const handleOpenDialog = (classItem: Class | null = null) => {
+    const handleOpenClassDialog = (classItem: Class | null = null) => {
         setEditingClass(classItem);
-        setIsDialogOpen(true);
+        setIsClassDialogOpen(true);
     };
 
     const handleStudentImport = ({ newUsers, newStudents, newEnrollments }: { newUsers: User[], newStudents: Student[], newEnrollments: Enrollment[] }) => {
@@ -409,6 +537,33 @@ export default function AdminClassesPage() {
     );
     const totalPages = Math.ceil(allClasses.length / itemsPerPage);
 
+    const handleOpenStudentDialog = (student: Student) => {
+        setEditingStudent(student);
+        setIsStudentDialogOpen(true);
+    };
+
+    const handleSaveStudent = (studentData: Student, userData: User) => {
+        // Check for email conflicts
+        const isEmailDuplicate = allUsers.some(u => u.email.toLowerCase() === userData.email.toLowerCase() && u.userId !== userData.userId);
+        if (isEmailDuplicate) {
+            toast({
+                variant: 'destructive',
+                title: 'แก้ไขไม่สำเร็จ',
+                description: 'มีผู้ใช้งานอีเมลนี้ในระบบแล้ว'
+            });
+            return;
+        }
+
+        setAllStudents(prev => prev.map(s => s.studentId === studentData.studentId ? studentData : s));
+        setAllUsers(prev => prev.map(u => u.userId === userData.userId ? userData : u));
+        
+        toast({
+            title: 'แก้ไขสำเร็จ',
+            description: `ข้อมูลของ ${studentData.firstNameTh} ได้รับการอัปเดตแล้ว`
+        });
+        setIsStudentDialogOpen(false);
+    };
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -416,7 +571,7 @@ export default function AdminClassesPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดการห้องเรียนและนักเรียน</h1>
                     <p className="text-muted-foreground">สร้างห้องเรียน และนำข้อมูลนักเรียนเข้าสู่ระบบ</p>
                 </div>
-                <Button onClick={() => handleOpenDialog()}>
+                <Button onClick={() => handleOpenClassDialog()}>
                     <PlusCircle className="mr-2" />
                     สร้างห้องเรียนใหม่
                 </Button>
@@ -453,7 +608,7 @@ export default function AdminClassesPage() {
                                        <ActionDropdown 
                                             classItem={c} 
                                             onViewStudents={() => setViewingClass(c)}
-                                            onEdit={() => handleOpenDialog(c)}
+                                            onEdit={() => handleOpenClassDialog(c)}
                                             onDelete={() => handleDeleteClass(c.classId)}
                                         />
                                     </TableCell>
@@ -497,17 +652,32 @@ export default function AdminClassesPage() {
                          <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead>เลขที่</TableHead>
                                     <TableHead>รหัสนักเรียน</TableHead>
                                     <TableHead>ชื่อ-สกุล</TableHead>
+                                    <TableHead>อีเมล</TableHead>
+                                    <TableHead className="text-right">การดำเนินการ</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {studentsInViewingClass.map((student) => (
-                                    <TableRow key={student.studentId}>
-                                        <TableCell>{student.stuCode}</TableCell>
-                                        <TableCell>{`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}</TableCell>
-                                    </TableRow>
-                                ))}
+                                {studentsInViewingClass.map((student) => {
+                                    const user = usersByStudentId.get(student.studentId) || null;
+                                    return (
+                                        <TableRow key={student.studentId}>
+                                            <TableCell>{student.classNumber || '-'}</TableCell>
+                                            <TableCell>{student.stuCode}</TableCell>
+                                            <TableCell>{`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}</TableCell>
+                                            <TableCell>{user?.email}</TableCell>
+                                            <TableCell className="text-right">
+                                                <StudentActionDropdown 
+                                                    student={student} 
+                                                    user={user}
+                                                    onEdit={() => handleOpenStudentDialog(student)}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -515,13 +685,19 @@ export default function AdminClassesPage() {
             )}
             
             <CreateOrEditClassDialog
-                open={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
+                open={isClassDialogOpen}
+                onOpenChange={setIsClassDialogOpen}
                 classData={editingClass}
                 onSave={handleSaveClass}
+            />
+
+            <EditStudentDialog
+                open={isStudentDialogOpen}
+                onOpenChange={setIsStudentDialogOpen}
+                student={editingStudent}
+                user={editingStudent ? usersByStudentId.get(editingStudent.studentId) || null : null}
+                onSave={handleSaveStudent}
             />
         </div>
     )
 }
-
-    
