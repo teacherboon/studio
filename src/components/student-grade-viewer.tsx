@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { students, scores, offerings, subjects, classes, enrollments } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Wand, BarChart, User, FileText, PieChart, School } from "lucide-react";
+import { Loader2, Wand, BarChart, User, FileText, PieChart, School, Calendar } from "lucide-react";
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from "@/ai/flows/analyze-student-scores";
 import type { StudentGradeDetails } from "@/lib/types";
 import { calculateGPA } from "@/lib/utils";
@@ -67,7 +67,7 @@ function AnalysisResultCard({ result }: { result: AnalyzeStudentScoresOutput }) 
 
 export function StudentGradeViewer() {
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
@@ -77,18 +77,43 @@ export function StudentGradeViewer() {
     return [...new Set(classes.map(c => c.yearBe))].sort((a, b) => b - a);
   }, []);
 
-  const classesInYear = useMemo(() => {
-      if (!selectedYear) return [];
-      return classes.filter(c => c.yearBe === Number(selectedYear));
-  }, [selectedYear]);
+  const termsForYear = useMemo(() => {
+        if (!selectedYear) return [];
+        const terms = new Set<string>();
+        offerings.forEach(o => {
+            const classInfo = classes.find(c => c.classId === o.classId);
+            if (classInfo?.yearBe === Number(selectedYear)) {
+                if (classInfo.yearMode === 'PRIMARY') {
+                    terms.add(classInfo.termLabel);
+                } else { // SECONDARY
+                    classInfo.termLabel.split(',').forEach(term => terms.add(term));
+                }
+            }
+        });
+        return Array.from(terms);
+    }, [selectedYear]);
 
-  const studentsInClass = useMemo(() => {
-    if (!selectedClassId) return [];
-    const studentIds = enrollments
-        .filter(e => e.classId === selectedClassId)
-        .map(e => e.studentId);
-    return students.filter(s => studentIds.includes(s.studentId));
-  }, [selectedClassId]);
+    const studentsForTerm = useMemo(() => {
+        if (!selectedTerm) return [];
+
+        const classIdsInTerm = new Set<string>();
+        offerings.forEach(o => {
+            if (o.termLabel.includes(selectedTerm)) {
+                classIdsInTerm.add(o.classId);
+            }
+        });
+
+        const studentIdsInClass = new Set<string>();
+        enrollments.forEach(e => {
+            if (classIdsInTerm.has(e.classId)) {
+                studentIdsInClass.add(e.studentId);
+            }
+        });
+        
+        return students.filter(s => studentIdsInClass.has(s.studentId));
+
+    }, [selectedTerm]);
+
 
   const selectedStudent = useMemo(() => {
     return students.find(s => s.studentId === selectedStudentId);
@@ -96,14 +121,19 @@ export function StudentGradeViewer() {
 
   const handleYearChange = (year: string) => {
     setSelectedYear(year);
-    setSelectedClassId("");
+    setSelectedTerm("");
     setSelectedStudentId("");
     setAnalysisResult(null);
   }
 
-  const handleClassChange = (classId: string) => {
-    setSelectedClassId(classId);
+  const handleTermChange = (term: string) => {
+    setSelectedTerm(term);
     setSelectedStudentId("");
+    setAnalysisResult(null);
+  }
+
+  const handleStudentChange = (studentId: string) => {
+    setSelectedStudentId(studentId);
     setAnalysisResult(null);
   }
 
@@ -192,48 +222,57 @@ export function StudentGradeViewer() {
             ค้นหานักเรียน
           </CardTitle>
           <CardDescription>
-            เลือกปีการศึกษา, ห้องเรียน, จากนั้นจึงเลือกนักเรียนที่ต้องการดูข้อมูล
+            เลือกปีการศึกษา, ภาคเรียน, จากนั้นจึงเลือกนักเรียนที่ต้องการดูข้อมูล
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col md:flex-row gap-4">
-            <Select onValueChange={handleYearChange} value={selectedYear}>
-                <SelectTrigger className="w-full md:w-[240px]">
-                <SelectValue placeholder="เลือกปีการศึกษา..." />
-                </SelectTrigger>
-                <SelectContent>
-                {academicYears.map(year => (
-                    <SelectItem key={year} value={String(year)}>
-                        ปีการศึกษา {year}
-                    </SelectItem>
-                ))}
-                </SelectContent>
-            </Select>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <Select onValueChange={handleYearChange} value={selectedYear}>
+                    <SelectTrigger>
+                    <SelectValue placeholder="เลือกปีการศึกษา..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {academicYears.map(year => (
+                        <SelectItem key={year} value={String(year)}>
+                            ปีการศึกษา {year}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <Select onValueChange={handleTermChange} value={selectedTerm} disabled={!selectedYear}>
+                    <SelectTrigger>
+                    <SelectValue placeholder="เลือกภาคเรียน..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {termsForYear.map(term => (
+                        <SelectItem key={term} value={term}>
+                            {term.includes('/') ? `ภาคเรียนที่ ${term}`: `ตลอดปีการศึกษา`}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+            </div>
 
-            <Select onValueChange={handleClassChange} value={selectedClassId} disabled={!selectedYear}>
-                <SelectTrigger className="w-full md:w-[240px]">
-                <SelectValue placeholder="เลือกห้องเรียน..." />
-                </SelectTrigger>
-                <SelectContent>
-                {classesInYear.map(c => (
-                    <SelectItem key={c.classId} value={c.classId}>
-                        ห้อง {c.level}/{c.room}
-                    </SelectItem>
-                ))}
-                </SelectContent>
-            </Select>
-
-            <Select onValueChange={setSelectedStudentId} value={selectedStudentId} disabled={!selectedClassId}>
-                <SelectTrigger className="w-full md:w-[240px]">
-                <SelectValue placeholder="เลือกนักเรียน..." />
-                </SelectTrigger>
-                <SelectContent>
-                {studentsInClass.map(student => (
-                    <SelectItem key={student.studentId} value={student.studentId}>
-                    {`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}
-                    </SelectItem>
-                ))}
-                </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <Select onValueChange={handleStudentChange} value={selectedStudentId} disabled={!selectedTerm}>
+                    <SelectTrigger>
+                    <SelectValue placeholder="เลือกนักเรียน..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {studentsForTerm.map(student => (
+                        <SelectItem key={student.studentId} value={student.studentId}>
+                        {`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+            </div>
         </CardContent>
       </Card>
 
@@ -315,3 +354,5 @@ export function StudentGradeViewer() {
     </div>
   );
 }
+
+    
