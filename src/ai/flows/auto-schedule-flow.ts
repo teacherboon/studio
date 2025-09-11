@@ -57,39 +57,50 @@ const prompt = ai.definePrompt({
     name: 'autoSchedulePrompt',
     input: { schema: AutoScheduleInputSchema },
     output: { schema: AutoScheduleOutputSchema },
-    prompt: `You are an expert AI school scheduler. Your task is to automatically create a weekly class schedule.
+    prompt: `You are an expert AI school scheduler. Your task is to automatically create a weekly class schedule by placing remaining classes into available slots.
 
 **Objective:**
-Assign a day and period for all required course offerings, respecting all constraints.
+Assign a day and period for all required course offerings that have not yet been scheduled, respecting all constraints.
 
-**Constraints:**
-1.  A teacher cannot teach two different classes at the same time.
-2.  A class cannot attend two different subjects at the same time.
-3.  The number of scheduled periods per week for an offering must match its 'periodsPerWeek' property.
-4.  Do not schedule classes during periods that are not in the provided 'periods' list.
-5.  Only use the days provided in the 'days' list.
-6.  Do not alter or remove 'existingSchedules'.
+**Core Constraints (MUST be followed):**
+1.  **Teacher Conflict:** A teacher cannot teach two different classes at the same time.
+2.  **Class Conflict:** A class cannot attend two different subjects at the same time.
+3.  The total number of scheduled periods per week for an offering must match its 'periodsPerWeek' property.
+4.  Only use the days and periods provided in the input lists.
+5.  Do not alter or remove 'existingSchedules'.
 
 **Input Data:**
--   **Offerings to Schedule:** A list of courses, each with a required number of periods per week, a teacher, and a class.
--   **Existing Schedules:** A list of classes that are already on the schedule and cannot be moved.
--   **Teachers:** A list of all teachers.
--   **Classes:** A list of all classes.
--   **Periods:** A list of valid teaching periods in a day (e.g., [1, 2, 3, 4, 5, 6]).
--   **Days:** A list of valid school days (e.g., ['MONDAY', 'TUESDAY', ...]).
+-   **Offerings to Schedule:** A list of courses that need to be placed on the schedule.
+-   **Existing Schedules:** A list of classes that are already fixed and cannot be moved. This represents the current state of the schedule.
+-   **Teachers & Classes:** Lists of all available teachers and classes.
+-   **Periods & Days:** Lists of valid teaching periods and days.
 
-**Process:**
-1.  Determine how many periods need to be scheduled for each offering by comparing 'periodsPerWeek' with the 'existingSchedules'.
-2.  For each period that needs scheduling, find an available time slot (a day and period combination).
-3.  A time slot is available for an offering if BOTH the assigned teacher AND the assigned class are free at that time.
-4.  Iterate through all available days and periods to find a suitable slot. You can place the class in any valid, available slot. There is no need for complex optimization; any valid placement is acceptable.
-5.  Create a new schedule entry for each successfully placed period. The 'scheduleId' for new entries should be a unique string, like 'auto-sch-1', 'auto-sch-2', etc.
-6.  If an offering cannot be fully scheduled (i.e., you cannot find enough available slots), add it to the 'failedSchedules' list with a clear reason (e.g., "Teacher 'Teacher Name' has no available slots" or "Class 'Class Name' has no available slots").
+**Execution Algorithm:**
+1.  **Build Availability Maps:**
+    *   First, create two availability maps in your memory: one for teachers ('teacherAvailability') and one for classes ('classAvailability').
+    *   Iterate through all 'existingSchedules'. For each schedule entry, mark the corresponding time slot (e.g., "MONDAY-1") as "busy" for both the teacher of that offering and the class of that offering in your maps.
+
+2.  **Iterative Placement:**
+    *   Iterate through each 'offering' in the 'offerings' input list.
+    *   For each offering, determine the number of periods that still need to be scheduled by subtracting the count in 'existingSchedules' from 'periodsPerWeek'.
+    *   For each period that needs a slot, iterate through all possible time slots (all 'days' and all 'periods').
+    *   For each potential time slot (e.g., TUESDAY-3), check **BOTH** availability maps:
+        *   Is the teacher for this offering available at this time?
+        *   Is the class for this offering available at this time?
+    *   **If BOTH are available:**
+        *   Place the class. Create a new schedule entry. The 'scheduleId' should be a unique string (e.g., 'auto-sch-1', 'auto-sch-2').
+        *   **Crucially, update your availability maps immediately.** Mark this time slot as "busy" for both the teacher and the class to prevent conflicts in subsequent placements.
+        *   Move on to the next required period for this offering.
+    *   **If either is unavailable:** Continue to the next time slot.
+
+3.  **Handle Failures:**
+    *   After trying to place all required periods for an offering, if you could not find enough valid slots, add it to the 'failedSchedules' list.
+    *   Provide a clear reason for the failure. The reason should specify whether the constraint was the teacher or the class (e.g., "Teacher 'Teacher Name' has no available slots" or "Class 'Class Name' has no available slots").
 
 **Output:**
 Return a JSON object containing two lists:
 -   'newSchedules': All the schedule entries you successfully created.
--   'failedSchedules': All the offerings you could not fully schedule, with the reason for failure.
+-   'failedSchedules': All the offerings you could not fully schedule, with the specific reason for failure.
 `,
 });
 
