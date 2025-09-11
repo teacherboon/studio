@@ -46,6 +46,8 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
     const [email, setEmail] = useState(userData?.email || '');
     const [role, setRole] = useState<UserRole>(userData?.role || 'STUDENT');
     const [password, setPassword] = useState('');
+    const [studentId, setStudentId] = useState(userData?.studentId || '');
+    const [homeroomClassId, setHomeroomClassId] = useState(userData?.homeroomClassId || '');
 
     const handleSave = () => {
         if (!displayName || !thaiName || !email || !role) {
@@ -63,6 +65,8 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
             thaiName,
             email,
             role,
+            studentId: role === 'STUDENT' ? studentId : undefined,
+            homeroomClassId: role === 'TEACHER' ? homeroomClassId : undefined,
             status: userData?.status || 'ACTIVE',
             createdAt: userData?.createdAt || new Date().toISOString(),
             // Only update password if it's a new user or if a new password is provided
@@ -112,6 +116,18 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                         </SelectContent>
                     </Select>
                 </div>
+                 {role === 'STUDENT' && (
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="studentId" className="text-right">รหัสนักเรียน (Student ID)</Label>
+                        <Input id="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} className="col-span-3" placeholder="เช่น stu1, stu2" />
+                    </div>
+                )}
+                 {role === 'TEACHER' && (
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="homeroomClassId" className="text-right">ID ห้องประจำชั้น</Label>
+                        <Input id="homeroomClassId" value={homeroomClassId} onChange={(e) => setHomeroomClassId(e.target.value)} className="col-span-3" placeholder="เช่น c1, c2 (ถ้ามี)" />
+                    </div>
+                )}
             </div>
             <DialogFooter>
                 <DialogClose asChild>
@@ -184,20 +200,17 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleDownloadTemplate = (type: 'teachers' | 'students') => {
-        const header = type === 'teachers' 
-            ? 'email,displayName,thaiName,password,homeroomClassId\n'
-            : 'studentId,prefixTh,firstNameTh,lastNameTh,email,password\n';
-        const sampleData = type === 'teachers'
-            ? 'teacher.c@school.ac.th,Teacher C,ครู ซี,password123,c2\n'
-            : 'stu6,ด.ช.,เด็กใหม่,ดีเด่น,student.new@school.ac.th,password123\n';
+    const handleDownloadTemplate = () => {
+        const header = 'email,displayName,thaiName,password,role,studentId,homeroomClassId\n';
+        const sampleData1 = 'teacher.c@school.ac.th,Teacher C,ครูซี,password123,TEACHER,,c3\n';
+        const sampleData2 = 'student.new@school.ac.th,New Kid,เด็กใหม่,password123,STUDENT,stu-new,\n';
         
-        const csvContent = "﻿" + header + sampleData;
+        const csvContent = "﻿" + header + sampleData1 + sampleData2;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `${type}_import_template.csv`);
+        link.setAttribute('download', `users_import_template.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -214,21 +227,41 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target?.result as string;
-            const lines = text.split('\n');
-            const header = lines[0].trim().split(',');
-
             try {
-                if (header.includes('studentId')) {
-                    processStudentCsv(lines.slice(1));
-                } else if (header.includes('displayName')) {
-                    processTeacherCsv(lines.slice(1));
+                const lines = text.split('\n').slice(1);
+                const newUsers: User[] = [];
+                
+                lines.forEach((line, index) => {
+                     if (line.trim() === '') return;
+                     const parts = line.split(',').map(s => s.trim());
+                     const [email, displayName, thaiName, password, role, studentId, homeroomClassId] = parts;
+
+                     if (email && displayName && thaiName && password && role && (role === 'ADMIN' || role === 'TEACHER' || role === 'STUDENT')) {
+                         newUsers.push({
+                            userId: `user-csv-${Date.now()}-${index}`,
+                            email,
+                            displayName,
+                            thaiName,
+                            password,
+                            role: role as UserRole,
+                            studentId: role === 'STUDENT' ? studentId : undefined,
+                            homeroomClassId: role === 'TEACHER' ? homeroomClassId : undefined,
+                            status: 'ACTIVE',
+                            createdAt: new Date().toISOString(),
+                         });
+                     }
+                });
+
+                 if (newUsers.length > 0) {
+                    onUsersImported(newUsers);
                 } else {
                     toast({
                         variant: 'destructive',
-                        title: 'ไฟล์ไม่ถูกต้อง',
-                        description: 'ไม่รู้จักรูปแบบของไฟล์ CSV',
+                        title: 'ไม่พบข้อมูลที่ถูกต้อง',
+                        description: `ไม่พบข้อมูลผู้ใช้ที่ถูกต้องในไฟล์ CSV`,
                     });
                 }
+
             } catch (error) {
                 toast({
                     variant: 'destructive',
@@ -241,75 +274,12 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
         event.target.value = '';
     }
 
-    const processCsv = (lines: string[], role: UserRole, processor: (parts: string[], index: number) => User | null) => {
-        const newUsers: User[] = [];
-        lines.forEach((line, index) => {
-            if (line.trim() === '') return;
-            const parts = line.split(',').map(s => s.trim());
-            const user = processor(parts, index);
-            if (user) {
-                newUsers.push(user);
-            }
-        });
-
-        if (newUsers.length > 0) {
-            onUsersImported(newUsers);
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                description: `ไม่พบข้อมูล${role === 'STUDENT' ? 'นักเรียน' : 'ครู'}ที่ถูกต้องในไฟล์ CSV`,
-            });
-        }
-    };
-
-    const processStudentCsv = (lines: string[]) => {
-        processCsv(lines, 'STUDENT', (parts, index) => {
-            const [studentId, prefixTh, firstNameTh, lastNameTh, email, password] = parts;
-            if (studentId && email && password) {
-                return {
-                    userId: `user-csv-s-${Date.now()}-${index}`,
-                    role: 'STUDENT',
-                    email,
-                    displayName: `${firstNameTh} ${lastNameTh}`,
-                    thaiName: `${prefixTh}${firstNameTh} ${lastNameTh}`,
-                    password,
-                    studentId,
-                    status: 'ACTIVE',
-                    createdAt: new Date().toISOString(),
-                };
-            }
-            return null;
-        });
-    };
-    
-    const processTeacherCsv = (lines: string[]) => {
-        processCsv(lines, 'TEACHER', (parts, index) => {
-             const [email, displayName, thaiName, password, homeroomClassId] = parts;
-             if (email && displayName && thaiName && password) {
-                return {
-                    userId: `user-csv-t-${Date.now()}-${index}`,
-                    role: 'TEACHER',
-                    email,
-                    displayName,
-                    thaiName,
-                    password,
-                    homeroomClassId: homeroomClassId || undefined,
-                    status: 'ACTIVE',
-                    createdAt: new Date().toISOString(),
-                };
-            }
-            return null;
-        });
-    };
-
-
     return (
         <Card>
             <CardHeader>
                 <CardTitle>นำเข้าข้อมูลผู้ใช้ (CSV)</CardTitle>
                 <CardDescription>
-                    เพิ่มข้อมูลครูและนักเรียนจำนวนมากผ่านไฟล์ CSV
+                    เพิ่มข้อมูลผู้ใช้จำนวนมาก (ครู, นักเรียน, ผู้ดูแลระบบ) ผ่านไฟล์ CSV
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -318,14 +288,9 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                     <p className="text-sm text-muted-foreground mb-2">
                         ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <Button variant="outline" onClick={() => handleDownloadTemplate('teachers')}>
-                            <Download className="mr-2"/> เทมเพลตสำหรับครู
-                        </Button>
-                        <Button variant="outline" onClick={() => handleDownloadTemplate('students')}>
-                            <Download className="mr-2"/> เทมเพลตสำหรับนักเรียน
-                        </Button>
-                    </div>
+                    <Button variant="outline" onClick={handleDownloadTemplate}>
+                        <Download className="mr-2"/> เทมเพลตสำหรับผู้ใช้ทั้งหมด
+                    </Button>
                 </div>
                  <div>
                     <h4 className="font-semibold">อัปโหลดไฟล์</h4>
@@ -364,8 +329,7 @@ export default function AdminUsersPage() {
             setUserList(prev => prev.map(u => u.userId === data.userId ? data : u));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลผู้ใช้ได้รับการอัปเดตแล้ว" });
         } else {
-            // Check for duplicate email before adding
-            if (userList.some(u => u.email.toLowerCase() === data.email.toLowerCase())) {
+             if (userList.some(u => u.email.toLowerCase() === data.email.toLowerCase())) {
                 toast({
                     variant: "destructive",
                     title: "สร้างไม่สำเร็จ",
@@ -508,3 +472,5 @@ export default function AdminUsersPage() {
         </div>
     )
 }
+
+    
