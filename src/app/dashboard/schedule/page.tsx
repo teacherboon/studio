@@ -120,12 +120,12 @@ export default function StudentSchedulePage() {
     return (
         <div className="space-y-8">
              <div>
-                <h1 className="text-3xl font-bold font-headline">ตารางสอน</h1>
-                <p className="text-muted-foreground">ดูตารางสอนประจำสัปดาห์ของคุณ</p>
+                <h1 className="text-3xl font-bold font-headline">ตารางเรียน</h1>
+                <p className="text-muted-foreground">ดูตารางเรียนประจำสัปดาห์ของคุณ</p>
             </div>
              <Card>
                 <CardHeader>
-                    <CardTitle>ตารางสอนห้อง {currentClass.level}/{currentClass.room}</CardTitle>
+                    <CardTitle>ตารางเรียนห้อง {currentClass.level}/{currentClass.room}</CardTitle>
                     <CardDescription>
                        ปีการศึกษา {currentClass.yearBe}
                     </CardDescription>

@@ -122,7 +122,7 @@ export function DashboardNav() {
                     >
                         <Link href="/dashboard/schedule">
                             <CalendarIcon />
-                            <span>ตารางสอน</span>
+                            <span>ตารางเรียน</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -308,5 +308,3 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
-
-    
