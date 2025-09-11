@@ -9,7 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const OfferingSchema = z.object({
     offeringId: z.string(),
@@ -26,7 +26,7 @@ const ScheduleSchema = z.object({
     period: z.number(),
 });
 
-export const AutoScheduleInputSchema = z.object({
+const AutoScheduleInputSchema = z.object({
   offerings: z.array(OfferingSchema).describe('List of all course offerings for the semester.'),
   existingSchedules: z.array(ScheduleSchema).describe('List of schedules that are already fixed.'),
   teachers: z.array(z.object({ email: z.string(), name: z.string() })).describe('List of all teachers.'),
@@ -42,7 +42,7 @@ const FailedScheduleSchema = z.object({
   reason: z.string().describe('The reason why this offering could not be scheduled.'),
 });
 
-export const AutoScheduleOutputSchema = z.object({
+const AutoScheduleOutputSchema = z.object({
   newSchedules: z.array(ScheduleSchema).describe('A list of newly created schedule entries.'),
   failedSchedules: z.array(FailedScheduleSchema).describe('A list of offerings that could not be fully scheduled, along with the reason.'),
 });
