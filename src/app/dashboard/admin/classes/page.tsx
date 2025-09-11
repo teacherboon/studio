@@ -44,7 +44,8 @@ import type { Class, Enrollment, Student, User, UserRole } from '@/lib/types';
 function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Class> | null, onSave: (classData: Class) => void, closeDialog: () => void }) {
     const [level, setLevel] = useState(classData?.level || '');
     const [room, setRoom] = useState(classData?.room || '');
-    const [homeroomTeacherEmail, setHomeroomTeacherEmail] = useState(classData?.homeroomTeacherEmail || '');
+    const [homeroomTeacherEmail1, setHomeroomTeacherEmail1] = useState(classData?.homeroomTeacherEmails?.[0] || 'NONE');
+    const [homeroomTeacherEmail2, setHomeroomTeacherEmail2] = useState(classData?.homeroomTeacherEmails?.[1] || 'NONE');
 
     const teachers = useMemo(() => initialUsers.filter(u => u.role === 'TEACHER'), []);
 
@@ -53,12 +54,16 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
              alert('กรุณากรอกข้อมูลให้ครบถ้วน');
              return;
         }
+        
+        const teacherEmails = [homeroomTeacherEmail1, homeroomTeacherEmail2]
+            .filter(email => email !== 'NONE' && email)
+            .filter((email, index, self) => self.indexOf(email) === index); // Remove duplicates
 
         const finalClassData: Class = {
             classId: classData?.classId || `c${Date.now()}`,
             level,
             room,
-            homeroomTeacherEmail: homeroomTeacherEmail === 'NONE' ? undefined : homeroomTeacherEmail,
+            homeroomTeacherEmails: teacherEmails.length > 0 ? teacherEmails : undefined,
             yearBe: classData?.yearBe || 0, // Simplified
             isActive: classData?.isActive ?? true,
             yearMode: 'PRIMARY', // Simplified
@@ -85,17 +90,33 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                     <Input id="room" value={room} onChange={e => setRoom(e.target.value)} placeholder="เช่น 1 หรือ 2" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="homeroomTeacher" className="text-right">
-                        ครูประจำชั้น
+                    <Label htmlFor="homeroomTeacher1" className="text-right">
+                        ครูประจำชั้น 1
                     </Label>
-                     <Select value={homeroomTeacherEmail} onValueChange={setHomeroomTeacherEmail}>
+                     <Select value={homeroomTeacherEmail1} onValueChange={setHomeroomTeacherEmail1}>
                         <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="เลือกครูประจำชั้น (ถ้ามี)" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="NONE">-- ไม่กำหนด --</SelectItem>
                             {teachers.map(teacher => (
-                                <SelectItem key={teacher.userId} value={teacher.email}>{teacher.thaiName}</SelectItem>
+                                <SelectItem key={teacher.userId} value={teacher.email} disabled={teacher.email === homeroomTeacherEmail2}>{teacher.thaiName}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="homeroomTeacher2" className="text-right">
+                        ครูประจำชั้น 2
+                    </Label>
+                     <Select value={homeroomTeacherEmail2} onValueChange={setHomeroomTeacherEmail2}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="เลือกครูประจำชั้น (ถ้ามี)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="NONE">-- ไม่กำหนด --</SelectItem>
+                            {teachers.map(teacher => (
+                                <SelectItem key={teacher.userId} value={teacher.email} disabled={teacher.email === homeroomTeacherEmail1}>{teacher.thaiName}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -305,7 +326,7 @@ function StudentImportCard({
                             level,
                             room,
                             classNumber: classNumberStr ? parseInt(classNumberStr) : undefined,
-                            homeroomEmail: classTarget.homeroomTeacherEmail || '',
+                            homeroomEmail: classTarget.homeroomTeacherEmails?.join(',') || '',
                             status: 'ACTIVE',
                             admitYearBe: classTarget.yearBe,
                         });
@@ -472,11 +493,12 @@ export default function AdminClassesPage() {
     const homeroomTeacherByClass = useMemo(() => {
         const map = new Map<string, string>();
         allClasses.forEach(c => {
-            if (c.homeroomTeacherEmail) {
-                const teacher = allUsers.find(u => u.email === c.homeroomTeacherEmail);
-                if (teacher) {
-                    map.set(c.classId, teacher.thaiName);
-                }
+            if (c.homeroomTeacherEmails && c.homeroomTeacherEmails.length > 0) {
+                const teacherNames = c.homeroomTeacherEmails
+                    .map(email => allUsers.find(u => u.email === email)?.thaiName)
+                    .filter(Boolean)
+                    .join(', ');
+                map.set(c.classId, teacherNames);
             }
         });
         return map;

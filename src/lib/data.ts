@@ -4,8 +4,8 @@ import type { User, Student, Class, Enrollment, Subject, Offering, Score, GradeS
 
 export const users: User[] = [
   { userId: 'user1', role: 'ADMIN', email: 'admin@school.ac.th', displayName: 'Admin User', thaiName: 'ผู้ดูแลระบบ', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
-  { userId: 'user2', role: 'TEACHER', email: 'teacher.a@school.ac.th', displayName: 'Teacher A', thaiName: 'ครู เอ', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString(), homeroomClassId: 'c1' },
-  { userId: 'user3', role: 'TEACHER', email: 'teacher.b@school.ac.th', displayName: 'Teacher B', thaiName: 'ครู บี', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString(), homeroomClassId: 'c2' },
+  { userId: 'user2', role: 'TEACHER', email: 'teacher.a@school.ac.th', displayName: 'Teacher A', thaiName: 'ครู เอ', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
+  { userId: 'user3', role: 'TEACHER', email: 'teacher.b@school.ac.th', displayName: 'Teacher B', thaiName: 'ครู บี', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
   { userId: 'user4', role: 'STUDENT', email: 'student.1@school.ac.th', studentId: 'stu1', displayName: 'Student 1', thaiName: 'นักเรียน หนึ่ง', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
   { userId: 'user5', role: 'STUDENT', email: 'student.2@school.ac.th', studentId: 'stu2', displayName: 'Student 2', thaiName: 'นักเรียน สอง', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
   { userId: 'user-teacher-c', role: 'TEACHER', email: 'teacher.c@school.ac.th', displayName: 'Teacher C', thaiName: 'ครู ซี', password: 'password123', status: 'ACTIVE', createdAt: new Date().toISOString() },
@@ -21,8 +21,8 @@ export const students: Student[] = [
 ];
 
 export const classes: Class[] = [
-  { classId: 'c1', level: 'ป.6', room: '1', yearMode: 'PRIMARY', termLabel: '2568', yearBe: 2568, isActive: true, homeroomTeacherEmail: 'teacher.a@school.ac.th' },
-  { classId: 'c2', level: 'ม.1', room: '2', yearMode: 'SECONDARY', termLabel: '1/2568,2/2568', yearBe: 2568, isActive: true, homeroomTeacherEmail: 'teacher.b@school.ac.th' },
+  { classId: 'c1', level: 'ป.6', room: '1', yearMode: 'PRIMARY', termLabel: '2568', yearBe: 2568, isActive: true, homeroomTeacherEmails: ['teacher.a@school.ac.th'] },
+  { classId: 'c2', level: 'ม.1', room: '2', yearMode: 'SECONDARY', termLabel: '1/2568,2/2568', yearBe: 2568, isActive: true, homeroomTeacherEmails: ['teacher.b@school.ac.th', 'teacher.c@school.ac.th'] },
 ];
 
 export const enrollments: Enrollment[] = [

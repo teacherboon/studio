@@ -12,7 +12,6 @@ export interface User {
   studentId?: string;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
-  homeroomClassId?: string;
 }
 
 export interface Student {
@@ -37,7 +36,7 @@ export interface Class {
   termLabel: string; // This might become less relevant
   yearBe: number; // This might become less relevant
   isActive: boolean;
-  homeroomTeacherEmail?: string;
+  homeroomTeacherEmails?: string[];
 }
 
 export interface Enrollment {

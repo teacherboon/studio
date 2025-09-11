@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { UserRole } from '@/lib/types';
-import { users } from '@/lib/data';
+import { users, classes } from '@/lib/data';
 
 export interface UserInfo {
   role: UserRole;
@@ -11,7 +11,6 @@ export interface UserInfo {
   displayName: string;
   thaiName: string;
   studentId?: string;
-  homeroomClassId?: string;
 }
 
 export function useUser() {
@@ -22,14 +21,16 @@ export function useUser() {
     if (userEmail) {
       const foundUser = users.find(u => u.email === userEmail);
       if (foundUser) {
-        setUser({
+        
+        const userInfo: UserInfo = {
           role: foundUser.role,
           email: foundUser.email,
           displayName: foundUser.displayName,
           thaiName: foundUser.thaiName,
           studentId: foundUser.studentId,
-          homeroomClassId: foundUser.homeroomClassId
-        });
+        };
+
+        setUser(userInfo);
       }
     }
   }, []);
