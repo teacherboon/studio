@@ -20,7 +20,9 @@ import {
   Sun,
   CalendarDays,
   CalendarPlus,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Wand,
+  UserSquare
 } from "lucide-react";
 import {
   Sidebar,
@@ -170,6 +172,21 @@ export function DashboardNav() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
+
+          {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/dashboard/score-analysis"}
+                tooltip="Score Analysis (AI)"
+              >
+                <Link href="/dashboard/score-analysis">
+                  <Wand />
+                  <span>วิเคราะห์ผลการเรียน (AI)</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           
           {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
             <SidebarMenuItem>
@@ -205,6 +222,11 @@ export function DashboardNav() {
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/users"} tooltip="Users">
                               <Link href="/dashboard/admin/users">ผู้ใช้งาน</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/teachers"} tooltip="Teachers">
+                              <Link href="/dashboard/admin/teachers">คุณครู</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -12,7 +13,8 @@ import {
   Users,
   AlertTriangle,
   FileText,
-  Activity
+  Activity,
+  Wand
 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
@@ -43,7 +45,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold font-headline">แดชบอร์ด, {user.thaiName}</h1>
         <p className="text-muted-foreground">ภาพรวมระบบและการเข้าถึงด่วนสำหรับ {user.role === 'TEACHER' ? 'ครู' : user.role === 'STUDENT' ? 'นักเรียน' : 'ผู้ดูแลระบบ'}</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         
         {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
             <Card className="hover:shadow-lg transition-shadow">
@@ -56,6 +58,23 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold">5 วิชา</div>
                 <p className="text-xs text-muted-foreground">
                     กรอกคะแนนและดูรายชื่อนักเรียน
+                </p>
+                </CardContent>
+            </Link>
+            </Card>
+        )}
+        
+        {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
+            <Card className="hover:shadow-lg transition-shadow">
+            <Link href="/dashboard/score-analysis">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">วิเคราะห์ผลการเรียน (AI)</CardTitle>
+                <Wand className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">ใหม่</div>
+                <p className="text-xs text-muted-foreground">
+                    ใช้ AI เพื่อวิเคราะห์และให้คำแนะนำ
                 </p>
                 </CardContent>
             </Link>
