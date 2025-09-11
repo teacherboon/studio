@@ -74,8 +74,24 @@ const analyzeStudentScoresFlow = ai.defineFlow(
     inputSchema: AnalyzeStudentScoresInputSchema,
     outputSchema: AnalyzeStudentScoresOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        const { output } = await prompt(input);
+        return output!;
+      } catch (error: any) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          console.error("AI model failed after multiple retries:", error);
+          throw new Error(`The AI model is currently overloaded. Please try again later. (Error: ${error.message})`);
+        }
+        console.warn(`AI model temporarily unavailable, retrying... (Attempt ${attempt}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+      }
+    }
+    // This part should be unreachable, but it's here for type safety.
+    throw new Error("Failed to get a response from the AI model after multiple attempts.");
   }
 );
