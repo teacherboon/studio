@@ -1,12 +1,13 @@
 
+"use client";
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const UserImportCard = () => {
-    // This would be a client component in a real scenario to use hooks
-    // const { toast } = useToast();
+    const { toast } = useToast();
 
     const handleDownloadTemplate = (type: 'teachers' | 'students') => {
         const header = type === 'teachers' 
@@ -28,8 +29,10 @@ const UserImportCard = () => {
     };
 
     const handleUploadClick = () => {
-        // This would trigger a file input
-        alert('ฟังก์ชันอัปโหลดยังไม่พร้อมใช้งาน');
+        toast({
+            title: 'ฟังก์ชันยังไม่พร้อมใช้งาน',
+            description: 'การอัปโหลดไฟล์ CSV ยังไม่สามารถใช้งานได้ในเวอร์ชันนี้',
+        });
     }
 
     return (
