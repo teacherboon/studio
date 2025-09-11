@@ -170,7 +170,6 @@ export default function AdminSubjectsPage() {
                                 <TableHead>รหัสวิชา</TableHead>
                                 <TableHead>ชื่อวิชา</TableHead>
                                 <TableHead>ห้องเรียน</TableHead>
-
                                 <TableHead>ครูผู้สอน</TableHead>
                                 <TableHead className="text-center">หน่วยกิต</TableHead>
                                 <TableHead className="text-center">คาบ/สัปดาห์</TableHead>
