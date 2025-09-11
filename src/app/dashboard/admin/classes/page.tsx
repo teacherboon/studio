@@ -49,7 +49,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
     const [yearMode, setYearMode] = useState<'PRIMARY' | 'SECONDARY' | ''>(classData?.yearMode || '');
     const [term1Label, setTerm1Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[0] || '') : '');
     const [term2Label, setTerm2Label] = useState(classData?.yearMode === 'SECONDARY' ? (classData.termLabel?.split(',')[1] || '') : '');
-
+    const isEditing = !!classData;
 
     const handleSave = () => {
         // Basic validation
@@ -97,7 +97,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                     <Label htmlFor="year" className="text-right">
                         ปีการศึกษา
                     </Label>
-                    <Input id="year" type="number" value={year} onChange={e => setYear(Number(e.target.value))} placeholder="เช่น 2568" className="col-span-3" />
+                    <Input id="year" type="number" value={year} onChange={e => setYear(Number(e.target.value))} placeholder="เช่น 2568" className="col-span-3" readOnly={isEditing} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="level" className="text-right">
