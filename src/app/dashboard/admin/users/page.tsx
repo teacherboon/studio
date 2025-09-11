@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, ChangeEvent } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Download, PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -58,7 +58,7 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
         }
 
         const finalUserData: User = {
-            userId: userData?.userId || `user${Date.now()}`,
+            userId: userData?.userId || `user-${Date.now()}`,
             displayName,
             thaiName,
             email,
@@ -134,7 +134,7 @@ function CreateOrEditUserDialog({ user, onSave, open, onOpenChange }: { user?: U
                         {user?.userId ? 'แก้ไขข้อมูลผู้ใช้ในระบบ' : 'กรอกข้อมูลเพื่อสร้างผู้ใช้ใหม่'}
                     </DialogDescription>
                 </DialogHeader>
-                <UserForm userData={user || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />
+                {open && <UserForm userData={user || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
     );
@@ -350,10 +350,12 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
 
 
 export default function AdminUsersPage() {
-    const [userList, setUserList] = useState<User[]>(initialUsers);
+    const [userList, setUserList] = useState<User[]>(initialUsers.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const handleSaveUser = (data: User) => {
         const isEditing = userList.some(u => u.userId === data.userId);
@@ -371,7 +373,7 @@ export default function AdminUsersPage() {
                 });
                 return;
             }
-            setUserList(prev => [data, ...prev]);
+            setUserList(prev => [data, ...prev].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             toast({ title: "สร้างสำเร็จ", description: "ผู้ใช้ใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsDialogOpen(false);
@@ -403,13 +405,20 @@ export default function AdminUsersPage() {
         }
         
         if (uniqueNewUsers.length > 0) {
-            setUserList(prev => [...prev, ...uniqueNewUsers]);
+            setUserList(prev => [...prev, ...uniqueNewUsers].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             toast({
                 title: 'อัปโหลดสำเร็จ',
                 description: `นำเข้าข้อมูลผู้ใช้ใหม่ ${uniqueNewUsers.length} คน`,
             });
         }
     }
+    
+    const paginatedUsers = userList.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const totalPages = Math.ceil(userList.length / itemsPerPage);
 
     return (
         <div className="space-y-8">
@@ -440,7 +449,7 @@ export default function AdminUsersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {userList.map((user) => (
+                            {paginatedUsers.map((user) => (
                                 <TableRow key={user.userId}>
                                     <TableCell className="font-medium">{user.displayName} ({user.thaiName})</TableCell>
                                     <TableCell>{user.email}</TableCell>
@@ -467,6 +476,27 @@ export default function AdminUsersPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                 <CardFooter className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                        หน้า {currentPage} จาก {totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            ก่อนหน้า
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                        >
+                            ถัดไป
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
 
             <CreateOrEditUserDialog

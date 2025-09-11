@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, ChangeEvent, useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, UserSquare, Upload, Download, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -54,6 +54,9 @@ const periods = [
 ];
 
 function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], offerings: Offering[] }) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+    
     const summaryData = useMemo(() => {
         return offerings.map(offering => {
             const requiredPeriods = offering.periodsPerWeek || 0;
@@ -73,15 +76,28 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
                 scheduledPeriods,
                 remaining,
             }
+        }).sort((a, b) => {
+            // Prioritize items with remaining > 0
+            if (a.remaining > 0 && b.remaining <= 0) return -1;
+            if (b.remaining > 0 && a.remaining <= 0) return 1;
+            // Then sort by remaining descending
+            return b.remaining - a.remaining;
         });
     }, [schedules, offerings]);
+
+    const paginatedData = summaryData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalPages = Math.ceil(summaryData.length / itemsPerPage);
+
 
      return (
         <Card>
             <CardHeader>
                 <CardTitle>สรุปการจัดตารางสอน</CardTitle>
                 <CardDescription>
-                    ตรวจสอบว่ารายวิชาทั้งหมดได้ถูกจัดคาบสอนครบถ้วนตามที่กำหนดหรือไม่
+                    ตรวจสอบว่ารายวิชาทั้งหมดได้ถูกจัดคาบสอนครบถ้วนตามที่กำหนดหรือไม่ (รายวิชาที่ยังจัดไม่ครบจะแสดงก่อน)
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -97,7 +113,7 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {summaryData.map(item => (
+                        {paginatedData.map(item => (
                             <TableRow key={item.offeringId}>
                                 <TableCell>{item.subjectName}</TableCell>
                                 <TableCell>{item.className}</TableCell>
@@ -115,6 +131,27 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
                     </TableBody>
                 </Table>
             </CardContent>
+             <CardFooter className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                        หน้า {currentPage} จาก {totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            ก่อนหน้า
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                        >
+                            ถัดไป
+                        </Button>
+                    </div>
+                </CardFooter>
         </Card>
     );
 }
@@ -569,7 +606,7 @@ export default function AdminSchedulesPage() {
                 <AddScheduleDialog onAddSchedule={handleAddSchedule} allSchedules={allSchedules} />
             </div>
 
-            <ScheduleSummaryCard schedules={allSchedules} offerings={initialOfferings} />
+            <ScheduleSummaryCard schedules={allSchedules} offerings={initialOfferings.filter(o => o.isConduct === false)} />
             <ImportSchedulesCard onSchedulesImported={handleSchedulesImport} />
 
 
@@ -621,5 +658,7 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
+
+    
 
     

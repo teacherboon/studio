@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog"
 import {
@@ -164,7 +163,7 @@ function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { cl
                         {classData?.classId ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนสำหรับปีการศึกษาใหม่'}
                     </DialogDescription>
                 </DialogHeader>
-                <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />
+                {open && <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
     )
@@ -210,16 +209,19 @@ function ActionDropdown({ classItem, onEdit, onDelete }: { classItem: Class, onE
 }
 
 export default function AdminClassesPage() {
-    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses);
+    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses.sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level)));
     const [editingClass, setEditingClass] = useState<Class | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const handleSaveClass = (data: Class) => {
         const isEditing = allClasses.some(c => c.classId === data.classId);
 
         if (isEditing) {
-            setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c));
+            setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c)
+                .sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level)));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลห้องเรียนได้รับการอัปเดตแล้ว" });
         } else {
             // Check for duplicates before adding
@@ -234,9 +236,10 @@ export default function AdminClassesPage() {
                 });
                 return;
             }
-            setAllClasses(prev => [data, ...prev].sort((a, b) => b.yearBe - a.yearBe));
+            setAllClasses(prev => [data, ...prev].sort((a, b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level)));
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
+        setIsDialogOpen(false);
     }
     
     const handleDeleteClass = (classId: string) => {
@@ -248,6 +251,12 @@ export default function AdminClassesPage() {
         setEditingClass(classItem);
         setIsDialogOpen(true);
     };
+    
+    const paginatedClasses = allClasses.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalPages = Math.ceil(allClasses.length / itemsPerPage);
 
     return (
         <div className="space-y-8">
@@ -282,7 +291,7 @@ export default function AdminClassesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {allClasses.map((c) => (
+                            {paginatedClasses.map((c) => (
                                 <TableRow key={c.classId}>
                                     <TableCell>{c.yearBe}</TableCell>
                                     <TableCell>{c.level}</TableCell>
@@ -305,6 +314,27 @@ export default function AdminClassesPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                 <CardFooter className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                        หน้า {currentPage} จาก {totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            ก่อนหน้า
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                        >
+                            ถัดไป
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
             
             <CreateOrEditClassDialog
@@ -316,5 +346,7 @@ export default function AdminClassesPage() {
         </div>
     )
 }
+
+    
 
     

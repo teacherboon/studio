@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload, Download, MoreHorizontal, Pencil, Trash2, BookPlus } from "lucide-react";
 import {
@@ -120,7 +120,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
         };
 
         const newOffering: Offering = {
-            offeringId: offeringData?.offeringId || `off${Date.now()}`,
+            offeringId: offeringData?.offeringId || `off-${Date.now()}`,
             subjectId: selectedSubject,
             classId: selectedClass,
             teacherEmail: selectedTeacher,
@@ -143,7 +143,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                          {offeringData ? 'แก้ไขข้อมูลครู, วิชา, และห้องเรียน' : 'กำหนดครู, วิชา, และห้องเรียนสำหรับภาคการศึกษานี้'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                {open && <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="subject" className="text-right">
                             รายวิชา
@@ -195,7 +195,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                         </Label>
                         <Input id="periods" type="number" value={periodsPerWeek} onChange={e => setPeriodsPerWeek(Number(e.target.value))} className="col-span-3" />
                     </div>
-                </div>
+                </div>}
                 <DialogFooter>
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">ยกเลิก</Button>
@@ -327,10 +327,13 @@ function ImportOfferingsCard({ onOfferingsImported }: { onOfferingsImported: (ne
 
 export default function AdminOfferingsPage() {
     const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
-    const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings);
+    const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings.sort((a,b) => b.offeringId.localeCompare(a.offeringId)));
     const [editingOffering, setEditingOffering] = useState<Offering | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
 
     const handleSaveOffering = (data: Offering) => {
         const isEditing = offeringsList.some(o => o.offeringId === data.offeringId);
@@ -355,9 +358,10 @@ export default function AdminOfferingsPage() {
             setOfferingsList(prev => prev.map(o => o.offeringId === data.offeringId ? data : o));
              toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาที่เปิดสอนได้รับการอัปเดตแล้ว" });
         } else {
-            setOfferingsList(prev => [data, ...prev]);
+            setOfferingsList(prev => [data, ...prev].sort((a,b) => b.offeringId.localeCompare(a.offeringId)));
             toast({ title: "สร้างสำเร็จ", description: "เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย" });
         }
+        setIsDialogOpen(false);
     }
 
     const deleteOffering = (offeringId: string) => {
@@ -399,7 +403,7 @@ export default function AdminOfferingsPage() {
         }
 
         if (uniqueNewOfferings.length > 0) {
-            setOfferingsList(prev => [...prev, ...uniqueNewOfferings]);
+            setOfferingsList(prev => [...prev, ...uniqueNewOfferings].sort((a,b) => b.offeringId.localeCompare(a.offeringId)));
             toast({
                 title: 'อัปโหลดสำเร็จ',
                 description: `นำเข้ารายวิชาที่เปิดสอนใหม่ ${uniqueNewOfferings.length} รายการ`,
@@ -413,6 +417,12 @@ export default function AdminOfferingsPage() {
         const teacher = users.find(u => u.email === offering.teacherEmail);
         return { subject, classInfo, teacher };
     }
+    
+    const paginatedOfferings = offeringsList.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalPages = Math.ceil(offeringsList.length / itemsPerPage);
 
     return (
         <div className="space-y-8">
@@ -459,7 +469,7 @@ export default function AdminOfferingsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {offeringsList.map(offering => {
+                            {paginatedOfferings.map(offering => {
                                 const { subject, classInfo, teacher } = getOfferingDetails(offering);
                                 return (
                                     <TableRow key={offering.offeringId}>
@@ -483,6 +493,27 @@ export default function AdminOfferingsPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                <CardFooter className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                        หน้า {currentPage} จาก {totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            ก่อนหน้า
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                        >
+                            ถัดไป
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
 
              <CreateOrEditOfferingDialog
@@ -494,5 +525,7 @@ export default function AdminOfferingsPage() {
         </div>
     );
 }
+
+    
 
     

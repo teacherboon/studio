@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import {
@@ -54,7 +54,7 @@ function SubjectForm({ subjectData, onSave, closeDialog }: { subjectData: Partia
         }
 
         const finalSubjectData: Subject = {
-            subjectId: subjectData?.subjectId || `subj${Date.now()}`,
+            subjectId: subjectData?.subjectId || `subj-${Date.now()}`,
             subjectCode,
             subjectNameTh,
             type,
@@ -99,7 +99,7 @@ function SubjectForm({ subjectData, onSave, closeDialog }: { subjectData: Partia
                  <DialogClose asChild>
                     <Button type="button" variant="secondary">ยกเลิก</Button>
                 </DialogClose>
-                <Button type="button" onClick={handleSave}>{subjectData ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างรายวิชา'}</Button>
+                <Button type="button" onClick={handleSave}>{subjectData?.subjectId ? 'บันทึกการเปลี่ยนแปลง' : 'สร้างรายวิชา'}</Button>
             </DialogFooter>
         </>
     )
@@ -115,7 +115,7 @@ function CreateOrEditSubjectDialog({ subject, onSave, open, onOpenChange }: { su
                         {subject ? `แก้ไขข้อมูลสำหรับวิชา ${subject.subjectCode}` : 'กรอกข้อมูลเพื่อสร้างรายวิชาหลักในระบบ'}
                     </DialogDescription>
                 </DialogHeader>
-                <SubjectForm subjectData={subject || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />
+                {open && <SubjectForm subjectData={subject || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
     )
@@ -161,10 +161,12 @@ function ActionDropdown({ subject, onEdit, onDelete }: { subject: Subject, onEdi
 }
 
 export default function ManageSubjectsPage() {
-    const [allSubjects, setAllSubjects] = useState<Subject[]>(initialSubjects);
+    const [allSubjects, setAllSubjects] = useState<Subject[]>(initialSubjects.sort((a,b) => b.subjectId.localeCompare(a.subjectId)));
     const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const handleSaveSubject = (data: Subject) => {
         const isEditing = allSubjects.some(s => s.subjectId === data.subjectId);
@@ -182,9 +184,10 @@ export default function ManageSubjectsPage() {
                 });
                 return;
             }
-            setAllSubjects(prev => [data, ...prev]);
+            setAllSubjects(prev => [data, ...prev].sort((a,b) => b.subjectId.localeCompare(a.subjectId)));
             toast({ title: "สร้างสำเร็จ", description: "รายวิชาใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
+        setIsDialogOpen(false);
     }
     
     const handleDeleteSubject = (subjectId: string) => {
@@ -197,6 +200,13 @@ export default function ManageSubjectsPage() {
         setEditingSubject(subject);
         setIsDialogOpen(true);
     };
+
+    const paginatedSubjects = allSubjects.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const totalPages = Math.ceil(allSubjects.length / itemsPerPage);
 
     return (
         <div className="space-y-8">
@@ -231,7 +241,7 @@ export default function ManageSubjectsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {allSubjects.map((s) => (
+                            {paginatedSubjects.map((s) => (
                                 <TableRow key={s.subjectId}>
                                     <TableCell className="font-mono">{s.subjectCode}</TableCell>
                                     <TableCell>{s.subjectNameTh}</TableCell>
@@ -254,6 +264,27 @@ export default function ManageSubjectsPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                <CardFooter className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                        หน้า {currentPage} จาก {totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            ก่อนหน้า
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                        >
+                            ถัดไป
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
             
             <CreateOrEditSubjectDialog
@@ -265,3 +296,5 @@ export default function ManageSubjectsPage() {
         </div>
     )
 }
+
+    
