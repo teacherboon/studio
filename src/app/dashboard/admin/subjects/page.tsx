@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { classes, subjects, users, offerings } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 const CreateOfferingDialog = () => {
@@ -58,7 +57,7 @@ const CreateOfferingDialog = () => {
                 <Select>
                     <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="เลือกครูผู้สอน" />
-                    </SelectTrigger>
+                    </Trigger>
                     <SelectContent>
                         {teachers.map(t => (
                             <SelectItem key={t.userId} value={t.email}>{t.thaiName}</SelectItem>
@@ -88,7 +87,7 @@ const CreateOfferingDialog = () => {
     )
 }
 
-const ImportOfferingsCard = () => {
+function ImportOfferingsCardClient() {
     const { toast } = useToast();
 
     const handleDownloadTemplate = () => {
@@ -112,9 +111,8 @@ const ImportOfferingsCard = () => {
             description: 'การอัปโหลดไฟล์ CSV ยังไม่สามารถใช้งานได้ในเวอร์ชันนี้',
         });
     }
-
     return (
-        <Card>
+         <Card>
             <CardHeader>
                 <CardTitle>นำเข้ารายวิชาที่เปิดสอน (CSV)</CardTitle>
                 <CardDescription>
@@ -142,8 +140,9 @@ const ImportOfferingsCard = () => {
                 </div>
             </CardContent>
         </Card>
-    );
+    )
 }
+
 
 export default function AdminSubjectsPage() {
     return (
@@ -156,7 +155,7 @@ export default function AdminSubjectsPage() {
                 <CreateOfferingDialog />
             </div>
 
-            <ImportOfferingsCard />
+            <ImportOfferingsCardClient />
 
             <Card>
                 <CardHeader>
