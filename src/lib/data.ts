@@ -1,4 +1,4 @@
-import type { User, Student, Class, Enrollment, Subject, Offering, Score, GradeScale } from './types';
+import type { User, Student, Class, Enrollment, Subject, Offering, Score, GradeScale, Schedule, LeaveRequest } from './types';
 
 export const users: User[] = [
   { userId: 'user1', role: 'ADMIN', email: 'admin@school.ac.th', displayName: 'Admin User', thaiName: 'ผู้ดูแลระบบ', status: 'ACTIVE', createdAt: new Date().toISOString() },
@@ -6,6 +6,8 @@ export const users: User[] = [
   { userId: 'user3', role: 'TEACHER', email: 'teacher.b@school.ac.th', displayName: 'Teacher B', thaiName: 'ครู บี', status: 'ACTIVE', createdAt: new Date().toISOString() },
   { userId: 'user4', role: 'STUDENT', email: 'student.1@school.ac.th', studentId: 'stu1', displayName: 'Student 1', thaiName: 'นักเรียน หนึ่ง', status: 'ACTIVE', createdAt: new Date().toISOString() },
   { userId: 'user5', role: 'STUDENT', email: 'student.2@school.ac.th', studentId: 'stu2', displayName: 'Student 2', thaiName: 'นักเรียน สอง', status: 'ACTIVE', createdAt: new Date().toISOString() },
+  { userId: 'user-teacher-c', role: 'TEACHER', email: 'teacher.c@school.ac.th', displayName: 'Teacher C', thaiName: 'ครู ซี', status: 'ACTIVE', createdAt: new Date().toISOString() },
+
 ];
 
 export const students: Student[] = [
@@ -61,4 +63,31 @@ export const gradeScale: GradeScale[] = [
   { min_inclusive: 55, max_inclusive: 59, letter: 'D+', grade_point: 1.5, is_pass: true },
   { min_inclusive: 50, max_inclusive: 54, letter: 'D', grade_point: 1.0, is_pass: true },
   { min_inclusive: 0, max_inclusive: 49, letter: 'F', grade_point: 0.0, is_pass: false },
+];
+
+export const schedules: Schedule[] = [
+    // Teacher A (teacher.a@school.ac.th)
+    { scheduleId: 'sch1', offeringId: 'off1', dayOfWeek: 'MONDAY', period: 1 },
+    { scheduleId: 'sch2', offeringId: 'off1', dayOfWeek: 'WEDNESDAY', period: 2 },
+    { scheduleId: 'sch3', offeringId: 'off3', dayOfWeek: 'FRIDAY', period: 3 },
+
+    // Teacher B (teacher.b@school.ac.th)
+    { scheduleId: 'sch4', offeringId: 'off2', dayOfWeek: 'TUESDAY', period: 4 },
+    { scheduleId: 'sch5', offeringId: 'off2', dayOfWeek: 'THURSDAY', period: 1 },
+
+     // Teacher C is free on Monday period 1
+    { scheduleId: 'sch6', offeringId: 'off2', dayOfWeek: 'TUESDAY', period: 2 },
+];
+
+export const leaveRequests: LeaveRequest[] = [
+    {
+        leaveRequestId: 'lr1',
+        teacherEmail: 'teacher.a@school.ac.th',
+        leaveType: 'PERSONAL',
+        leaveDate: '2024-07-29', // A Monday
+        periods: [1],
+        reason: 'ธุระส่วนตัว',
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+    }
 ];

@@ -90,3 +90,27 @@ export interface StudentGradeDetails extends Score {
   subjectName: string;
   subjectCode: string;
 }
+
+export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY';
+
+export interface Schedule {
+    scheduleId: string;
+    offeringId: string; // Links to subject, class, teacher
+    dayOfWeek: DayOfWeek;
+    period: number; // e.g., 1, 2, 3...
+}
+
+export type LeaveType = 'PERSONAL' | 'OFFICIAL_DUTY';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUBSTITUTE_ASSIGNED';
+
+export interface LeaveRequest {
+    leaveRequestId: string;
+    teacherEmail: string;
+    leaveType: LeaveType;
+    leaveDate: string; // YYYY-MM-DD
+    periods: number[]; // Which class periods are affected
+    reason: string;
+    status: LeaveStatus;
+    substituteTeacherEmail?: string;
+    createdAt: string;
+}

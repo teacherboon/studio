@@ -18,7 +18,9 @@ import {
   ChevronDown,
   LayoutDashboard,
   Moon,
-  Sun
+  Sun,
+  CalendarDays,
+  CalendarPlus
 } from "lucide-react";
 import {
   Sidebar,
@@ -111,6 +113,21 @@ export function DashboardNav() {
             </SidebarMenuItem>
           )}
 
+           {(user?.role === 'TEACHER') && (
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/dashboard/teacher/leave"}
+                    tooltip="Leave Request"
+                >
+                    <Link href="/dashboard/teacher/leave">
+                        <CalendarPlus />
+                        <span>แจ้งลา/ราชการ</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+
           {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -187,6 +204,11 @@ export function DashboardNav() {
                               <Link href="/dashboard/admin/subjects">รายวิชา</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
+                       <SidebarMenuItem>
+                          <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/schedules"} tooltip="Schedules">
+                              <Link href="/dashboard/admin/schedules">ตารางสอน</Link>
+                          </SidebarMenuButton>
+                       </SidebarMenuItem>
                     </SidebarMenu>
                 </CollapsibleContent>
             </Collapsible>
@@ -245,5 +267,3 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
-
-    
