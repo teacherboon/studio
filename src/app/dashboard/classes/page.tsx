@@ -83,6 +83,15 @@ export default function ClassesPage() {
         });
         setStudentScores(initialClassScores);
     }, [studentsInClass, selectedOffering]);
+    
+    useEffect(() => {
+        // When the available offerings change (e.g. after changing year),
+        // reset the offering selection if the current one is no longer valid.
+        if (selectedOfferingId && !offeringsForTeacher.some(o => o.offeringId === selectedOfferingId)) {
+            setSelectedOfferingId('');
+        }
+    }, [offeringsForTeacher, selectedOfferingId]);
+
 
     const handleYearChange = (event: ChangeEvent<HTMLInputElement>) => {
         setSelectedYear(event.target.value);
@@ -115,7 +124,7 @@ export default function ClassesPage() {
                     gradePoint: null, // Should be calculated
                     credits: subjects.find(s => s.subjectId === selectedOffering.subjectId)?.defaultCredits || 0,
                     statusFlag: 'NORMAL',
-                    updatedBy: 'teacher.a@school.ac.th', // Should be current user
+                    updatedBy: user?.email || '',
                     updatedAt: new Date().toISOString(),
                 });
             }
@@ -243,7 +252,7 @@ export default function ClassesPage() {
                         </Label>
                          <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedYear || offeringsForTeacher.length === 0}>
                             <SelectTrigger id="offering-select">
-                                <SelectValue placeholder="เลือกรายวิชาที่สอน..." />
+                                <SelectValue placeholder={!selectedYear ? "กรุณากรอกปีการศึกษาก่อน" : "เลือกรายวิชาที่สอน..."} />
                             </SelectTrigger>
                             <SelectContent>
                                 {offeringsForTeacher.map(o => (
@@ -355,3 +364,5 @@ export default function ClassesPage() {
         </div>
     )
 }
+
+    

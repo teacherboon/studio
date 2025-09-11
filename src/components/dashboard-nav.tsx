@@ -224,12 +224,12 @@ export function DashboardNav() {
                     <SidebarMenu className="ml-4 my-1 border-l pl-4">
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/users"} tooltip="Users">
-                              <Link href="/dashboard/admin/users">จัดการผู้ใช้งาน</Link>
+                              <Link href="/dashboard/admin/users">จัดการบุคลากร</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/classes"} tooltip="Classes">
-                              <Link href="/dashboard/admin/classes">จัดการห้องเรียน</Link>
+                              <Link href="/dashboard/admin/classes">จัดการห้องเรียนและนักเรียน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                         <SidebarMenuItem>
@@ -244,7 +244,7 @@ export function DashboardNav() {
                        </SidebarMenuItem>
                        <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin/schedules"} tooltip="Schedules">
-                              <Link href="/dashboard/admin/schedules">จัดตารางสอนครู</Link>
+                              <Link href="/dashboard/admin/schedules">จัดตารางสอน</Link>
                           </SidebarMenuButton>
                        </SidebarMenuItem>
                     </SidebarMenu>
@@ -308,3 +308,5 @@ export function DashboardNav() {
     </Sidebar>
   );
 }
+
+    
