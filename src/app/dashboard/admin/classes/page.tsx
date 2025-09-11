@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, ChangeEvent, useRef } from 'react';
+import { useState, useMemo, ChangeEvent, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2, Download, Upload, Users } from "lucide-react";
@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,9 @@ import type { Class, Enrollment, Student, User, UserRole } from '@/lib/types';
 function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Class> | null, onSave: (classData: Class) => void, closeDialog: () => void }) {
     const [level, setLevel] = useState(classData?.level || '');
     const [room, setRoom] = useState(classData?.room || '');
+    const [homeroomTeacherEmail, setHomeroomTeacherEmail] = useState(classData?.homeroomTeacherEmail || '');
+
+    const teachers = useMemo(() => initialUsers.filter(u => u.role === 'TEACHER'), []);
 
     const handleSave = () => {
         if (!level || !room) {
@@ -54,10 +58,11 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
             classId: classData?.classId || `c${Date.now()}`,
             level,
             room,
-            yearBe: classData?.yearBe || new Date().getFullYear() + 543,
+            homeroomTeacherEmail: homeroomTeacherEmail || undefined,
+            yearBe: classData?.yearBe || 0, // Simplified
             isActive: classData?.isActive ?? true,
             yearMode: 'PRIMARY', // Simplified
-            termLabel: String(new Date().getFullYear() + 543), // Simplified
+            termLabel: String(classData?.yearBe || 0), // Simplified
         };
         
         onSave(finalClassData);
@@ -78,6 +83,22 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                         ห้อง
                     </Label>
                     <Input id="room" value={room} onChange={e => setRoom(e.target.value)} placeholder="เช่น 1 หรือ 2" className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="homeroomTeacher" className="text-right">
+                        ครูประจำชั้น
+                    </Label>
+                     <Select value={homeroomTeacherEmail} onValueChange={setHomeroomTeacherEmail}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="เลือกครูประจำชั้น (ถ้ามี)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">-- ไม่กำหนด --</SelectItem>
+                            {teachers.map(teacher => (
+                                <SelectItem key={teacher.userId} value={teacher.email}>{teacher.thaiName}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
             <DialogFooter>
@@ -119,17 +140,30 @@ function EditStudentDialog({
     open: boolean, 
     onOpenChange: (open: boolean) => void 
 }) {
-    const [prefixTh, setPrefixTh] = useState(student?.prefixTh || '');
-    const [firstNameTh, setFirstNameTh] = useState(student?.firstNameTh || '');
-    const [lastNameTh, setLastNameTh] = useState(student?.lastNameTh || '');
-    const [classNumber, setClassNumber] = useState(student?.classNumber || '');
-    const [email, setEmail] = useState(user?.email || '');
+    const [prefixTh, setPrefixTh] = useState('');
+    const [firstNameTh, setFirstNameTh] = useState('');
+    const [lastNameTh, setLastNameTh] = useState('');
+    const [classNumber, setClassNumber] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    useEffect(() => {
+        if(student) {
+            setPrefixTh(student.prefixTh || '');
+            setFirstNameTh(student.firstNameTh || '');
+            setLastNameTh(student.lastNameTh || '');
+            setClassNumber(String(student.classNumber || ''));
+        }
+        if(user) {
+            setEmail(user.email || '');
+        }
+        setPassword('');
+    }, [student, user, open]);
     
-    if (!open) return null;
+    if (!open || !student || !user) return null;
 
     const handleSave = () => {
-        if (!prefixTh || !firstNameTh || !lastNameTh || !email || !student || !user) {
+        if (!prefixTh || !firstNameTh || !lastNameTh || !email) {
             alert('กรุณากรอกข้อมูลให้ครบถ้วน');
             return;
         }
@@ -434,6 +468,19 @@ export default function AdminClassesPage() {
         });
         return counts;
     }, [allEnrollments]);
+
+    const homeroomTeacherByClass = useMemo(() => {
+        const map = new Map<string, string>();
+        allClasses.forEach(c => {
+            if (c.homeroomTeacherEmail) {
+                const teacher = allUsers.find(u => u.email === c.homeroomTeacherEmail);
+                if (teacher) {
+                    map.set(c.classId, teacher.thaiName);
+                }
+            }
+        });
+        return map;
+    }, [allClasses, allUsers]);
     
     const studentsInViewingClass = useMemo(() => {
         if (!viewingClass) return [];
@@ -592,7 +639,7 @@ export default function AdminClassesPage() {
                             <TableRow>
                                 <TableHead>ระดับชั้น</TableHead>
                                 <TableHead>ห้อง</TableHead>
-                                <TableHead className="text-center">ปีการศึกษา</TableHead>
+                                <TableHead>ครูประจำชั้น</TableHead>
                                 <TableHead className="text-center">จำนวนนักเรียน</TableHead>
                                 <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
@@ -602,7 +649,7 @@ export default function AdminClassesPage() {
                                 <TableRow key={c.classId}>
                                     <TableCell>{c.level}</TableCell>
                                     <TableCell>{c.room}</TableCell>
-                                    <TableCell className="text-center">{c.yearBe}</TableCell>
+                                    <TableCell>{homeroomTeacherByClass.get(c.classId) || '-'}</TableCell>
                                     <TableCell className="text-center">{studentCountByClass[c.classId] || 0}</TableCell>
                                     <TableCell className="text-right">
                                        <ActionDropdown 
@@ -669,11 +716,11 @@ export default function AdminClassesPage() {
                                             <TableCell>{`${student.prefixTh}${student.firstNameTh} ${student.lastNameTh}`}</TableCell>
                                             <TableCell>{user?.email}</TableCell>
                                             <TableCell className="text-right">
-                                                <StudentActionDropdown 
+                                                { user && <StudentActionDropdown 
                                                     student={student} 
                                                     user={user}
                                                     onEdit={() => handleOpenStudentDialog(student)}
-                                                />
+                                                /> }
                                             </TableCell>
                                         </TableRow>
                                     )

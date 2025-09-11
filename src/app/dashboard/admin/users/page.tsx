@@ -46,8 +46,7 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
     const [email, setEmail] = useState(userData?.email || '');
     const [role, setRole] = useState<UserRole>(userData?.role || 'TEACHER');
     const [password, setPassword] = useState('');
-    const [homeroomClassId, setHomeroomClassId] = useState(userData?.homeroomClassId || '');
-
+    
     const handleSave = () => {
         if (!displayName || !thaiName || !email || !role) {
             alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -64,8 +63,6 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
             thaiName,
             email,
             role,
-            studentId: undefined, // No longer managed here
-            homeroomClassId: role === 'TEACHER' ? homeroomClassId : undefined,
             status: userData?.status || 'ACTIVE',
             createdAt: userData?.createdAt || new Date().toISOString(),
             password: password || userData?.password,
@@ -113,12 +110,6 @@ function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> |
                         </SelectContent>
                     </Select>
                 </div>
-                 {role === 'TEACHER' && (
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="homeroomClassId" className="text-right">ID ห้องประจำชั้น</Label>
-                        <Input id="homeroomClassId" value={homeroomClassId} onChange={(e) => setHomeroomClassId(e.target.value)} className="col-span-3" placeholder="เช่น c1, c2 (ถ้ามี)" />
-                    </div>
-                )}
             </div>
             <DialogFooter>
                 <DialogClose asChild>
@@ -192,8 +183,8 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
-        const header = 'email,password,displayName,thaiName,role,homeroomClassId\n';
-        const sampleData = 'teacher.d@school.ac.th,password123,Teacher D,ครูดี,TEACHER,c4\n';
+        const header = 'email,password,displayName,thaiName,role\n';
+        const sampleData = 'teacher.d@school.ac.th,password123,Teacher D,ครูดี,TEACHER\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -224,7 +215,7 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                 lines.forEach((line, index) => {
                      if (line.trim() === '') return;
                      const parts = line.split(',').map(s => s.trim());
-                     const [email, password, displayName, thaiName, role, homeroomClassId] = parts;
+                     const [email, password, displayName, thaiName, role] = parts;
 
                      if (email && password && displayName && thaiName && role && (role === 'ADMIN' || role === 'TEACHER')) {
                          newUsers.push({
@@ -234,7 +225,6 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
                             thaiName,
                             password,
                             role: role as UserRole,
-                            homeroomClassId: role === 'TEACHER' ? homeroomClassId : undefined,
                             status: 'ACTIVE',
                             createdAt: new Date().toISOString(),
                          });
