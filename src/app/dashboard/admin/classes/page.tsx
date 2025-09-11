@@ -58,7 +58,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
             classId: classData?.classId || `c${Date.now()}`,
             level,
             room,
-            homeroomTeacherEmail: homeroomTeacherEmail || undefined,
+            homeroomTeacherEmail: homeroomTeacherEmail === 'NONE' ? undefined : homeroomTeacherEmail,
             yearBe: classData?.yearBe || 0, // Simplified
             isActive: classData?.isActive ?? true,
             yearMode: 'PRIMARY', // Simplified
@@ -93,7 +93,7 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                             <SelectValue placeholder="เลือกครูประจำชั้น (ถ้ามี)" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">-- ไม่กำหนด --</SelectItem>
+                            <SelectItem value="NONE">-- ไม่กำหนด --</SelectItem>
                             {teachers.map(teacher => (
                                 <SelectItem key={teacher.userId} value={teacher.email}>{teacher.thaiName}</SelectItem>
                             ))}
@@ -748,5 +748,3 @@ export default function AdminClassesPage() {
         </div>
     )
 }
-
-    
