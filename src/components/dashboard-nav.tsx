@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
-  GraduationCap,
   Home,
   Users,
   BookUser,
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/hooks/use-user";
+import { Logo } from "@/components/logo";
 
 export function DashboardNav() {
   const pathname = usePathname();
@@ -59,7 +59,7 @@ export function DashboardNav() {
         <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="shrink-0" asChild>
                 <Link href="/dashboard">
-                    <GraduationCap className="h-6 w-6 text-primary" />
+                    <Logo className="h-6 w-6 text-primary" />
                 </Link>
             </Button>
             <h2 className="text-lg font-semibold font-headline">Grade Vision</h2>
