@@ -7,35 +7,101 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { classes, students, enrollments, scores as initialScores, type Score } from "@/lib/data";
-import { Download, Upload, Users, FileText, Save, Edit } from 'lucide-react';
+import { classes, students, enrollments, scores as initialScores, type Score, offerings, subjects } from "@/lib/data";
+import { Download, Upload, Users, FileText, Save, Edit, School, BookOpen, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Offering, Class } from '@/lib/types';
+
+
+interface OfferingWithDetails extends Offering {
+    subjectName: string;
+    subjectCode: string;
+    className: string;
+}
+
 
 export default function ClassesPage() {
-    const [selectedClassId, setSelectedClassId] = useState<string>('');
+    const [selectedYear, setSelectedYear] = useState<string>('');
+    const [selectedTerm, setSelectedTerm] = useState<string>('');
+    const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
+    
     const [studentScores, setStudentScores] = useState<Record<string, number | null>>({});
     const { toast } = useToast();
     const fileInputRef = useState<HTMLInputElement>(null);
 
+    const academicYears = useMemo(() => {
+        return [...new Set(classes.map(c => c.yearBe))].sort((a, b) => b - a);
+    }, []);
+
+    const termsForYear = useMemo(() => {
+        if (!selectedYear) return [];
+        const terms = new Set<string>();
+        offerings.forEach(o => {
+            const classInfo = classes.find(c => c.classId === o.classId);
+            if (classInfo?.yearBe === Number(selectedYear)) {
+                if (classInfo.yearMode === 'PRIMARY') {
+                    terms.add(classInfo.termLabel);
+                } else { // SECONDARY
+                    classInfo.termLabel.split(',').forEach(term => terms.add(term));
+                }
+            }
+        });
+        return Array.from(terms);
+    }, [selectedYear]);
+
+    const offeringsForTerm = useMemo(() => {
+        if (!selectedTerm) return [];
+        return offerings
+            .filter(o => o.termLabel.includes(selectedTerm))
+            .map(o => {
+                const subject = subjects.find(s => s.subjectId === o.subjectId);
+                const classInfo = classes.find(c => c.classId === o.classId);
+                return {
+                    ...o,
+                    subjectName: subject?.subjectNameTh || 'N/A',
+                    subjectCode: subject?.subjectCode || 'N/A',
+                    className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A'
+                }
+            })
+    }, [selectedTerm]);
+
+    const selectedOffering = useMemo(() => {
+        return offeringsForTerm.find(o => o.offeringId === selectedOfferingId);
+    }, [selectedOfferingId, offeringsForTerm]);
 
     const studentsInClass = useMemo(() => {
-        if (!selectedClassId) return [];
+        if (!selectedOffering) return [];
         const studentIdsInClass = enrollments
-            .filter(e => e.classId === selectedClassId)
+            .filter(e => e.classId === selectedOffering.classId)
             .map(e => e.studentId);
         return students.filter(s => studentIdsInClass.includes(s.studentId));
-    }, [selectedClassId]);
+    }, [selectedOffering]);
 
     // Effect to initialize scores when class changes
     useMemo(() => {
+        if (!selectedOffering) {
+            setStudentScores({});
+            return;
+        }
         const initialClassScores: Record<string, number | null> = {};
         studentsInClass.forEach(student => {
-            const existingScore = initialScores.find(s => s.studentId === student.studentId);
+            const existingScore = initialScores.find(s => s.studentId === student.studentId && s.offeringId === selectedOffering.offeringId);
             initialClassScores[student.studentId] = existingScore?.rawScore ?? null;
         });
         setStudentScores(initialClassScores);
-    }, [studentsInClass]);
+    }, [studentsInClass, selectedOffering]);
+
+    const handleYearChange = (year: string) => {
+        setSelectedYear(year);
+        setSelectedTerm('');
+        setSelectedOfferingId('');
+    }
+
+    const handleTermChange = (term: string) => {
+        setSelectedTerm(term);
+        setSelectedOfferingId('');
+    }
 
 
     const handleScoreChange = (studentId: string, score: string) => {
@@ -46,15 +112,18 @@ export default function ClassesPage() {
     };
 
     const handleSaveScores = () => {
-        // In a real app, you would make an API call here to persist the changes.
-        // For now, we just update the initialScores array to simulate persistence.
+        if (!selectedOffering) return;
+
         Object.entries(studentScores).forEach(([studentId, rawScore]) => {
-            const scoreIndex = initialScores.findIndex(s => s.studentId === studentId);
+            const scoreIndex = initialScores.findIndex(s => s.studentId === studentId && s.offeringId === selectedOffering.offeringId);
             if (scoreIndex !== -1) {
                 initialScores[scoreIndex].rawScore = rawScore;
+                 // TODO: Update letterGrade and gradePoint based on gradeScale
+            } else {
+                 // In a real app, this would be a new score record
+                console.log(`Creating new score for ${studentId} in ${selectedOffering.offeringId}`);
             }
         });
-        console.log("Saving scores:", studentScores);
         toast({
             title: 'บันทึกคะแนนสำเร็จ',
             description: 'คะแนนของนักเรียนได้รับการอัปเดตแล้ว (จำลอง)',
@@ -62,16 +131,15 @@ export default function ClassesPage() {
     };
 
     const handleDownloadCsv = () => {
-        if (studentsInClass.length === 0) {
+        if (studentsInClass.length === 0 || !selectedOffering) {
             toast({
                 variant: 'destructive',
                 title: 'ไม่สามารถดาวน์โหลดได้',
-                description: 'กรุณาเลือกห้องเรียนที่มีนักเรียนก่อน',
+                description: 'กรุณาเลือกข้อมูลให้ครบถ้วนก่อน',
             });
             return;
         }
 
-        const selectedClass = classes.find(c => c.classId === selectedClassId);
         const header = 'studentId,studentCode,studentName,score\n';
         const rows = studentsInClass.map(s =>
             `${s.studentId},${s.stuCode},"${s.prefixTh}${s.firstNameTh} ${s.lastNameTh}",`
@@ -82,7 +150,7 @@ export default function ClassesPage() {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `scores_template_${selectedClass?.level}-${selectedClass?.room}.csv`);
+        link.setAttribute('download', `scores_template_${selectedOffering.subjectCode}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -148,33 +216,67 @@ export default function ClassesPage() {
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold font-headline">จัดการคะแนนรายวิชา</h1>
-                <p className="text-muted-foreground">เลือกห้องเรียนเพื่อดูรายชื่อนักเรียน, กรอกคะแนน หรือนำเข้าข้อมูล</p>
+                <p className="text-muted-foreground">เลือกปีการศึกษา, ภาคเรียน, และรายวิชาเพื่อดูรายชื่อนักเรียนและกรอกคะแนน</p>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>เลือกห้องเรียน</CardTitle>
+                    <CardTitle>เลือกข้อมูลการสอน</CardTitle>
                     <CardDescription>
-                        เลือกห้องเรียนและรายวิชาที่ต้องการจัดการ
+                        กรุณาเลือกข้อมูลตามลำดับเพื่อค้นหารายการที่ต้องการจัดการ
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Select onValueChange={setSelectedClassId} value={selectedClassId}>
-                        <SelectTrigger className="w-full md:w-[280px]">
-                            <SelectValue placeholder="เลือกห้องเรียน..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {classes.map(c => (
-                                <SelectItem key={c.classId} value={c.classId}>
-                                    ห้อง {c.level}/{c.room} ({c.termLabel})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2">
+                         <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <Select onValueChange={handleYearChange} value={selectedYear}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="เลือกปีการศึกษา..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicYears.map(year => (
+                                    <SelectItem key={year} value={String(year)}>
+                                        ปีการศึกษา {year}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        <Select onValueChange={handleTermChange} value={selectedTerm} disabled={!selectedYear}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="เลือกภาคเรียน..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {termsForYear.map(term => (
+                                    <SelectItem key={term} value={term}>
+                                        {term.includes('/') ? `ภาคเรียนที่ ${term}`: `ตลอดปีการศึกษา`}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-muted-foreground" />
+                         <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedTerm}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="เลือกรายวิชา..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {offeringsForTerm.map(o => (
+                                    <SelectItem key={o.offeringId} value={o.offeringId}>
+                                        {o.subjectCode} - {o.subjectName} ({o.className})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </CardContent>
             </Card>
             
-            {selectedClassId && (
+            {selectedOfferingId && (
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -182,7 +284,7 @@ export default function ClassesPage() {
                            รายชื่อนักเรียน
                         </CardTitle>
                         <CardDescription>
-                            ห้อง {classes.find(c => c.classId === selectedClassId)?.level}/{classes.find(c => c.classId === selectedClassId)?.room} มีนักเรียนทั้งหมด {studentsInClass.length} คน
+                            {selectedOffering?.subjectName} ({selectedOffering?.subjectCode}) - {selectedOffering?.className} - มีนักเรียนทั้งหมด {studentsInClass.length} คน
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
