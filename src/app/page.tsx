@@ -14,7 +14,7 @@ export default function LoginPage() {
                 <h1 className="text-3xl font-bold font-headline whitespace-nowrap">โรงเรียนวัดทองสัมฤทธิ์</h1>
             </div>
             <p className="text-balance text-muted-foreground">
-              เข้าสู่ระบบเพื่อจัดการและดูผลการเรียน
+              กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ
             </p>
           </div>
           <LoginForm />
