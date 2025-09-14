@@ -49,7 +49,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 <p className="text-lg mt-1">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
             </div>
             
-            <div className="grid grid-cols-4 gap-x-4 gap-y-1 mb-2 border-t border-b border-black py-1">
+            <div className="grid grid-cols-4 gap-x-4 gap-y-1 mb-1 border-t border-b border-black py-1">
                 <div><strong>ชื่อ:</strong> {student.prefixTh}{student.firstNameTh} {student.lastNameTh}</div>
                 <div><strong>เลขประจำตัว:</strong> {student.stuCode}</div>
                 <div><strong>เลขที่:</strong> {student.classNumber || '-'}</div>
@@ -59,13 +59,13 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
             <table className="w-full border-collapse border border-black">
                 <thead>
                     <tr className="bg-gray-100 print:bg-gray-100">
-                        <th className="border border-black p-1 w-[15%]">รหัสวิชา</th>
-                        <th className="border border-black p-1 w-[35%]">รายวิชา</th>
-                        <th className="border border-black p-1 w-[10%]">หน่วยกิต</th>
-                        <th className="border border-black p-1 w-[10%]">คะแนน</th>
-                        <th className="border border-black p-1 w-[10%]">เกรด</th>
-                        <th className="border border-black p-1 w-[10%]">แก้ตัว</th>
-                        <th className="border border-black p-1 w-[10%]">หมายเหตุ</th>
+                        <th className="border border-black px-1 py-0 w-[15%]">รหัสวิชา</th>
+                        <th className="border border-black px-1 py-0 w-[35%]">รายวิชา</th>
+                        <th className="border border-black px-1 py-0 w-[10%]">หน่วยกิต</th>
+                        <th className="border border-black px-1 py-0 w-[10%]">คะแนน</th>
+                        <th className="border border-black px-1 py-0 w-[10%]">เกรด</th>
+                        <th className="border border-black px-1 py-0 w-[10%]">แก้ตัว</th>
+                        <th className="border border-black px-1 py-0 w-[10%]">หมายเหตุ</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -108,25 +108,25 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <table className="w-full border-collapse border border-black">
                             <thead>
                                 <tr className="bg-gray-100 print:bg-gray-100">
-                                    <th className="border border-black p-1 text-left" colSpan={2}>สรุปผลการประเมิน</th>
+                                    <th className="border border-black px-1 py-0 text-left" colSpan={2}>สรุปผลการประเมิน</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาพื้นฐาน</td>
-                                    <td className="border border-black p-1 text-right">{totalBasicCredits.toFixed(1)}</td>
+                                    <td className="border border-black px-1 py-0">จำนวนหน่วยกิต/น้ำหนักวิชาพื้นฐาน</td>
+                                    <td className="border border-black px-1 py-0 text-right">{totalBasicCredits.toFixed(1)}</td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาเพิ่มเติม</td>
-                                    <td className="border border-black p-1 text-right">{totalAdditionalCredits.toFixed(1)}</td>
+                                    <td className="border border-black px-1 py-0">จำนวนหน่วยกิต/น้ำหนักวิชาเพิ่มเติม</td>
+                                    <td className="border border-black px-1 py-0 text-right">{totalAdditionalCredits.toFixed(1)}</td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-black p-1">รวมหน่วยกิต/น้ำหนัก</td>
-                                    <td className="border border-black p-1 text-right">{totalCredits.toFixed(1)}</td>
+                                    <td className="border border-black px-1 py-0">รวมหน่วยกิต/น้ำหนัก</td>
+                                    <td className="border border-black px-1 py-0 text-right">{totalCredits.toFixed(1)}</td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-black p-1"><strong>ระดับผลการเรียนเฉลี่ย</strong></td>
-                                    <td className="border border-black p-1 text-right"><strong>{gpa}</strong></td>
+                                    <td className="border border-black px-1 py-0"><strong>ระดับผลการเรียนเฉลี่ย</strong></td>
+                                    <td className="border border-black px-1 py-0 text-right"><strong>{gpa}</strong></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -134,31 +134,31 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <table className="w-full border-collapse border border-black mt-2">
                             <thead>
                                 <tr className="bg-gray-100 print:bg-gray-100">
-                                    <th className="border border-black p-1 text-left" colSpan={2}>การประเมินคุณลักษณะ</th>
+                                    <th className="border border-black px-1 py-0 text-left" colSpan={2}>การประเมินคุณลักษณะ</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td className="border border-black p-1">คุณลักษณะอันพึงประสงค์ของสถานศึกษา</td>
-                                    <td className="border border-black p-1 text-center">{attributes?.desirableCharacteristics || '-'}</td>
+                                    <td className="border border-black px-1 py-0">คุณลักษณะอันพึงประสงค์ของสถานศึกษา</td>
+                                    <td className="border border-black px-1 py-0 text-center">{attributes?.desirableCharacteristics || '-'}</td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-black p-1">การอ่าน คิด วิเคราะห์และเขียน</td>
-                                    <td className="border border-black p-1 text-center">{attributes?.readingThinkingWriting || '-'}</td>
+                                    <td className="border border-black px-1 py-0">การอ่าน คิด วิเคราะห์และเขียน</td>
+                                    <td className="border border-black px-1 py-0 text-center">{attributes?.readingThinkingWriting || '-'}</td>
                                 </tr>
                             </tbody>
                         </table>
                         <table className="w-full border-collapse border border-black mt-2">
                             <thead>
                                 <tr className="bg-gray-100 print:bg-gray-100">
-                                    <th className="border border-black p-1 text-left" colSpan={2}>กิจกรรมพัฒนาผู้เรียน</th>
+                                    <th className="border border-black px-1 py-0 text-left" colSpan={2}>กิจกรรมพัฒนาผู้เรียน</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td className="border border-black p-1">กิจกรรมแนะแนว</td><td className="border border-black p-1 text-center">{attributes?.guidanceActivity || '-'}</td></tr>
-                                <tr><td className="border border-black p-1">กิจกรรมชุมนุม</td><td className="border border-black p-1 text-center">{attributes?.clubActivity || '-'}</td></tr>
-                                <tr><td className="border border-black p-1">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black p-1 text-center">{attributes?.scoutActivity || '-'}</td></tr>
-                                <tr><td className="border border-black p-1">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black p-1 text-center">{attributes?.socialServiceActivity || '-'}</td></tr>
+                                <tr><td className="border border-black px-1 py-0">กิจกรรมแนะแนว</td><td className="border border-black px-1 py-0 text-center">{attributes?.guidanceActivity || '-'}</td></tr>
+                                <tr><td className="border border-black px-1 py-0">กิจกรรมชุมนุม</td><td className="border border-black px-1 py-0 text-center">{attributes?.clubActivity || '-'}</td></tr>
+                                <tr><td className="border border-black px-1 py-0">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black px-1 py-0 text-center">{attributes?.scoutActivity || '-'}</td></tr>
+                                <tr><td className="border border-black px-1 py-0">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black px-1 py-0 text-center">{attributes?.socialServiceActivity || '-'}</td></tr>
                             </tbody>
                         </table>
                     </div>
