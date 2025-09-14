@@ -179,7 +179,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                             </div>
                              <div className="relative h-24">
                                 <div className="absolute bottom-6 inset-x-0 flex justify-center">
-                                    <Image src="https://i.postimg.cc/bN4L8J4v/director-signature.png" alt="Director's Signature" width={240} height={80} style={{ objectFit: 'contain' }} />
+                                    <Image src="https://i.postimg.cc/HW5TdRm1/image.png" alt="Director's Signature" width={240} height={80} style={{ objectFit: 'contain' }} />
                                 </div>
                                 <div className="absolute bottom-0 inset-x-0">
                                     <p>(นายราชัน หาญเทพ)</p>
