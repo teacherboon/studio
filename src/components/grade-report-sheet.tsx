@@ -42,7 +42,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
             <div className="text-center mb-1">
                 <div className="flex items-center justify-center gap-4">
                     <Logo className="w-20 h-20" />
-                    <div>
+                    <div className="text-center">
                         <h1 className="text-xl font-bold">แบบรายงานประจำตัวนักเรียน</h1>
                         <h2 className="text-lg font-bold">โรงเรียนวัดทองสัมฤทธิ์ เขตมีนบุรี กรุงเทพมหานคร</h2>
                     </div>
