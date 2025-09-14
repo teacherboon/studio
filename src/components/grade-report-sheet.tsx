@@ -35,7 +35,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
     return (
         <div 
             ref={ref} 
-            className="p-8 bg-white text-black print:shadow-none" 
+            className="p-8 bg-white text-black print:shadow-none flex flex-col" 
             style={{ width: '210mm', minHeight: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
         >
             <div className="text-center mb-4">
@@ -97,7 +97,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 </tbody>
             </table>
 
-            <div className="flex justify-between mt-4" style={{ minHeight: '300px' }}>
+            <div className="flex justify-between mt-4 flex-grow">
                  {/* Left Column for summaries */}
                 <div className="w-1/2">
                     <table className="w-full border-collapse border border-black">
