@@ -39,15 +39,15 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
             className="p-8 bg-white text-black print:shadow-none flex flex-col" 
             style={{ width: '210mm', minHeight: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
         >
-            <div className="text-center mb-1">
-                <div className="flex items-center justify-center gap-4">
+            <div className="relative text-center mb-4">
+                <div className="absolute top-0 left-0">
                     <Logo className="w-20 h-20" />
-                    <div className="text-center">
-                        <h1 className="text-xl font-bold">แบบรายงานประจำตัวนักเรียน</h1>
-                        <h2 className="text-lg font-bold">โรงเรียนวัดทองสัมฤทธิ์ เขตมีนบุรี กรุงเทพมหานคร</h2>
-                    </div>
                 </div>
-                 <p className="text-lg mt-1">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
+                <div>
+                    <h1 className="text-xl font-bold">แบบรายงานประจำตัวนักเรียน</h1>
+                    <h2 className="text-lg font-bold">โรงเรียนวัดทองสัมฤทธิ์ เขตมีนบุรี กรุงเทพมหานคร</h2>
+                    <p className="text-lg mt-1">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
+                </div>
             </div>
             
             <div className="grid grid-cols-4 gap-x-4 gap-y-1 mb-1 border-t border-b border-black py-1">
@@ -172,7 +172,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                                     </>
                                 )}
                             </div>
-                            <div className="relative h-20">
+                             <div className="relative h-20">
                                 <div className="absolute bottom-8 inset-x-0 flex justify-center">
                                     <Image src="https://i.postimg.cc/bNhpJgYD/image.png" alt="Head of Academic's Signature" width={120} height={40} style={{ objectFit: 'contain' }} />
                                 </div>
