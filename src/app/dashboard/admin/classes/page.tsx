@@ -219,36 +219,44 @@ function EditStudentDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>แก้ไขข้อมูลนักเรียน</DialogTitle>
                     <DialogDescription>แก้ไขข้อมูลสำหรับ {student?.firstNameTh} {student?.lastNameTh}</DialogDescription>
                 </DialogHeader>
                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="prefix" className="text-right">คำนำหน้า</Label>
-                        <Input id="prefix" value={prefixTh} onChange={e => setPrefixTh(e.target.value)} className="col-span-3" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-baseline">
+                         <div>
+                            <Label htmlFor="prefix">คำนำหน้า</Label>
+                            <Input id="prefix" value={prefixTh} onChange={e => setPrefixTh(e.target.value)} />
+                        </div>
+                        <div className="md:col-span-2">
+                             <Label htmlFor="firstName">ชื่อจริง</Label>
+                             <Input id="firstName" value={firstNameTh} onChange={e => setFirstNameTh(e.target.value)} />
+                        </div>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="firstName" className="text-right">ชื่อจริง</Label>
-                        <Input id="firstName" value={firstNameTh} onChange={e => setFirstNameTh(e.target.value)} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="lastName" className="text-right">นามสกุล</Label>
-                        <Input id="lastName" value={lastNameTh} onChange={e => setLastNameTh(e.target.value)} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="classNumber" className="text-right">เลขที่</Label>
-                        <Input id="classNumber" type="number" value={classNumber} onChange={e => setClassNumber(e.target.value)} className="col-span-3" />
-                    </div>
-                    <hr className="col-span-4 my-2" />
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">อีเมล</Label>
-                        <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="password" className="text-right">รหัสผ่านใหม่</Label>
-                        <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="col-span-3" placeholder="(ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน)" />
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-baseline">
+                        <div className="md:col-span-2">
+                            <Label htmlFor="lastName">นามสกุล</Label>
+                            <Input id="lastName" value={lastNameTh} onChange={e => setLastNameTh(e.target.value)} />
+                        </div>
+                         <div>
+                            <Label htmlFor="classNumber">เลขที่</Label>
+                            <Input id="classNumber" type="number" value={classNumber} onChange={e => setClassNumber(e.target.value)} />
+                        </div>
+                     </div>
+
+                    <hr className="col-span-full my-2" />
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-baseline">
+                         <div>
+                             <Label htmlFor="email">อีเมล</Label>
+                            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                         </div>
+                        <div>
+                             <Label htmlFor="password">รหัสผ่านใหม่</Label>
+                             <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="(ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน)" />
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>
