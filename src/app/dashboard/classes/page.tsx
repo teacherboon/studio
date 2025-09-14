@@ -299,7 +299,7 @@ export default function ClassesPage() {
             return;
         }
 
-        const header = 'studentId,stuCode,studentName,score\n';
+        const header = 'studentId,stuCode,fullName,score\n';
         const rows = studentsInClass.map(s =>
             `${s.studentId},${s.stuCode},"${s.prefixTh}${s.firstNameTh} ${s.lastNameTh}",`
         ).join('\n');
@@ -505,3 +505,5 @@ export default function ClassesPage() {
         </div>
     )
 }
+
+    

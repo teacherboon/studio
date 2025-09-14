@@ -264,7 +264,7 @@ function StudentImportCard({
 
     const handleDownloadTemplate = () => {
         const header = 'studentId,stuCode,prefixTh,firstNameTh,lastNameTh,email,password,level,room,classNumber\n';
-        const sampleData = 'stu_new_1,S006,ด.ช.,เด็กใหม่,คนหนึ่ง,student.new1@school.ac.th,password,ป.1,1,30\n';
+        const sampleData = 'stu_new_1,S006,ด.ช.,เด็กใหม่,คนหนึ่ง,student.new1@school.ac.th,password,ป.6,1,30\n';
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -301,7 +301,7 @@ function StudentImportCard({
                     
                     const classTarget = allClassesData.find(c => c.level === level && c.room === room && c.isActive);
                     
-                    if (studentId && stuCode && firstNameTh && lastNameTh && email && password && classTarget) {
+                    if (studentId && stuCode && firstNameTh && lastNameTh && email && password && classTarget && classNumberStr) {
                         const now = new Date().toISOString();
                         const userId = `user-csv-${Date.now()}-${index}`;
 
@@ -770,3 +770,5 @@ export default function AdminClassesPage() {
         </div>
     )
 }
+
+    
