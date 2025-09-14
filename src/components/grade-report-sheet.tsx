@@ -2,7 +2,7 @@
 import React from 'react';
 import { Logo } from '@/components/logo';
 import { Student, StudentGradeDetails, Class, Subject, StudentAttributes } from '@/lib/types';
-import { subjects } from '@/lib/data';
+import { subjects, users } from '@/lib/data';
 
 interface GradeReportSheetProps {
     student: Student;
@@ -26,6 +26,10 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
     const totalBasicCredits = basicSubjects.reduce((sum, g) => sum + g.credits, 0)
     const totalAdditionalCredits = additionalSubjects.reduce((sum, g) => sum + g.credits, 0)
     const totalCredits = totalBasicCredits + totalAdditionalCredits;
+
+    const homeroomTeachers = currentClass.homeroomTeacherEmails
+        ?.map(email => users.find(u => u.email === email)?.thaiName)
+        .filter(Boolean) as string[];
 
 
     return (
@@ -144,9 +148,14 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 
                 <div className="flex flex-col justify-between">
                     <div className="text-center mt-8">
-                        <p>ลงชื่อ ........................................................</p>
-                        <p>(........................................................)</p>
-                        <p>ครูประจำชั้น / ครูประจำวิชา</p>
+                        {homeroomTeachers && homeroomTeachers.length > 0 ? (
+                            homeroomTeachers.map((teacher, index) => (
+                                <p key={index}>{teacher}</p>
+                            ))
+                        ) : (
+                             <p>(........................................................)</p>
+                        )}
+                        <p>ครูประจำชั้น</p>
                     </div>
                      <div className="text-center">
                         <p>ลงชื่อ ........................................................</p>
@@ -157,10 +166,6 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <p>ลงชื่อ ........................................................</p>
                         <p>(นายราชัน หาญเทพ)</p>
                         <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
-                    </div>
-                    <div className="text-center">
-                        <p>ลงชื่อ ........................................................</p>
-                        <p>ผู้ปกครอง</p>
                     </div>
                 </div>
             </div>
