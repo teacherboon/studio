@@ -38,7 +38,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
             className="p-8 bg-white text-black print:shadow-none flex flex-col" 
             style={{ width: '210mm', height: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
         >
-            <div className="text-center mb-4">
+            <div className="text-center mb-2">
                 <div className="flex items-center justify-center gap-4">
                     <Logo className="w-20 h-20" />
                     <div>
@@ -46,10 +46,10 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <h2 className="text-lg font-bold">โรงเรียนวัดทองสัมฤทธิ์ เขตมีนบุรี กรุงเทพมหานคร</h2>
                     </div>
                 </div>
-                <p className="text-lg mt-2 text-center">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
+                <p className="text-lg mt-1">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
             </div>
             
-            <div className="grid grid-cols-4 gap-x-4 gap-y-2 mb-4 border-t border-b border-black py-2">
+            <div className="grid grid-cols-4 gap-x-4 gap-y-1 mb-2 border-t border-b border-black py-1">
                 <div><strong>ชื่อ:</strong> {student.prefixTh}{student.firstNameTh} {student.lastNameTh}</div>
                 <div><strong>เลขประจำตัว:</strong> {student.stuCode}</div>
                 <div><strong>เลขที่:</strong> {student.classNumber || '-'}</div>
@@ -72,26 +72,26 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                     {grades.map(grade => {
                          return (
                             <tr key={grade.scoreId}>
-                                <td className="border border-black p-1 text-center">{grade.subjectCode}</td>
-                                <td className="border border-black p-1">{grade.subjectName}</td>
-                                <td className="border border-black p-1 text-center">{grade.credits.toFixed(1)}</td>
-                                <td className="border border-black p-1 text-center">{grade.rawScore}</td>
-                                <td className="border border-black p-1 text-center">{grade.gradePoint?.toFixed(2) ?? '-'}</td>
-                                <td className="border border-black p-1 text-center">{grade.statusFlag === 'ร' ? 'ร' : ''}</td>
-                                <td className="border border-black p-1 text-center"></td>
+                                <td className="border border-black px-1 py-0 text-center">{grade.subjectCode}</td>
+                                <td className="border border-black px-1 py-0">{grade.subjectName}</td>
+                                <td className="border border-black px-1 py-0 text-center">{grade.credits.toFixed(1)}</td>
+                                <td className="border border-black px-1 py-0 text-center">{grade.rawScore}</td>
+                                <td className="border border-black px-1 py-0 text-center">{grade.gradePoint?.toFixed(2) ?? '-'}</td>
+                                <td className="border border-black px-1 py-0 text-center">{grade.statusFlag === 'ร' ? 'ร' : ''}</td>
+                                <td className="border border-black px-1 py-0 text-center"></td>
                             </tr>
                          )
                     })}
                      {/* Add empty rows to fill the page */}
                     {Array.from({ length: Math.max(0, 12 - grades.length) }).map((_, i) => (
                         <tr key={`empty-${i}`}>
-                            <td className="border border-black p-1">&nbsp;</td>
-                            <td className="border border-black p-1"></td>
-                            <td className="border border-black p-1"></td>
-                            <td className="border border-black p-1"></td>
-                            <td className="border border-black p-1"></td>
-                            <td className="border border-black p-1"></td>
-                            <td className="border border-black p-1"></td>
+                            <td className="border border-black px-1 py-0">&nbsp;</td>
+                            <td className="border border-black px-1 py-0"></td>
+                            <td className="border border-black px-1 py-0"></td>
+                            <td className="border border-black px-1 py-0"></td>
+                            <td className="border border-black px-1 py-0"></td>
+                            <td className="border border-black px-1 py-0"></td>
+                            <td className="border border-black px-1 py-0"></td>
                         </tr>
                     ))}
                 </tbody>
