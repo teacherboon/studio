@@ -36,7 +36,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
         <div 
             ref={ref} 
             className="p-8 bg-white text-black print:shadow-none flex flex-col" 
-            style={{ width: '210mm', minHeight: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
+            style={{ width: '210mm', height: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
         >
             <div className="text-center mb-4">
                 <div className="flex items-center justify-center gap-4">
@@ -96,9 +96,13 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                     ))}
                 </tbody>
             </table>
+            
+            {/* This div will grow and push the footer to the bottom */}
+            <div className="flex-grow"></div>
 
-            <div className="flex-grow flex flex-col justify-end">
-                <div className="flex mt-4">
+            {/* Footer Section */}
+            <div className="mt-4">
+                <div className="flex">
                     {/* Left Column for summaries */}
                     <div className="w-1/2 pr-4">
                         <table className="w-full border-collapse border border-black">
@@ -160,12 +164,9 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                     </div>
 
                     {/* Right Column for signatures */}
-                    <div 
-                        className="w-1/2 flex flex-col justify-end items-center pl-4"
-                        style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}
-                    >
-                        <div className="w-full space-y-8">
-                             <div className="text-center">
+                    <div className="w-1/2 flex flex-col justify-end items-center pl-4">
+                        <div className="w-full space-y-8 text-center" style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}>
+                            <div>
                                 {homeroomTeachers && homeroomTeachers.length > 0 && (
                                     <>
                                         {homeroomTeachers.map((teacher, index) => (
@@ -175,12 +176,12 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                                     </>
                                 )}
                             </div>
-                            <div className="text-center">
+                            <div>
                                 <p>........................................................</p>
                                 <p>(นายรัตนะ มณีงาม)</p>
                                 <p>หัวหน้าฝ่ายวิชาการ</p>
                             </div>
-                            <div className="text-center">
+                            <div>
                                 <p>........................................................</p>
                                 <p>(นายราชัน หาญเทพ)</p>
                                 <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
