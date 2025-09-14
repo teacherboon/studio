@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('font-body antialiased', sarabun.variable)}>
+      <body className={cn('antialiased', sarabun.className)}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
