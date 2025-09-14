@@ -3,7 +3,6 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import {
   Users,
   Settings,
@@ -13,8 +12,6 @@ import {
   School,
   ChevronDown,
   LayoutDashboard,
-  Moon,
-  Sun,
   CalendarDays,
   CalendarPlus,
   Calendar as CalendarIcon,
@@ -56,7 +53,6 @@ export function DashboardNav() {
   const pathname = usePathname();
   const user = useUser();
   const router = useRouter();
-  const { setTheme } = useTheme();
 
   const handleLogout = () => {
     localStorage.removeItem('user_email');
@@ -279,15 +275,6 @@ export function DashboardNav() {
                                 </p>
                             </div>
                         </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setTheme("light")}>
-                            <Sun className="mr-2 h-4 w-4" />
-                            <span>Light Mode</span>
-                        </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => setTheme("dark")}>
-                            <Moon className="mr-2 h-4 w-4" />
-                            <span>Dark Mode</span>
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                          <DropdownMenuItem asChild>
                            <Link href="/dashboard/settings">
