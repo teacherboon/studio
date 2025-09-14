@@ -46,7 +46,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <h2 className="text-lg font-bold">โรงเรียนวัดทองสัมฤทธิ์ เขตมีนบุรี กรุงเทพมหานคร</h2>
                     </div>
                 </div>
-                <p className="text-lg mt-2">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
+                <p className="text-lg mt-2 text-center">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
             </div>
             
             <div className="grid grid-cols-4 gap-x-4 gap-y-2 mb-4 border-t border-b border-black py-2">
@@ -76,7 +76,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                                 <td className="border border-black p-1">{grade.subjectName}</td>
                                 <td className="border border-black p-1 text-center">{grade.credits.toFixed(1)}</td>
                                 <td className="border border-black p-1 text-center">{grade.rawScore}</td>
-                                <td className="border border-black p-1 text-center">{grade.letterGrade}</td>
+                                <td className="border border-black p-1 text-center">{grade.gradePoint?.toFixed(1) ?? '-'}</td>
                                 <td className="border border-black p-1 text-center">{grade.statusFlag === 'ร' ? 'ร' : ''}</td>
                                 <td className="border border-black p-1 text-center"></td>
                             </tr>
