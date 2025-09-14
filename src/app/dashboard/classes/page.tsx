@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { classes, students, enrollments, scores as initialScores, type Score, offerings as initialOfferings, subjects } from "@/lib/data";
+import { classes, students as allStudents, enrollments, scores as initialScores, type Score, offerings as initialOfferings, subjects } from "@/lib/data";
 import { Download, Upload, Users, FileText, Save, Edit, School, BookOpen, Calendar, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -223,13 +223,19 @@ export default function ClassesPage() {
 
     const studentsInClass = useMemo(() => {
         if (!selectedOffering) return [];
+
+        const validClass = classes.find(c => c.classId === selectedOffering.classId && c.yearBe === selectedOffering.yearBe);
+        if (!validClass) return [];
+
         const studentIdsInClass = enrollments
-            .filter(e => e.classId === selectedOffering.classId)
+            .filter(e => e.classId === validClass.classId)
             .map(e => e.studentId);
-        return students
+            
+        return allStudents
             .filter(s => studentIdsInClass.includes(s.studentId))
             .sort((a, b) => (a.classNumber || 999) - (b.classNumber || 999));
     }, [selectedOffering]);
+
 
     useEffect(() => {
         if (!selectedOffering) {
@@ -355,7 +361,7 @@ export default function ClassesPage() {
 
                 lines.forEach(line => {
                     if (line.trim() === '') return;
-                    const [studentId, studentCode, fullName, scoreStr] = line.split(',').map(s => s.trim());
+                    const [studentId, studentCode, fullName, scoreStr] = line.split(',').map(s => s.trim().replace(/"/g, ''));
                     
                     if (studentId && studentsInClass.some(s => s.studentId === studentId)) {
                         const score = scoreStr === '' ? null : Number(scoreStr);
@@ -506,7 +512,7 @@ export default function ClassesPage() {
                                     <div className="text-center py-10 text-muted-foreground">
                                         <FileText className="mx-auto h-12 w-12" />
                                         <h3 className="mt-2 text-lg font-semibold">ไม่พบข้อมูลนักเรียน</h3>
-                                        <p className="mt-1 text-sm">ไม่มีนักเรียนในห้องเรียนที่เลือก</p>
+                                        <p className="mt-1 text-sm">ไม่มีนักเรียนในห้องเรียนที่เลือกสำหรับปีการศึกษานี้</p>
                                     </div>
                                 )}
                            </TabsContent>
@@ -545,3 +551,5 @@ export default function ClassesPage() {
         </div>
     )
 }
+
+    
