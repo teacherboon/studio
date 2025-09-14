@@ -150,8 +150,8 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                     </div>
                      <div className="text-center">
                         <p>ลงชื่อ ........................................................</p>
-                        <p>(นางสาวสุมิตรา นวลสระน้อย)</p>
-                        <p>รองผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
+                        <p>(นายรัตนะ มณีงาม)</p>
+                        <p>หัวหน้าฝ่ายวิชาการ</p>
                     </div>
                      <div className="text-center">
                         <p>ลงชื่อ ........................................................</p>
