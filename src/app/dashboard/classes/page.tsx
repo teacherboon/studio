@@ -40,7 +40,7 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
     const [selectedClass, setSelectedClass] = useState('');
     const [periodsPerWeek, setPeriodsPerWeek] = useState(0);
     const [yearBe, setYearBe] = useState(new Date().getFullYear() + 543);
-    const [termLabel, setTermLabel] = useState((new Date().getFullYear() + 543).toString());
+    const [term, setTerm] = useState('1');
     const [yearMode, setYearMode] = useState<"PRIMARY" | "SECONDARY">('PRIMARY');
 
     useEffect(() => {
@@ -50,7 +50,7 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
             setSelectedClass('');
             setPeriodsPerWeek(0);
             setYearBe(currentYear);
-            setTermLabel(String(currentYear));
+            setTerm('1');
             setYearMode('PRIMARY');
         }
     }, [open]);
@@ -61,7 +61,7 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
             return;
         }
 
-        const finalTermLabel = yearMode === 'PRIMARY' ? String(yearBe) : termLabel;
+        const finalTermLabel = yearMode === 'PRIMARY' ? String(yearBe) : `${term}/${yearBe}`;
 
         const newOffering: Offering = {
             offeringId: `off-${Date.now()}`,
@@ -153,10 +153,18 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
                     </div>
                     {yearMode === 'SECONDARY' && (
                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="termLabel" className="text-right">
+                            <Label htmlFor="term" className="text-right">
                                 ภาคเรียน
                             </Label>
-                            <Input id="termLabel" value={termLabel} onChange={e => setTermLabel(e.target.value)} placeholder="เช่น 1/2567" className="col-span-3" />
+                            <Select value={term} onValueChange={setTerm}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="เลือกภาคเรียน" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">เทอม 1</SelectItem>
+                                    <SelectItem value="2">เทอม 2</SelectItem>
+                                </SelectContent>
+                            </Select>
                          </div>
                     )}
                 </div>}
