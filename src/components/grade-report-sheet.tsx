@@ -33,7 +33,11 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 
 
     return (
-        <div ref={ref} className="p-8 bg-white text-black font-['Sarabun'] print:shadow-none" style={{ width: '210mm', minHeight: '297mm', fontFamily: 'Sarabun, sans-serif' }}>
+        <div 
+            ref={ref} 
+            className="p-8 bg-white text-black print:shadow-none" 
+            style={{ width: '210mm', minHeight: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
+        >
             <div className="text-center mb-4">
                 <div className="flex items-center justify-center gap-4">
                     <Logo className="w-20 h-20" />
@@ -45,14 +49,14 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 <p className="text-lg mt-2">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
             </div>
             
-            <div className="grid grid-cols-4 gap-x-4 gap-y-2 mb-4 border-t border-b border-black py-2 text-sm">
+            <div className="grid grid-cols-4 gap-x-4 gap-y-2 mb-4 border-t border-b border-black py-2">
                 <div><strong>ชื่อ:</strong> {student.prefixTh}{student.firstNameTh} {student.lastNameTh}</div>
                 <div><strong>เลขประจำตัว:</strong> {student.stuCode}</div>
                 <div><strong>เลขที่:</strong> {student.classNumber || '-'}</div>
                 <div></div>
             </div>
 
-            <table className="w-full border-collapse border border-black text-sm">
+            <table className="w-full border-collapse border border-black">
                 <thead>
                     <tr className="bg-gray-100 print:bg-gray-100">
                         <th className="border border-black p-1" rowSpan={2}>รหัสวิชา</th>
@@ -86,7 +90,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 </tbody>
             </table>
 
-            <div className="flex flex-col justify-between mt-4 text-sm" style={{ minHeight: '300px' }}>
+            <div className="flex flex-col justify-between mt-4" style={{ minHeight: '300px' }}>
                 <div className="flex justify-between">
                     <div className="w-1/2">
                         <table className="w-full border-collapse border border-black">
@@ -151,7 +155,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                  <div 
                     className="flex justify-end items-end"
                  >
-                    <div className="w-1/2 space-y-8" style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}>
+                    <div className="w-1/2 space-y-8">
                         <div className="text-center">
                             {homeroomTeachers && homeroomTeachers.length > 0 && (
                                 <>
@@ -180,5 +184,3 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 });
 
 GradeReportSheet.displayName = 'GradeReportSheet';
-
-    
