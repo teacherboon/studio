@@ -78,7 +78,7 @@ export function DashboardNav() {
                     <Logo className="h-10 w-10 text-primary" />
                 </Link>
             </Button>
-            <h2 className="text-lg font-semibold font-headline">โรงเรียนวัดทองสัมฤทธิ์</h2>
+            <h2 className="text-lg font-semibold font-headline whitespace-nowrap">โรงเรียนวัดทองสัมฤทธิ์</h2>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
