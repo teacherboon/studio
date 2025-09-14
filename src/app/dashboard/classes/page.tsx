@@ -43,6 +43,10 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
     const [term, setTerm] = useState('1');
     const [yearMode, setYearMode] = useState<"PRIMARY" | "SECONDARY">('PRIMARY');
 
+    const availableClasses = useMemo(() => {
+      return classes.filter(c => c.yearBe === yearBe && c.isActive);
+    }, [yearBe]);
+
     useEffect(() => {
         if (!open) {
             const currentYear = new Date().getFullYear() + 543;
@@ -54,6 +58,13 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
             setYearMode('PRIMARY');
         }
     }, [open]);
+
+    useEffect(() => {
+        // Reset selected class if it's not in the new list of available classes
+        if (!availableClasses.some(c => c.classId === selectedClass)) {
+            setSelectedClass('');
+        }
+    }, [availableClasses, selectedClass]);
     
     const handleSave = () => {
         if (!selectedSubject || !selectedClass || !yearBe || !user) {
@@ -89,12 +100,18 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>เพิ่มรายวิชาที่สอน</DialogTitle>
+                    <DialogTitle>เพิ่มรายวิchaที่สอน</DialogTitle>
                     <DialogDescription>
                          กำหนดวิชา, ห้องเรียน, และปี/ภาคการศึกษาที่คุณจะสอน
                     </DialogDescription>
                 </DialogHeader>
                 {open && <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="yearBe" className="text-right">
+                            ปีการศึกษา (พ.ศ.)
+                        </Label>
+                        <Input id="yearBe" type="number" value={yearBe} onChange={e => setYearBe(Number(e.target.value))} className="col-span-3" />
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="subject" className="text-right">
                             รายวิชา
@@ -114,12 +131,12 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
                         <Label htmlFor="class" className="text-right">
                             ห้องเรียน
                         </Label>
-                        <Select value={selectedClass} onValueChange={setSelectedClass}>
+                        <Select value={selectedClass} onValueChange={setSelectedClass} disabled={availableClasses.length === 0}>
                             <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="เลือกห้องเรียน" />
+                                <SelectValue placeholder={availableClasses.length > 0 ? "เลือกห้องเรียน" : "ไม่พบห้องเรียนในปีการศึกษานี้"} />
                             </SelectTrigger>
                             <SelectContent>
-                                {classes.map(c => (
+                                {availableClasses.map(c => (
                                     <SelectItem key={c.classId} value={c.classId}>ห้อง {c.level}/{c.room}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -130,12 +147,6 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
                             คาบ/สัปดาห์
                         </Label>
                         <Input id="periods" type="number" value={periodsPerWeek} onChange={e => setPeriodsPerWeek(Number(e.target.value))} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="yearBe" className="text-right">
-                            ปีการศึกษา (พ.ศ.)
-                        </Label>
-                        <Input id="yearBe" type="number" value={yearBe} onChange={e => setYearBe(Number(e.target.value))} className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                          <Label htmlFor="yearMode" className="text-right">
@@ -224,11 +235,8 @@ export default function ClassesPage() {
     const studentsInClass = useMemo(() => {
         if (!selectedOffering) return [];
 
-        const validClass = classes.find(c => c.classId === selectedOffering.classId && c.yearBe === selectedOffering.yearBe);
-        if (!validClass) return [];
-
         const studentIdsInClass = enrollments
-            .filter(e => e.classId === validClass.classId)
+            .filter(e => e.classId === selectedOffering.classId)
             .map(e => e.studentId);
             
         return allStudents
@@ -251,10 +259,16 @@ export default function ClassesPage() {
     }, [studentsInClass, selectedOffering]);
     
      useEffect(() => {
-        if (selectedOfferingId && !offeringsForSelectedYear.some(o => o.offeringId === selectedOfferingId)) {
-            setSelectedOfferingId('');
+        if (academicYears.length > 0 && !selectedYear) {
+            setSelectedYear(String(academicYears[0]));
         }
-    }, [offeringsForSelectedYear, selectedOfferingId]);
+    }, [academicYears, selectedYear]);
+
+     useEffect(() => {
+        if (selectedYear && !offeringsForSelectedYear.some(o => o.offeringId === selectedOfferingId)) {
+            setSelectedOfferingId(offeringsForSelectedYear[0]?.offeringId || '');
+        }
+    }, [selectedYear, offeringsForSelectedYear, selectedOfferingId]);
 
     const handleYearChange = (year: string) => {
         setSelectedYear(year);
@@ -273,7 +287,7 @@ export default function ClassesPage() {
             toast({
                 variant: "destructive",
                 title: "สร้างไม่สำเร็จ",
-                description: `คุณได้สร้างรายวิชานี้สำหรับห้องนี้ในภาคเรียนนี้แล้ว`,
+                description: `คุณได้สร้างรายวิชานี้สำหรับห้องนี้ในปี/ภาคเรียนนี้แล้ว`,
             });
             return;
         }
@@ -551,5 +565,3 @@ export default function ClassesPage() {
         </div>
     )
 }
-
-    

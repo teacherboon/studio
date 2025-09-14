@@ -39,18 +39,20 @@ import { Label } from '@/components/ui/label';
 import { classes as initialClasses, students as initialStudents, enrollments as initialEnrollments, users as initialUsers } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import type { Class, Enrollment, Student, User, UserRole } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 
 
 function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Class> | null, onSave: (classData: Class) => void, closeDialog: () => void }) {
     const [level, setLevel] = useState(classData?.level || '');
     const [room, setRoom] = useState(classData?.room || '');
+    const [yearBe, setYearBe] = useState(classData?.yearBe || new Date().getFullYear() + 543);
     const [homeroomTeacherEmail1, setHomeroomTeacherEmail1] = useState(classData?.homeroomTeacherEmails?.[0] || 'NONE');
     const [homeroomTeacherEmail2, setHomeroomTeacherEmail2] = useState(classData?.homeroomTeacherEmails?.[1] || 'NONE');
 
     const teachers = useMemo(() => initialUsers.filter(u => u.role === 'TEACHER'), []);
 
     const handleSave = () => {
-        if (!level || !room) {
+        if (!level || !room || !yearBe) {
              alert('กรุณากรอกข้อมูลให้ครบถ้วน');
              return;
         }
@@ -60,14 +62,14 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
             .filter((email, index, self) => self.indexOf(email) === index); // Remove duplicates
 
         const finalClassData: Class = {
-            classId: classData?.classId || `c${Date.now()}`,
+            classId: classData?.classId || `c-${level}-${room}-${yearBe}-${Date.now()}`,
             level,
             room,
             homeroomTeacherEmails: teacherEmails.length > 0 ? teacherEmails : undefined,
-            yearBe: classData?.yearBe || 0, // Simplified
+            yearBe,
             isActive: classData?.isActive ?? true,
             yearMode: 'PRIMARY', // Simplified
-            termLabel: String(classData?.yearBe || 0), // Simplified
+            termLabel: String(yearBe), // Simplified
         };
         
         onSave(finalClassData);
@@ -88,6 +90,12 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
                         ห้อง
                     </Label>
                     <Input id="room" value={room} onChange={e => setRoom(e.target.value)} placeholder="เช่น 1 หรือ 2" className="col-span-3" />
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="yearBe" className="text-right">
+                        ปีการศึกษา (พ.ศ.)
+                    </Label>
+                    <Input id="yearBe" type="number" value={yearBe} onChange={e => setYearBe(Number(e.target.value))} placeholder="เช่น 2567" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="homeroomTeacher1" className="text-right">
@@ -139,7 +147,7 @@ function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { cl
                 <DialogHeader>
                     <DialogTitle>{classData?.classId ? 'แก้ไขห้องเรียน' : 'สร้างห้องเรียนใหม่'}</DialogTitle>
                     <DialogDescription>
-                        {classData?.classId ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนในระบบ'}
+                        {classData?.classId ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room} ปีการศึกษา ${classData.yearBe}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนในระบบ'}
                     </DialogDescription>
                 </DialogHeader>
                 {open && <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
@@ -261,17 +269,18 @@ function StudentImportCard({
 }) {
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const currentYear = new Date().getFullYear() + 543;
 
     const handleDownloadTemplate = () => {
         const header = 'studentId,stuCode,prefixTh,firstNameTh,lastNameTh,email,password,level,room,classNumber\n';
-        const sampleData = 'stu_new_1,S006,ด.ช.,เด็กใหม่,คนหนึ่ง,student.new1@school.ac.th,password,ป.6,1,30\n';
+        const sampleData = `stu_new_1,S006,ด.ช.,เด็กใหม่,คนหนึ่ง,student.new1@school.ac.th,password,ป.6,1,30\n`;
         
         const csvContent = "\uFEFF" + header + sampleData;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `student_import_template.csv`);
+        link.setAttribute('download', `student_import_template_${currentYear}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -299,7 +308,7 @@ function StudentImportCard({
                     if (line.trim() === '') return;
                     const [studentId, stuCode, prefixTh, firstNameTh, lastNameTh, email, password, level, room, classNumberStr] = line.split(',').map(s => s.trim());
                     
-                    const classTarget = allClassesData.find(c => c.level === level && c.room === room && c.isActive);
+                    const classTarget = allClassesData.find(c => c.level === level && c.room === room && c.yearBe === currentYear && c.isActive);
                     
                     if (studentId && stuCode && firstNameTh && lastNameTh && email && password && classTarget && classNumberStr) {
                         const now = new Date().toISOString();
@@ -348,7 +357,7 @@ function StudentImportCard({
                      toast({
                         variant: 'destructive',
                         title: 'ไม่พบข้อมูลที่ถูกต้อง',
-                        description: 'ไม่พบข้อมูลนักเรียนที่ถูกต้องในไฟล์ CSV หรือไม่พบห้องเรียนที่ตรงกัน',
+                        description: `ไม่พบข้อมูลนักเรียนที่ถูกต้องในไฟล์ CSV หรือไม่พบห้องเรียนที่ตรงกันสำหรับปีการศึกษา ${currentYear}`,
                     });
                 }
             } catch (error) {
@@ -366,9 +375,9 @@ function StudentImportCard({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>นำข้อมูลนักเรียนเข้าสู่ระบบ (CSV)</CardTitle>
+                <CardTitle>นำข้อมูลนักเรียนเข้าสู่ระบบ (CSV) สำหรับปีการศึกษา {currentYear}</CardTitle>
                 <CardDescription>
-                    สร้างบัญชีผู้ใช้, ข้อมูลนักเรียน, และลงทะเบียนเข้าห้องเรียนในขั้นตอนเดียว
+                    สร้างบัญชีผู้ใช้, ข้อมูลนักเรียน, และลงทะเบียนเข้าห้องเรียนในปีการศึกษาปัจจุบัน
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -431,7 +440,7 @@ function ActionDropdown({ classItem, onEdit, onDelete, onViewStudents }: { class
                         <AlertDialogHeader>
                             <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
                             <AlertDialogDescription>
-                                คุณแน่ใจหรือไม่ว่าต้องการลบห้อง "{classItem.level}/{classItem.room}"? การกระทำนี้ไม่สามารถย้อนกลับได้
+                                คุณแน่ใจหรือไม่ว่าต้องการลบห้อง "{classItem.level}/{classItem.room} ปีการศึกษา {classItem.yearBe}"? การกระทำนี้ไม่สามารถย้อนกลับได้
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -466,7 +475,7 @@ function StudentActionDropdown({ student, user, onEdit }: { student: Student, us
 }
 
 export default function AdminClassesPage() {
-    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses.sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
+    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses.sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
     const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
     const [allStudents, setAllStudents] = useState<Student[]>(initialStudents);
     const [allEnrollments, setAllEnrollments] = useState<Enrollment[]>(initialEnrollments);
@@ -529,21 +538,21 @@ export default function AdminClassesPage() {
 
         if (isEditing) {
             setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c)
-                .sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
+                .sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลห้องเรียนได้รับการอัปเดตแล้ว" });
         } else {
              const isDuplicate = allClasses.some(
-                c => c.level === data.level && c.room === data.room
+                c => c.level === data.level && c.room === data.room && c.yearBe === data.yearBe
             );
             if (isDuplicate) {
                 toast({
                     variant: "destructive",
                     title: "สร้างไม่สำเร็จ",
-                    description: `ห้องเรียน ${data.level}/${data.room} มีอยู่แล้ว`,
+                    description: `ห้องเรียน ${data.level}/${data.room} สำหรับปีการศึกษา ${data.yearBe} มีอยู่แล้ว`,
                 });
                 return;
             }
-            setAllClasses(prev => [data, ...prev].sort((a,b) => a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
+            setAllClasses(prev => [data, ...prev].sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsClassDialogOpen(false);
@@ -638,7 +647,7 @@ export default function AdminClassesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold font-headline">จัดการห้องเรียนและนักเรียน</h1>
-                    <p className="text-muted-foreground">สร้างห้องเรียน และนำข้อมูลนักเรียนเข้าสู่ระบบ</p>
+                    <p className="text-muted-foreground">สร้างห้องเรียนสำหรับแต่ละปีการศึกษา และนำข้อมูลนักเรียนเข้าสู่ระบบ</p>
                 </div>
                 <Button onClick={() => handleOpenClassDialog()}>
                     <PlusCircle className="mr-2" />
@@ -659,20 +668,28 @@ export default function AdminClassesPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>ปีการศึกษา</TableHead>
                                 <TableHead>ระดับชั้น</TableHead>
                                 <TableHead>ห้อง</TableHead>
                                 <TableHead>ครูประจำชั้น</TableHead>
                                 <TableHead className="text-center">จำนวนนักเรียน</TableHead>
+                                <TableHead>สถานะ</TableHead>
                                 <TableHead className="text-right">การดำเนินการ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedClasses.map((c) => (
                                 <TableRow key={c.classId}>
+                                    <TableCell>{c.yearBe}</TableCell>
                                     <TableCell>{c.level}</TableCell>
                                     <TableCell>{c.room}</TableCell>
                                     <TableCell>{homeroomTeacherByClass.get(c.classId) || '-'}</TableCell>
                                     <TableCell className="text-center">{studentCountByClass[c.classId] || 0}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={c.isActive ? 'default' : 'secondary'}>
+                                            {c.isActive ? 'กำลังใช้งาน' : 'ปิดใช้งาน'}
+                                        </Badge>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                        <ActionDropdown 
                                             classItem={c} 
@@ -712,7 +729,7 @@ export default function AdminClassesPage() {
             {viewingClass && (
                  <Card>
                     <CardHeader>
-                        <CardTitle>รายชื่อนักเรียน ห้อง {viewingClass.level}/{viewingClass.room}</CardTitle>
+                        <CardTitle>รายชื่อนักเรียน ห้อง {viewingClass.level}/{viewingClass.room} (ปีการศึกษา {viewingClass.yearBe})</CardTitle>
                         <CardDescription>
                             มีนักเรียนทั้งหมด {studentsInViewingClass.length} คน
                         </CardDescription>
@@ -770,5 +787,3 @@ export default function AdminClassesPage() {
         </div>
     )
 }
-
-    
