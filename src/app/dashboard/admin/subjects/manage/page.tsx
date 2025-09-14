@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, ChangeEvent } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2, Download, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -160,6 +160,120 @@ function ActionDropdown({ subject, onEdit, onDelete }: { subject: Subject, onEdi
     );
 }
 
+function SubjectImportCard({ onSubjectsImported }: { onSubjectsImported: (newSubjects: Subject[]) => void }) {
+    const { toast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleDownloadTemplate = () => {
+        const header = 'subjectCode,subjectNameTh,type,defaultCredits\n';
+        const sampleData = 'ท21101,ภาษาไทย,พื้นฐาน,1.5\n';
+        
+        const csvContent = "\uFEFF" + header + sampleData;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'subject_import_template.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            try {
+                const lines = text.split('\n').slice(1);
+                const newSubjects: Subject[] = [];
+                
+                lines.forEach((line, index) => {
+                     if (line.trim() === '') return;
+                     const parts = line.split(',').map(s => s.trim());
+                     const [subjectCode, subjectNameTh, type, defaultCreditsStr] = parts;
+
+                     const defaultCredits = Number(defaultCreditsStr);
+
+                     if (subjectCode && subjectNameTh && (type === 'พื้นฐาน' || type === 'เพิ่มเติม') && !isNaN(defaultCredits) && defaultCredits > 0) {
+                         newSubjects.push({
+                            subjectId: `subj-csv-${Date.now()}-${index}`,
+                            subjectCode,
+                            subjectNameTh,
+                            type: type as "พื้นฐาน" | "เพิ่มเติม",
+                            defaultCredits,
+                            status: 'ACTIVE',
+                            createdByEmail: 'admin@school.ac.th' // Or a dynamic user
+                         });
+                     }
+                });
+
+                 if (newSubjects.length > 0) {
+                    onSubjectsImported(newSubjects);
+                } else {
+                    toast({
+                        variant: 'destructive',
+                        title: 'ไม่พบข้อมูลที่ถูกต้อง',
+                        description: 'ไม่พบข้อมูลรายวิชาที่ถูกต้องในไฟล์ CSV',
+                    });
+                }
+            } catch (error) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'ไฟล์ไม่ถูกต้อง',
+                    description: 'ไม่สามารถประมวลผลไฟล์ CSV ได้ โปรดตรวจสอบรูปแบบไฟล์',
+                });
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+        if(event.target) event.target.value = '';
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>นำเข้าข้อมูลรายวิชา (CSV)</CardTitle>
+                <CardDescription>
+                    เพิ่มข้อมูลรายวิชาหลักจำนวนมากผ่านไฟล์ CSV
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <h4 className="font-semibold">ดาวน์โหลดเทมเพลต</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                        ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบข้อมูลที่ถูกต้อง (คอลัมน์: subjectCode, subjectNameTh, type, defaultCredits)
+                    </p>
+                    <Button variant="outline" onClick={handleDownloadTemplate}>
+                        <Download className="mr-2"/> เทมเพลตสำหรับรายวิชา
+                    </Button>
+                </div>
+                <div>
+                    <h4 className="font-semibold">อัปโหลดไฟล์</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                        เลือกไฟล์ CSV ที่กรอกข้อมูลเรียบร้อยแล้วเพื่อนำเข้าสู่ระบบ
+                    </p>
+                    <Button onClick={handleUploadClick}>
+                        <Upload className="mr-2"/> อัปโหลดไฟล์ CSV
+                    </Button>
+                     <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept=".csv"
+                        onChange={handleFileChange}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function ManageSubjectsPage() {
     const [allSubjects, setAllSubjects] = useState<Subject[]>(initialSubjects.sort((a,b) => b.subjectId.localeCompare(a.subjectId)));
     const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -199,6 +313,29 @@ export default function ManageSubjectsPage() {
         setIsDialogOpen(true);
     };
 
+    const handleSubjectsImport = (newSubjects: Subject[]) => {
+        const existingCodes = new Set(allSubjects.map(s => s.subjectCode.toLowerCase()));
+        const uniqueNewSubjects = newSubjects.filter(
+            subject => !existingCodes.has(subject.subjectCode.toLowerCase())
+        );
+
+        if (uniqueNewSubjects.length < newSubjects.length) {
+            toast({
+                variant: 'destructive',
+                title: 'พบข้อมูลซ้ำซ้อน',
+                description: `ข้ามการนำเข้า ${newSubjects.length - uniqueNewSubjects.length} รายการ เนื่องจากมีรหัสวิชาซ้ำกับข้อมูลที่มีอยู่แล้ว`,
+            });
+        }
+
+        if (uniqueNewSubjects.length > 0) {
+            setAllSubjects(prev => [...prev, ...uniqueNewSubjects].sort((a,b) => b.subjectId.localeCompare(a.subjectId)));
+            toast({
+                title: 'นำเข้าสำเร็จ!',
+                description: `เพิ่มรายวิชาใหม่ ${uniqueNewSubjects.length} รายการ`,
+            });
+        }
+    };
+
     const paginatedSubjects = allSubjects.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
@@ -218,6 +355,8 @@ export default function ManageSubjectsPage() {
                     สร้างรายวิชาใหม่
                 </Button>
             </div>
+
+            <SubjectImportCard onSubjectsImported={handleSubjectsImport} />
 
             <Card>
                 <CardHeader>
