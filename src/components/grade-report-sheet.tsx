@@ -3,6 +3,7 @@ import React from 'react';
 import { Logo } from '@/components/logo';
 import { Student, StudentGradeDetails, Class, Subject, StudentAttributes } from '@/lib/types';
 import { subjects, users } from '@/lib/data';
+import Image from 'next/image';
 
 interface GradeReportSheetProps {
     student: Student;
@@ -38,7 +39,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
             className="p-8 bg-white text-black print:shadow-none flex flex-col" 
             style={{ width: '210mm', height: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
         >
-            <div className="text-center mb-2">
+            <div className="text-center mb-1">
                 <div className="flex items-center justify-center gap-4">
                     <Logo className="w-20 h-20" />
                     <div>
@@ -46,7 +47,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         <h2 className="text-lg font-bold">โรงเรียนวัดทองสัมฤทธิ์ เขตมีนบุรี กรุงเทพมหานคร</h2>
                     </div>
                 </div>
-                <p className="text-lg mt-1">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
+                 <p className="text-lg mt-1">ชั้นประถมศึกษาปีที่ {currentClass.level.split('.')[1]} ปีการศึกษา {currentClass.yearBe}</p>
             </div>
             
             <div className="grid grid-cols-4 gap-x-4 gap-y-1 mb-1 border-t border-b border-black py-1">
@@ -82,7 +83,6 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                             </tr>
                          )
                     })}
-                     {/* Add empty rows to fill the page */}
                     {Array.from({ length: Math.max(0, 15 - grades.length) }).map((_, i) => (
                         <tr key={`empty-${i}`}>
                             <td className="border border-black px-1 py-0">&nbsp;</td>
@@ -97,13 +97,10 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 </tbody>
             </table>
             
-            {/* This div will grow and push the footer to the bottom */}
             <div className="flex-grow"></div>
 
-            {/* Footer Section */}
             <div className="mt-4">
                 <div className="flex">
-                    {/* Left Column for summaries */}
                     <div className="w-1/2 pr-4">
                         <table className="w-full border-collapse border border-black">
                             <thead>
@@ -163,7 +160,6 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                         </table>
                     </div>
 
-                    {/* Right Column for signatures */}
                     <div className="w-1/2 flex flex-col justify-end items-center pl-4">
                         <div className="w-full space-y-8 text-center" style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}>
                             <div>
@@ -181,10 +177,14 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                                 <p>(นายรัตนะ มณีงาม)</p>
                                 <p>หัวหน้าฝ่ายวิชาการ</p>
                             </div>
-                            <div>
-                                <p>........................................................</p>
-                                <p>(นายราชัน หาญเทพ)</p>
-                                <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
+                             <div className="relative h-24">
+                                <div className="absolute bottom-6 inset-x-0 flex justify-center">
+                                    <Image src="https://storage.googleapis.com/gweb-aip-dev.appspot.com/public/project_images/669f6e625a3d463b827e8a94/1721867140807.png" alt="Director's Signature" width={120} height={40} style={{ objectFit: 'contain' }} />
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0">
+                                    <p>(นายราชัน หาญเทพ)</p>
+                                    <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
+                                </div>
                             </div>
                         </div>
                     </div>
