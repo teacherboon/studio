@@ -83,7 +83,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                          )
                     })}
                      {/* Add empty rows to fill the page */}
-                    {Array.from({ length: Math.max(0, 12 - grades.length) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, 15 - grades.length) }).map((_, i) => (
                         <tr key={`empty-${i}`}>
                             <td className="border border-black px-1 py-0">&nbsp;</td>
                             <td className="border border-black px-1 py-0"></td>
