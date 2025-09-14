@@ -308,9 +308,10 @@ function StudentImportCard({
                     if (line.trim() === '') return;
                     const [studentId, stuCode, prefixTh, firstNameTh, lastNameTh, email, password, level, room, classNumberStr] = line.split(',').map(s => s.trim());
                     
+                    const classNumber = classNumberStr ? parseInt(classNumberStr) : undefined;
                     const classTarget = allClassesData.find(c => c.level === level && c.room === room && c.yearBe === currentYear && c.isActive);
                     
-                    if (studentId && stuCode && firstNameTh && lastNameTh && email && password && classTarget && classNumberStr) {
+                    if (studentId && stuCode && firstNameTh && lastNameTh && email && password && classTarget && classNumber) {
                         const now = new Date().toISOString();
                         const userId = `user-csv-${Date.now()}-${index}`;
 
@@ -334,7 +335,7 @@ function StudentImportCard({
                             lastNameTh,
                             level,
                             room,
-                            classNumber: classNumberStr ? parseInt(classNumberStr) : undefined,
+                            classNumber,
                             homeroomEmail: classTarget.homeroomTeacherEmails?.join(',') || '',
                             status: 'ACTIVE',
                             admitYearBe: classTarget.yearBe,
@@ -475,7 +476,7 @@ function StudentActionDropdown({ student, user, onEdit }: { student: Student, us
 }
 
 export default function AdminClassesPage() {
-    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses.sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
+    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses);
     const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
     const [allStudents, setAllStudents] = useState<Student[]>(initialStudents);
     const [allEnrollments, setAllEnrollments] = useState<Enrollment[]>(initialEnrollments);
@@ -490,6 +491,18 @@ export default function AdminClassesPage() {
     const { toast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
+    const [selectedYear, setSelectedYear] = useState<string>('all');
+
+    const academicYears = useMemo(() => {
+        return [...new Set(allClasses.map(c => c.yearBe))].sort((a,b) => b-a);
+    }, [allClasses]);
+
+    const filteredClasses = useMemo(() => {
+        return (selectedYear === 'all' 
+            ? allClasses 
+            : allClasses.filter(c => c.yearBe === Number(selectedYear))
+        ).sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room));
+    }, [allClasses, selectedYear]);
     
     const studentCountByClass = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -537,8 +550,7 @@ export default function AdminClassesPage() {
         const isEditing = allClasses.some(c => c.classId === data.classId);
 
         if (isEditing) {
-            setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c)
-                .sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
+            setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c));
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลห้องเรียนได้รับการอัปเดตแล้ว" });
         } else {
              const isDuplicate = allClasses.some(
@@ -552,7 +564,7 @@ export default function AdminClassesPage() {
                 });
                 return;
             }
-            setAllClasses(prev => [data, ...prev].sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room)));
+            setAllClasses(prev => [data, ...prev]);
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsClassDialogOpen(false);
@@ -609,11 +621,15 @@ export default function AdminClassesPage() {
         }
     };
     
-    const paginatedClasses = allClasses.slice(
+    useEffect(() => {
+        setCurrentPage(1); // Reset to first page on filter change
+    }, [selectedYear]);
+
+    const paginatedClasses = filteredClasses.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
-    const totalPages = Math.ceil(allClasses.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
 
     const handleOpenStudentDialog = (student: Student) => {
         setEditingStudent(student);
@@ -660,9 +676,22 @@ export default function AdminClassesPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>รายชื่อห้องเรียน</CardTitle>
-                    <CardDescription>
-                        ห้องเรียนทั้งหมดที่มีอยู่ในระบบ (คลิกที่เมนู "..." เพื่อดูรายชื่อนักเรียน)
-                    </CardDescription>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <CardDescription>
+                            ห้องเรียนทั้งหมดที่มีอยู่ในระบบ (คลิกที่เมนู "..." เพื่อดูรายชื่อนักเรียน)
+                        </CardDescription>
+                         <Select value={selectedYear} onValueChange={setSelectedYear}>
+                            <SelectTrigger className="w-full sm:w-[200px]">
+                                <SelectValue placeholder="กรองตามปีการศึกษา" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">ทุกปีการศึกษา</SelectItem>
+                                {academicYears.map(year => (
+                                    <SelectItem key={year} value={String(year)}>ปีการศึกษา {year}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -678,7 +707,7 @@ export default function AdminClassesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedClasses.map((c) => (
+                            {paginatedClasses.length > 0 ? paginatedClasses.map((c) => (
                                 <TableRow key={c.classId}>
                                     <TableCell>{c.yearBe}</TableCell>
                                     <TableCell>{c.level}</TableCell>
@@ -699,7 +728,13 @@ export default function AdminClassesPage() {
                                         />
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                                        ไม่พบข้อมูลห้องเรียนสำหรับปีการศึกษาที่เลือก
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -787,3 +822,5 @@ export default function AdminClassesPage() {
         </div>
     )
 }
+
+    
