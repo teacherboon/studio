@@ -174,6 +174,7 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
 export default function ClassesPage() {
     const user = useUser();
     const [allOfferings, setAllOfferings] = useState<Offering[]>(initialOfferings);
+    const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     
@@ -181,28 +182,36 @@ export default function ClassesPage() {
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const offeringsForTeacher = useMemo(() => {
+    const allOfferingsForTeacher = useMemo(() => {
         if (!user) return [];
-
         return allOfferings
             .filter(o => o.teacherEmail === user.email)
             .map(o => {
                 const subject = subjects.find(s => s.subjectId === o.subjectId);
                 const classInfo = classes.find(c => c.classId === o.classId);
-                const termDisplay = o.termLabel.includes('/') ? ` (เทอม ${o.termLabel})` : ` (ปีการศึกษา ${o.yearBe})`;
                 return {
                     ...o,
                     subjectName: subject?.subjectNameTh || 'N/A',
                     subjectCode: subject?.subjectCode || 'N/A',
-                    className: `ห้อง ${classInfo?.level}/${classInfo?.room}${termDisplay}` || 'N/A',
-                    sortKey: `${o.yearBe}-${o.termLabel}`
+                    className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A',
+                    termDisplay: o.termLabel.includes('/') ? ` (เทอม ${o.termLabel})` : ''
                 }
-            }).sort((a,b) => b.sortKey.localeCompare(a.sortKey));
+            }).sort((a,b) => b.yearBe - a.yearBe || a.subjectName.localeCompare(b.subjectName));
     }, [user, allOfferings]);
 
+    const academicYears = useMemo(() => {
+        const years = [...new Set(allOfferingsForTeacher.map(o => o.yearBe))];
+        return years.sort((a,b) => b - a);
+    }, [allOfferingsForTeacher]);
+
+    const offeringsForSelectedYear = useMemo(() => {
+        if (!selectedYear) return [];
+        return allOfferingsForTeacher.filter(o => o.yearBe === Number(selectedYear));
+    }, [selectedYear, allOfferingsForTeacher]);
+
     const selectedOffering = useMemo(() => {
-        return offeringsForTeacher.find(o => o.offeringId === selectedOfferingId);
-    }, [selectedOfferingId, offeringsForTeacher]);
+        return allOfferingsForTeacher.find(o => o.offeringId === selectedOfferingId);
+    }, [selectedOfferingId, allOfferingsForTeacher]);
 
     const studentsInClass = useMemo(() => {
         if (!selectedOffering) return [];
@@ -227,11 +236,16 @@ export default function ClassesPage() {
         setStudentScores(initialClassScores);
     }, [studentsInClass, selectedOffering]);
     
-    useEffect(() => {
-        if (selectedOfferingId && !offeringsForTeacher.some(o => o.offeringId === selectedOfferingId)) {
+     useEffect(() => {
+        if (selectedOfferingId && !offeringsForSelectedYear.some(o => o.offeringId === selectedOfferingId)) {
             setSelectedOfferingId('');
         }
-    }, [offeringsForTeacher, selectedOfferingId]);
+    }, [offeringsForSelectedYear, selectedOfferingId]);
+
+    const handleYearChange = (year: string) => {
+        setSelectedYear(year);
+        setSelectedOfferingId(''); // Reset offering selection when year changes
+    }
 
     const handleCreateOffering = (data: Offering) => {
         const isDuplicate = allOfferings.some(o => 
@@ -333,7 +347,7 @@ export default function ClassesPage() {
 
                 lines.forEach(line => {
                     if (line.trim() === '') return;
-                    const [studentId, studentCode, studentName, scoreStr] = line.split(',').map(s => s.trim());
+                    const [studentId, studentCode, fullName, scoreStr] = line.split(',').map(s => s.trim());
                     
                     if (studentId && studentsInClass.some(s => s.studentId === studentId)) {
                         const score = scoreStr === '' ? null : Number(scoreStr);
@@ -388,22 +402,40 @@ export default function ClassesPage() {
                 <CardHeader>
                     <CardTitle>เลือกรายวิชาที่สอน</CardTitle>
                     <CardDescription>
-                        เลือกรายวิชาที่คุณได้สร้างไว้เพื่อเริ่มกรอกคะแนน (รายการล่าสุดจะอยู่ด้านบน)
+                        เลือกปีการศึกษาและรายวิชาที่คุณสอนเพื่อเริ่มกรอกคะแนน
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                     <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={offeringsForTeacher.length === 0}>
-                        <SelectTrigger id="offering-select">
-                            <SelectValue placeholder={offeringsForTeacher.length === 0 ? "คุณยังไม่ได้เพิ่มรายวิชาที่สอน" : "เลือกรายวิชาที่สอน..."} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {offeringsForTeacher.map(o => (
-                                <SelectItem key={o.offeringId} value={o.offeringId}>
-                                    {o.subjectCode} - {o.subjectName} {o.className}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <Label htmlFor="academic-year">ปีการศึกษา</Label>
+                        <Select onValueChange={handleYearChange} value={selectedYear} disabled={academicYears.length === 0}>
+                            <SelectTrigger id="academic-year">
+                                <SelectValue placeholder={academicYears.length === 0 ? "คุณยังไม่ได้เพิ่มรายวิชาที่สอน" : "เลือกปีการศึกษา..."} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicYears.map(year => (
+                                    <SelectItem key={year} value={String(year)}>
+                                        {year}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div>
+                        <Label htmlFor="offering-select">รายวิชาที่สอน</Label>
+                        <Select onValueChange={setSelectedOfferingId} value={selectedOfferingId} disabled={!selectedYear}>
+                            <SelectTrigger id="offering-select">
+                                <SelectValue placeholder="เลือกรายวิชาที่สอน..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {offeringsForSelectedYear.map(o => (
+                                    <SelectItem key={o.offeringId} value={o.offeringId}>
+                                        {o.subjectCode} - {o.subjectName} - {o.className}{o.termDisplay}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                     </div>
                 </CardContent>
             </Card>
             
@@ -415,7 +447,7 @@ export default function ClassesPage() {
                            รายชื่อนักเรียน
                         </CardTitle>
                         <CardDescription>
-                            {selectedOffering?.subjectName} ({selectedOffering?.subjectCode}) - {selectedOffering?.className} - มีนักเรียนทั้งหมด {studentsInClass.length} คน
+                            {selectedOffering?.subjectName} ({selectedOffering?.subjectCode}) - {selectedOffering?.className}{selectedOffering?.termDisplay} - มีนักเรียนทั้งหมด {studentsInClass.length} คน
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -505,5 +537,3 @@ export default function ClassesPage() {
         </div>
     )
 }
-
-    
