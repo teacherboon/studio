@@ -86,86 +86,92 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 </tbody>
             </table>
 
-            <div className="grid grid-cols-2 gap-8 mt-4 text-sm">
-                <div>
-                    <table className="w-full border-collapse border border-black">
-                         <thead>
-                            <tr className="bg-gray-100 print:bg-gray-100">
-                                <th className="border border-black p-1 text-left" colSpan={2}>สรุปผลการประเมิน</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาพื้นฐาน</td>
-                                <td className="border border-black p-1 text-right">{totalBasicCredits.toFixed(1)}</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาเพิ่มเติม</td>
-                                <td className="border border-black p-1 text-right">{totalAdditionalCredits.toFixed(1)}</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1">รวมหน่วยกิต/น้ำหนัก</td>
-                                <td className="border border-black p-1 text-right">{totalCredits.toFixed(1)}</td>
-                            </tr>
-                             <tr>
-                                <td className="border border-black p-1"><strong>ระดับผลการเรียนเฉลี่ย</strong></td>
-                                <td className="border border-black p-1 text-right"><strong>{gpa}</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div className="flex flex-col justify-between mt-4 text-sm" style={{ minHeight: '300px' }}>
+                <div className="flex justify-between">
+                    <div className="w-1/2">
+                        <table className="w-full border-collapse border border-black">
+                            <thead>
+                                <tr className="bg-gray-100 print:bg-gray-100">
+                                    <th className="border border-black p-1 text-left" colSpan={2}>สรุปผลการประเมิน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาพื้นฐาน</td>
+                                    <td className="border border-black p-1 text-right">{totalBasicCredits.toFixed(1)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาเพิ่มเติม</td>
+                                    <td className="border border-black p-1 text-right">{totalAdditionalCredits.toFixed(1)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1">รวมหน่วยกิต/น้ำหนัก</td>
+                                    <td className="border border-black p-1 text-right">{totalCredits.toFixed(1)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1"><strong>ระดับผลการเรียนเฉลี่ย</strong></td>
+                                    <td className="border border-black p-1 text-right"><strong>{gpa}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                    <table className="w-full border-collapse border border-black mt-2">
-                        <thead>
-                            <tr className="bg-gray-100 print:bg-gray-100">
-                                <th className="border border-black p-1 text-left" colSpan={2}>การประเมินคุณลักษณะ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td className="border border-black p-1">คุณลักษณะอันพึงประสงค์ของสถานศึกษา</td>
-                                <td className="border border-black p-1 text-center">{attributes?.desirableCharacteristics || '-'}</td>
-                            </tr>
-                             <tr>
-                                <td className="border border-black p-1">การอ่าน คิด วิเคราะห์และเขียน</td>
-                                <td className="border border-black p-1 text-center">{attributes?.readingThinkingWriting || '-'}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                     <table className="w-full border-collapse border border-black mt-2">
-                        <thead>
-                            <tr className="bg-gray-100 print:bg-gray-100">
-                                <th className="border border-black p-1 text-left" colSpan={2}>กิจกรรมพัฒนาผู้เรียน</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td className="border border-black p-1">กิจกรรมแนะแนว</td><td className="border border-black p-1 text-center">{attributes?.guidanceActivity || '-'}</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมชุมนุม</td><td className="border border-black p-1 text-center">{attributes?.clubActivity || '-'}</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black p-1 text-center">{attributes?.scoutActivity || '-'}</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black p-1 text-center">{attributes?.socialServiceActivity || '-'}</td></tr>
-                        </tbody>
-                    </table>
+                        <table className="w-full border-collapse border border-black mt-2">
+                            <thead>
+                                <tr className="bg-gray-100 print:bg-gray-100">
+                                    <th className="border border-black p-1 text-left" colSpan={2}>การประเมินคุณลักษณะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="border border-black p-1">คุณลักษณะอันพึงประสงค์ของสถานศึกษา</td>
+                                    <td className="border border-black p-1 text-center">{attributes?.desirableCharacteristics || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1">การอ่าน คิด วิเคราะห์และเขียน</td>
+                                    <td className="border border-black p-1 text-center">{attributes?.readingThinkingWriting || '-'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table className="w-full border-collapse border border-black mt-2">
+                            <thead>
+                                <tr className="bg-gray-100 print:bg-gray-100">
+                                    <th className="border border-black p-1 text-left" colSpan={2}>กิจกรรมพัฒนาผู้เรียน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td className="border border-black p-1">กิจกรรมแนะแนว</td><td className="border border-black p-1 text-center">{attributes?.guidanceActivity || '-'}</td></tr>
+                                <tr><td className="border border-black p-1">กิจกรรมชุมนุม</td><td className="border border-black p-1 text-center">{attributes?.clubActivity || '-'}</td></tr>
+                                <tr><td className="border border-black p-1">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black p-1 text-center">{attributes?.scoutActivity || '-'}</td></tr>
+                                <tr><td className="border border-black p-1">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black p-1 text-center">{attributes?.socialServiceActivity || '-'}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 
-                <div className="flex flex-col justify-between">
-                    <div className="text-center mt-8">
-                        {homeroomTeachers && homeroomTeachers.length > 0 ? (
-                            homeroomTeachers.map((teacher, index) => (
-                                <p key={index}>{teacher}</p>
-                            ))
-                        ) : (
-                             <p>(........................................................)</p>
-                        )}
-                        <p>ครูประจำชั้น</p>
-                    </div>
-                     <div className="text-center">
-                        <p>ลงชื่อ ........................................................</p>
-                        <p>(นายรัตนะ มณีงาม)</p>
-                        <p>หัวหน้าฝ่ายวิชาการ</p>
-                    </div>
-                     <div className="text-center">
-                        <p>ลงชื่อ ........................................................</p>
-                        <p>(นายราชัน หาญเทพ)</p>
-                        <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
+                 <div 
+                    className="flex justify-end items-end"
+                 >
+                    <div className="w-1/2 space-y-8" style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}>
+                        <div className="text-center">
+                            {homeroomTeachers && homeroomTeachers.length > 0 && (
+                                <>
+                                    {homeroomTeachers.map((teacher, index) => (
+                                        <p key={index}>{teacher}</p>
+                                    ))}
+                                    <p>ครูประจำชั้น</p>
+                                </>
+                            )}
+                        </div>
+                        <div className="text-center">
+                            <p>ลงชื่อ ........................................................</p>
+                            <p>(นายรัตนะ มณีงาม)</p>
+                            <p>หัวหน้าฝ่ายวิชาการ</p>
+                        </div>
+                        <div className="text-center">
+                            <p>ลงชื่อ ........................................................</p>
+                            <p>(นายราชัน หาญเทพ)</p>
+                            <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -174,3 +180,5 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 });
 
 GradeReportSheet.displayName = 'GradeReportSheet';
+
+    
