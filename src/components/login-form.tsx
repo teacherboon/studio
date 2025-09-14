@@ -6,14 +6,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { users } from '@/lib/data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState } from 'react';
 
 export function LoginForm() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
 
   const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
+    
+    if (!email) {
+        alert("กรุณาเลือกบัญชีเพื่อเข้าสู่ระบบ");
+        return;
+    }
     
     const user = users.find(u => u.email === email);
 
@@ -28,14 +40,19 @@ export function LoginForm() {
   return (
     <form onSubmit={handleLogin} className="grid gap-4">
       <div className="grid gap-2">
-        <Label htmlFor="email">อีเมล</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="m@example.com"
-          required
-        />
+        <Label htmlFor="email">บัญชีผู้ใช้</Label>
+        <Select value={email} onValueChange={setEmail}>
+            <SelectTrigger>
+                <SelectValue placeholder="เลือกบัญชีเพื่อเข้าสู่ระบบ" />
+            </SelectTrigger>
+            <SelectContent>
+                {users.map(user => (
+                    <SelectItem key={user.userId} value={user.email}>
+                        {user.displayName} ({user.role})
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2">
         <div className="flex items-center">
