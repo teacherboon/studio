@@ -174,7 +174,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                             </div>
                             <div className="relative h-20">
                                 <div className="absolute bottom-6 inset-x-0 flex justify-center">
-                                    <Image src="https://i.postimg.cc/bNhpJgYD/image.png" alt="Head of Academic's Signature" width={200} height={60} style={{ objectFit: 'contain' }} />
+                                    <Image src="https://i.postimg.cc/bNhpJgYD/image.png" alt="Head of Academic's Signature" width={120} height={40} style={{ objectFit: 'contain' }} />
                                 </div>
                                 <div className="absolute bottom-0 inset-x-0">
                                     <p>(นายรัตนะ มณีงาม)</p>
@@ -199,3 +199,5 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
 });
 
 GradeReportSheet.displayName = 'GradeReportSheet';
+
+    
