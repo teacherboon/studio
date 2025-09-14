@@ -76,7 +76,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                                 <td className="border border-black p-1">{grade.subjectName}</td>
                                 <td className="border border-black p-1 text-center">{grade.credits.toFixed(1)}</td>
                                 <td className="border border-black p-1 text-center">{grade.rawScore}</td>
-                                <td className="border border-black p-1 text-center">{grade.gradePoint?.toFixed(1) ?? '-'}</td>
+                                <td className="border border-black p-1 text-center">{grade.gradePoint?.toFixed(2) ?? '-'}</td>
                                 <td className="border border-black p-1 text-center">{grade.statusFlag === 'ร' ? 'ร' : ''}</td>
                                 <td className="border border-black p-1 text-center"></td>
                             </tr>
@@ -97,92 +97,94 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                 </tbody>
             </table>
 
-            <div className="flex justify-between mt-4 flex-grow">
-                 {/* Left Column for summaries */}
-                <div className="w-1/2">
-                    <table className="w-full border-collapse border border-black">
-                        <thead>
-                            <tr className="bg-gray-100 print:bg-gray-100">
-                                <th className="border border-black p-1 text-left" colSpan={2}>สรุปผลการประเมิน</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาพื้นฐาน</td>
-                                <td className="border border-black p-1 text-right">{totalBasicCredits.toFixed(1)}</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาเพิ่มเติม</td>
-                                <td className="border border-black p-1 text-right">{totalAdditionalCredits.toFixed(1)}</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1">รวมหน่วยกิต/น้ำหนัก</td>
-                                <td className="border border-black p-1 text-right">{totalCredits.toFixed(1)}</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1"><strong>ระดับผลการเรียนเฉลี่ย</strong></td>
-                                <td className="border border-black p-1 text-right"><strong>{gpa}</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div className="flex-grow flex flex-col justify-end">
+                <div className="flex mt-4">
+                    {/* Left Column for summaries */}
+                    <div className="w-1/2 pr-4">
+                        <table className="w-full border-collapse border border-black">
+                            <thead>
+                                <tr className="bg-gray-100 print:bg-gray-100">
+                                    <th className="border border-black p-1 text-left" colSpan={2}>สรุปผลการประเมิน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาพื้นฐาน</td>
+                                    <td className="border border-black p-1 text-right">{totalBasicCredits.toFixed(1)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1">จำนวนหน่วยกิต/น้ำหนักวิชาเพิ่มเติม</td>
+                                    <td className="border border-black p-1 text-right">{totalAdditionalCredits.toFixed(1)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1">รวมหน่วยกิต/น้ำหนัก</td>
+                                    <td className="border border-black p-1 text-right">{totalCredits.toFixed(1)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1"><strong>ระดับผลการเรียนเฉลี่ย</strong></td>
+                                    <td className="border border-black p-1 text-right"><strong>{gpa}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                    <table className="w-full border-collapse border border-black mt-2">
-                        <thead>
-                            <tr className="bg-gray-100 print:bg-gray-100">
-                                <th className="border border-black p-1 text-left" colSpan={2}>การประเมินคุณลักษณะ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td className="border border-black p-1">คุณลักษณะอันพึงประสงค์ของสถานศึกษา</td>
-                                <td className="border border-black p-1 text-center">{attributes?.desirableCharacteristics || '-'}</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1">การอ่าน คิด วิเคราะห์และเขียน</td>
-                                <td className="border border-black p-1 text-center">{attributes?.readingThinkingWriting || '-'}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <table className="w-full border-collapse border border-black mt-2">
-                        <thead>
-                            <tr className="bg-gray-100 print:bg-gray-100">
-                                <th className="border border-black p-1 text-left" colSpan={2}>กิจกรรมพัฒนาผู้เรียน</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td className="border border-black p-1">กิจกรรมแนะแนว</td><td className="border border-black p-1 text-center">{attributes?.guidanceActivity || '-'}</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมชุมนุม</td><td className="border border-black p-1 text-center">{attributes?.clubActivity || '-'}</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black p-1 text-center">{attributes?.scoutActivity || '-'}</td></tr>
-                            <tr><td className="border border-black p-1">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black p-1 text-center">{attributes?.socialServiceActivity || '-'}</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                        <table className="w-full border-collapse border border-black mt-2">
+                            <thead>
+                                <tr className="bg-gray-100 print:bg-gray-100">
+                                    <th className="border border-black p-1 text-left" colSpan={2}>การประเมินคุณลักษณะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="border border-black p-1">คุณลักษณะอันพึงประสงค์ของสถานศึกษา</td>
+                                    <td className="border border-black p-1 text-center">{attributes?.desirableCharacteristics || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border border-black p-1">การอ่าน คิด วิเคราะห์และเขียน</td>
+                                    <td className="border border-black p-1 text-center">{attributes?.readingThinkingWriting || '-'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table className="w-full border-collapse border border-black mt-2">
+                            <thead>
+                                <tr className="bg-gray-100 print:bg-gray-100">
+                                    <th className="border border-black p-1 text-left" colSpan={2}>กิจกรรมพัฒนาผู้เรียน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td className="border border-black p-1">กิจกรรมแนะแนว</td><td className="border border-black p-1 text-center">{attributes?.guidanceActivity || '-'}</td></tr>
+                                <tr><td className="border border-black p-1">กิจกรรมชุมนุม</td><td className="border border-black p-1 text-center">{attributes?.clubActivity || '-'}</td></tr>
+                                <tr><td className="border border-black p-1">กิจกรรมลูกเสือ ยุวกาชาด</td><td className="border border-black p-1 text-center">{attributes?.scoutActivity || '-'}</td></tr>
+                                <tr><td className="border border-black p-1">กิจกรรมเพื่อสังคมและสาธารณประโยชน์</td><td className="border border-black p-1 text-center">{attributes?.socialServiceActivity || '-'}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                {/* Right Column for signatures */}
-                <div 
-                    className="w-1/2 flex flex-col justify-end items-center"
-                    style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}
-                >
-                    <div className="w-full space-y-8">
-                         <div className="text-center">
-                            {homeroomTeachers && homeroomTeachers.length > 0 && (
-                                <>
-                                    {homeroomTeachers.map((teacher, index) => (
-                                        <p key={index}>{teacher}</p>
-                                    ))}
-                                    <p>ครูประจำชั้น</p>
-                                </>
-                            )}
-                        </div>
-                        <div className="text-center">
-                            <p>........................................................</p>
-                            <p>(นายรัตนะ มณีงาม)</p>
-                            <p>หัวหน้าฝ่ายวิชาการ</p>
-                        </div>
-                        <div className="text-center">
-                            <p>........................................................</p>
-                            <p>(นายราชัน หาญเทพ)</p>
-                            <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
+                    {/* Right Column for signatures */}
+                    <div 
+                        className="w-1/2 flex flex-col justify-end items-center pl-4"
+                        style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}
+                    >
+                        <div className="w-full space-y-8">
+                             <div className="text-center">
+                                {homeroomTeachers && homeroomTeachers.length > 0 && (
+                                    <>
+                                        {homeroomTeachers.map((teacher, index) => (
+                                            <p key={index}>{teacher}</p>
+                                        ))}
+                                        <p>ครูประจำชั้น</p>
+                                    </>
+                                )}
+                            </div>
+                            <div className="text-center">
+                                <p>........................................................</p>
+                                <p>(นายรัตนะ มณีงาม)</p>
+                                <p>หัวหน้าฝ่ายวิชาการ</p>
+                            </div>
+                            <div className="text-center">
+                                <p>........................................................</p>
+                                <p>(นายราชัน หาญเทพ)</p>
+                                <p>ผู้อำนวยการสถานศึกษา โรงเรียนวัดทองสัมฤทธิ์</p>
+                            </div>
                         </div>
                     </div>
                 </div>
