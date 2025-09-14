@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -10,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Sarabun', 'sans-serif'],
-        headline: ['Sarabun', 'sans-serif'],
+        body: ['var(--font-sarabun)', 'sans-serif'],
+        headline: ['var(--font-sarabun)', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

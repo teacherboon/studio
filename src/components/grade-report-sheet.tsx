@@ -37,7 +37,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
         <div 
             ref={ref} 
             className="p-8 bg-white text-black print:shadow-none flex flex-col" 
-            style={{ width: '210mm', height: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
+            style={{ width: '210mm', minHeight: '297mm', fontFamily: '"TH Sarabun New", sans-serif', fontSize: '16px' }}
         >
             <div className="text-center mb-1">
                 <div className="flex items-center justify-center gap-4">
