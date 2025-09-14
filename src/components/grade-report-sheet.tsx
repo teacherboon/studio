@@ -161,7 +161,7 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                     </div>
 
                     <div className="w-1/2 flex flex-col justify-end items-center pl-4">
-                        <div className="w-full space-y-8 text-center" style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}>
+                        <div className="w-full space-y-4 text-center" style={{ fontSize: '16px', fontFamily: '"TH Sarabun New", sans-serif' }}>
                             <div>
                                 {homeroomTeachers && homeroomTeachers.length > 0 && (
                                     <>
@@ -172,12 +172,16 @@ export const GradeReportSheet = React.forwardRef<HTMLDivElement, GradeReportShee
                                     </>
                                 )}
                             </div>
-                            <div>
-                                <p>........................................................</p>
-                                <p>(นายรัตนะ มณีงาม)</p>
-                                <p>หัวหน้าฝ่ายวิชาการ</p>
+                            <div className="relative h-20">
+                                <div className="absolute bottom-6 inset-x-0 flex justify-center">
+                                    <Image src="https://i.postimg.cc/bNhpJgYD/image.png" alt="Head of Academic's Signature" width={200} height={60} style={{ objectFit: 'contain' }} />
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0">
+                                    <p>(นายรัตนะ มณีงาม)</p>
+                                    <p>หัวหน้าฝ่ายวิชาการ</p>
+                                </div>
                             </div>
-                             <div className="relative h-24">
+                             <div className="relative h-20 mt-4">
                                 <div className="absolute bottom-6 inset-x-0 flex justify-center">
                                     <Image src="https://i.postimg.cc/HW5TdRm1/image.png" alt="Director's Signature" width={240} height={80} style={{ objectFit: 'contain' }} />
                                 </div>
