@@ -1,12 +1,13 @@
+
 "use client";
 
 import { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { schedules, offerings, subjects, classes, users } from '@/lib/data';
 import type { DayOfWeek } from '@/lib/types';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useData } from '@/context/data-context';
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
     { value: 'MONDAY', label: 'วันจันทร์' },
@@ -27,9 +28,11 @@ const periods = [
 ];
 
 function TeacherScheduleTable({ teacherEmail }: { teacherEmail: string }) {
+    const { allSchedules, allOfferings, allSubjects, allClasses } = useData();
+
     const getScheduleForCell = (day: DayOfWeek, period: number) => {
-        const offeringForTeacher = offerings.filter(o => o.teacherEmail === teacherEmail);
-        const scheduleEntry = schedules.find(s => 
+        const offeringForTeacher = allOfferings.filter(o => o.teacherEmail === teacherEmail);
+        const scheduleEntry = allSchedules.find(s => 
             s.dayOfWeek === day && 
             s.period === period &&
             offeringForTeacher.some(o => o.offeringId === s.offeringId)
@@ -37,11 +40,11 @@ function TeacherScheduleTable({ teacherEmail }: { teacherEmail: string }) {
 
         if (!scheduleEntry) return null;
 
-        const offering = offerings.find(o => o.offeringId === scheduleEntry.offeringId);
+        const offering = allOfferings.find(o => o.offeringId === scheduleEntry.offeringId);
         if (!offering) return null;
 
-        const subject = subjects.find(s => s.subjectId === offering.subjectId);
-        const classInfo = classes.find(c => c.classId === offering.classId);
+        const subject = allSubjects.find(s => s.subjectId === offering.subjectId);
+        const classInfo = allClasses.find(c => c.classId === offering.classId);
 
         return (
             <div className="text-xs p-1 bg-primary/10 rounded-md">

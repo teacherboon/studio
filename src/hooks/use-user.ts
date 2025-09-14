@@ -3,10 +3,10 @@
 
 import { useState, useEffect } from 'react';
 import type { UserRole } from '@/lib/types';
-import { users, classes } from '@/lib/data';
+import { useData } from '@/context/data-context';
 
 export interface UserInfo {
-  userId: string; // Added userId
+  userId: string;
   role: UserRole;
   email: string;
   displayName: string;
@@ -16,17 +16,18 @@ export interface UserInfo {
 }
 
 export function useUser() {
+  const { allUsers, allClasses } = useData();
   const [user, setUser] = useState<UserInfo | null>(null);
 
   useEffect(() => {
     const userEmail = localStorage.getItem('user_email');
     if (userEmail) {
-      const foundUser = users.find(u => u.email === userEmail);
+      const foundUser = allUsers.find(u => u.email === userEmail);
       if (foundUser) {
         
         let homeroomClassId: string | undefined = undefined;
         if(foundUser.role === 'TEACHER') {
-            const foundClass = classes.find(c => c.homeroomTeacherEmails?.includes(foundUser.email));
+            const foundClass = allClasses.find(c => c.homeroomTeacherEmails?.includes(foundUser.email) && c.isActive);
             if(foundClass) {
                 homeroomClassId = foundClass.classId;
             }
@@ -45,7 +46,7 @@ export function useUser() {
         setUser(userInfo);
       }
     }
-  }, []);
+  }, [allUsers, allClasses]);
 
   return user;
 }

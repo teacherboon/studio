@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Select,
@@ -27,12 +26,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { students, scores, offerings, subjects, classes, enrollments } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Wand, BarChart, User, FileText, PieChart, School, Calendar } from "lucide-react";
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from "@/ai/flows/analyze-student-scores";
 import type { StudentGradeDetails } from "@/lib/types";
 import { calculateGPA } from "@/lib/utils";
+import { useData } from "@/context/data-context";
 
 function AnalysisResultCard({ result }: { result: AnalyzeStudentScoresOutput }) {
     return (
@@ -67,6 +66,7 @@ function AnalysisResultCard({ result }: { result: AnalyzeStudentScoresOutput }) 
 }
 
 export function StudentGradeViewer() {
+  const { allStudents, allScores, allOfferings, allSubjects, allClasses, allEnrollments } = useData();
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -74,34 +74,34 @@ export function StudentGradeViewer() {
   const { toast } = useToast();
 
   const academicYears = useMemo(() => {
-    return [...new Set(classes.map(c => c.yearBe))].sort((a, b) => b - a);
-  }, []);
+    return [...new Set(allClasses.map(c => c.yearBe))].sort((a, b) => b - a);
+  }, [allClasses]);
 
   const studentsForYear = useMemo(() => {
     if (!selectedYear) return [];
 
     const classIdsInYear = new Set<string>();
-    classes.forEach(c => {
+    allClasses.forEach(c => {
         if (c.yearBe === Number(selectedYear)) {
             classIdsInYear.add(c.classId);
         }
     });
 
     const studentIdsInClass = new Set<string>();
-    enrollments.forEach(e => {
+    allEnrollments.forEach(e => {
         if (classIdsInYear.has(e.classId)) {
             studentIdsInClass.add(e.studentId);
         }
     });
     
-    return students.filter(s => studentIdsInClass.has(s.studentId));
+    return allStudents.filter(s => studentIdsInClass.has(s.studentId));
 
-  }, [selectedYear]);
+  }, [selectedYear, allStudents, allClasses, allEnrollments]);
 
 
   const selectedStudent = useMemo(() => {
-    return students.find(s => s.studentId === selectedStudentId);
-  }, [selectedStudentId]);
+    return allStudents.find(s => s.studentId === selectedStudentId);
+  }, [selectedStudentId, allStudents]);
 
   const handleYearChange = (year: string) => {
     setSelectedYear(year);
@@ -117,12 +117,12 @@ export function StudentGradeViewer() {
   const studentGrades = useMemo(() => {
     if (!selectedStudentId) return [];
     
-    const studentScores = scores.filter(s => s.studentId === selectedStudentId);
+    const studentScores = allScores.filter(s => s.studentId === selectedStudentId);
 
     return studentScores.map(score => {
-        const offering = offerings.find(o => o.offeringId === score.offeringId);
-        const subject = subjects.find(s => s.subjectId === offering?.subjectId);
-        const classInfo = classes.find(c => c.classId === offering?.classId);
+        const offering = allOfferings.find(o => o.offeringId === score.offeringId);
+        const subject = allSubjects.find(s => s.subjectId === offering?.subjectId);
+        const classInfo = allClasses.find(c => c.classId === offering?.classId);
         return {
           ...score,
           subjectName: subject?.subjectNameTh || 'N/A',
@@ -131,7 +131,7 @@ export function StudentGradeViewer() {
           className: `${classInfo?.level}/${classInfo?.room}` || 'N/A'
         };
       });
-  }, [selectedStudentId]);
+  }, [selectedStudentId, allScores, allOfferings, allSubjects, allClasses]);
 
   const gradesByTerm = useMemo(() => {
     return studentGrades.reduce((acc, grade) => {

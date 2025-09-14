@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, ChangeEvent, useRef } from "react";
+import { useState, ChangeEvent, useRef, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Download, PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog"
 import {
@@ -37,8 +36,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { users as initialUsers, type User, type UserRole } from "@/lib/data";
+import { type User, type UserRole } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { useData } from "@/context/data-context";
 
 function UserForm({ userData, onSave, closeDialog }: { userData: Partial<User> | null, onSave: (userData: User) => void, closeDialog: () => void }) {
     const [displayName, setDisplayName] = useState(userData?.displayName || '');
@@ -294,21 +294,22 @@ const UserImportCard = ({ onUsersImported }: { onUsersImported: (newUsers: User[
 
 
 export default function AdminUsersPage() {
-    const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
+    const { allUsers, actions } = useData();
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
     
-    // Filter out students
-    const personnel = allUsers.filter(u => u.role !== 'STUDENT').sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const personnel = useMemo(() => {
+        return allUsers.filter(u => u.role !== 'STUDENT').sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [allUsers]);
 
     const handleSaveUser = (data: User) => {
         const isEditing = allUsers.some(u => u.userId === data.userId);
 
         if (isEditing) {
-            setAllUsers(prev => prev.map(u => u.userId === data.userId ? data : u));
+            actions.updateUser(data.userId, data);
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลบุคลากรได้รับการอัปเดตแล้ว" });
         } else {
              if (allUsers.some(u => u.email.toLowerCase() === data.email.toLowerCase())) {
@@ -319,14 +320,14 @@ export default function AdminUsersPage() {
                 });
                 return;
             }
-            setAllUsers(prev => [data, ...prev]);
+            actions.addUser(data);
             toast({ title: "สร้างสำเร็จ", description: "บุคลากรใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsDialogOpen(false);
     };
 
     const handleDeleteUser = (userId: string) => {
-        setAllUsers(prev => prev.filter(u => u.userId !== userId));
+        actions.deleteUser(userId);
         toast({
             title: 'ลบบุคลากรสำเร็จ',
             description: 'บุคลากรได้ถูกลบออกจากระบบแล้ว',
@@ -339,22 +340,20 @@ export default function AdminUsersPage() {
     };
 
     const handleUsersImport = (newUsers: User[]) => {
-        const existingEmails = new Set(allUsers.map(u => u.email.toLowerCase()));
-        const uniqueNewUsers = newUsers.filter(newUser => !existingEmails.has(newUser.email.toLowerCase()));
+        const { importedCount, conflictCount } = actions.importUsers(newUsers);
 
-        if (uniqueNewUsers.length < newUsers.length) {
+        if (conflictCount > 0) {
             toast({
                 variant: "default",
                 title: "ตรวจพบข้อมูลซ้ำซ้อน",
-                description: `ข้ามการนำเข้า ${newUsers.length - uniqueNewUsers.length} รายการ เนื่องจากมีอีเมลซ้ำกับข้อมูลที่มีอยู่แล้ว`
+                description: `ข้ามการนำเข้า ${conflictCount} รายการ เนื่องจากมีอีเมลซ้ำกับข้อมูลที่มีอยู่แล้ว`
             });
         }
         
-        if (uniqueNewUsers.length > 0) {
-            setAllUsers(prev => [...prev, ...uniqueNewUsers]);
+        if (importedCount > 0) {
             toast({
                 title: 'อัปโหลดสำเร็จ',
-                description: `นำเข้าข้อมูลบุคลากรใหม่ ${uniqueNewUsers.length} คน`,
+                description: `นำเข้าข้อมูลบุคลากรใหม่ ${importedCount} คน`,
             });
         }
     }

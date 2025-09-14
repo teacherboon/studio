@@ -1,3 +1,4 @@
+
 import { StudentGradeViewer } from "@/components/student-grade-viewer";
 
 export default function ScoreAnalysisPage() {

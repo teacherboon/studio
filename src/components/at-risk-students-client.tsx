@@ -1,32 +1,36 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { identifyAtRiskStudents } from "@/ai/flows/identify-at-risk-students";
 import type { IdentifyAtRiskStudentsOutput } from "@/ai/flows/identify-at-risk-students";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { students, gradeScale } from "@/lib/data";
+import { useData } from "@/context/data-context";
 import { Loader2, AlertTriangle, UserCheck } from "lucide-react";
 
-// For demo, we'll just use a subset of scores from the mock data
-const allStudentRecords = students.map(s => ({
-    studentId: s.studentId,
-    studentName: `${s.prefixTh}${s.firstNameTh} ${s.lastNameTh}`,
-    // A more realistic scenario would fetch the current score. Here we use a random score for demo.
-    rawScore: Math.floor(Math.random() * 60) + 30, 
-}));
-allStudentRecords[1].rawScore = 45; // ensure at least one is at risk
-allStudentRecords[3].rawScore = 38; // and another one
-
 export function AtRiskStudentsClient() {
+  const { allStudents, gradeScale } = useData();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<IdentifyAtRiskStudentsOutput | null>(null);
   const { toast } = useToast();
 
+  const allStudentRecords = useMemo(() => allStudents.map(s => ({
+    studentId: s.studentId,
+    studentName: `${s.prefixTh}${s.firstNameTh} ${s.lastNameTh}`,
+    // A more realistic scenario would fetch the current score. Here we use a random score for demo.
+    rawScore: Math.floor(Math.random() * 60) + 30, 
+  })), [allStudents]);
+
   const handleIdentify = async () => {
     setLoading(true);
     setResult(null);
+
+    // ensure at least one is at risk
+    const atRiskCandidate = allStudentRecords.find(s => s.studentId === 'stu2');
+    if (atRiskCandidate) atRiskCandidate.rawScore = 45;
+
     try {
       const input = {
         studentRecords: allStudentRecords,

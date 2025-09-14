@@ -32,24 +32,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { classes as initialClasses, students as initialStudents, enrollments as initialEnrollments, users as initialUsers } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import type { Class, Enrollment, Student, User, UserRole } from '@/lib/types';
+import type { Class, Enrollment, Student, User } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { useData } from '@/context/data-context';
 
 
-function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Class> | null, onSave: (classData: Class) => void, closeDialog: () => void }) {
+function ClassForm({ classData, teachers, onSave, closeDialog }: { classData: Partial<Class> | null, teachers: User[], onSave: (classData: Class) => void, closeDialog: () => void }) {
     const [level, setLevel] = useState(classData?.level || '');
     const [room, setRoom] = useState(classData?.room || '');
     const [yearBe, setYearBe] = useState(classData?.yearBe || new Date().getFullYear() + 543);
     const [homeroomTeacherEmail1, setHomeroomTeacherEmail1] = useState(classData?.homeroomTeacherEmails?.[0] || 'NONE');
     const [homeroomTeacherEmail2, setHomeroomTeacherEmail2] = useState(classData?.homeroomTeacherEmails?.[1] || 'NONE');
-
-    const teachers = useMemo(() => initialUsers.filter(u => u.role === 'TEACHER'), []);
 
     const handleSave = () => {
         if (!level || !room || !yearBe) {
@@ -141,6 +138,9 @@ function ClassForm({ classData, onSave, closeDialog }: { classData: Partial<Clas
 }
 
 function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { classData?: Class | null, onSave: (data: Class) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    const { allUsers } = useData();
+    const teachers = useMemo(() => allUsers.filter(u => u.role === 'TEACHER'), [allUsers]);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
@@ -150,7 +150,7 @@ function CreateOrEditClassDialog({ classData, onSave, open, onOpenChange }: { cl
                         {classData?.classId ? `แก้ไขข้อมูลสำหรับห้อง ${classData.level}/${classData.room} ปีการศึกษา ${classData.yearBe}` : 'กรอกข้อมูลเพื่อสร้างห้องเรียนในระบบ'}
                     </DialogDescription>
                 </DialogHeader>
-                {open && <ClassForm classData={classData || null} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
+                {open && <ClassForm classData={classData || null} teachers={teachers} onSave={onSave} closeDialog={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
     )
@@ -268,15 +268,10 @@ function EditStudentDialog({
     );
 }
 
-function StudentImportCard({ 
-    onImport,
-    allClassesData,
-}: { 
-    onImport: (data: { newUsers: User[], newStudents: Student[], newEnrollments: Enrollment[] }) => void,
-    allClassesData: Class[],
-}) {
+function StudentImportCard({ onImport }: { onImport: (data: { newUsers: User[], newStudents: Student[], newEnrollments: Enrollment[] }) => void }) {
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { allClasses } = useData();
     const currentYear = new Date().getFullYear() + 543;
 
     const handleDownloadTemplate = () => {
@@ -317,9 +312,9 @@ function StudentImportCard({
                     const [studentId, stuCode, prefixTh, firstNameTh, lastNameTh, email, password, level, room, classNumberStr] = line.split(',').map(s => s.trim());
                     
                     const classNumber = classNumberStr ? parseInt(classNumberStr) : undefined;
-                    const classTarget = allClassesData.find(c => c.level === level && c.room === room && c.yearBe === currentYear && c.isActive);
+                    const classTarget = allClasses.find(c => c.level === level && c.room === room && c.yearBe === currentYear && c.isActive);
                     
-                    if (studentId && stuCode && firstNameTh && lastNameTh && email && password && classTarget && classNumber) {
+                    if (studentId && stuCode && prefixTh && firstNameTh && lastNameTh && email && password && classTarget && classNumber) {
                         const now = new Date().toISOString();
                         const userId = `user-csv-${Date.now()}-${index}`;
 
@@ -484,11 +479,17 @@ function StudentActionDropdown({ student, user, onEdit }: { student: Student, us
 }
 
 export default function AdminClassesPage() {
-    const [allClasses, setAllClasses] = useState<Class[]>(initialClasses);
-    const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
-    const [allStudents, setAllStudents] = useState<Student[]>(initialStudents);
-    const [allEnrollments, setAllEnrollments] = useState<Enrollment[]>(initialEnrollments);
-    
+    const { 
+        allClasses, 
+        allUsers, 
+        allStudents, 
+        allEnrollments, 
+        actions, 
+        studentCountByClass, 
+        homeroomTeacherByClass, 
+        usersByStudentId 
+    } = useData();
+
     const [editingClass, setEditingClass] = useState<Class | null>(null);
     const [viewingClass, setViewingClass] = useState<Class | null>(null);
     const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
@@ -512,28 +513,6 @@ export default function AdminClassesPage() {
         ).sort((a,b) => b.yearBe - a.yearBe || a.level.localeCompare(b.level) || a.room.localeCompare(b.room));
     }, [allClasses, selectedYear]);
     
-    const studentCountByClass = useMemo(() => {
-        const counts: Record<string, number> = {};
-        allEnrollments.forEach(e => {
-            counts[e.classId] = (counts[e.classId] || 0) + 1;
-        });
-        return counts;
-    }, [allEnrollments]);
-
-    const homeroomTeacherByClass = useMemo(() => {
-        const map = new Map<string, string>();
-        allClasses.forEach(c => {
-            if (c.homeroomTeacherEmails && c.homeroomTeacherEmails.length > 0) {
-                const teacherNames = c.homeroomTeacherEmails
-                    .map(email => allUsers.find(u => u.email === email)?.thaiName)
-                    .filter(Boolean)
-                    .join(', ');
-                map.set(c.classId, teacherNames);
-            }
-        });
-        return map;
-    }, [allClasses, allUsers]);
-    
     const studentsInViewingClass = useMemo(() => {
         if (!viewingClass) return [];
         const studentIds = allEnrollments
@@ -544,21 +523,12 @@ export default function AdminClassesPage() {
             .sort((a,b) => (a.classNumber || 999) - (b.classNumber || 999));
     }, [viewingClass, allEnrollments, allStudents]);
 
-    const usersByStudentId = useMemo(() => {
-        const map = new Map<string, User>();
-        allUsers.forEach(u => {
-            if (u.studentId) {
-                map.set(u.studentId, u);
-            }
-        });
-        return map;
-    }, [allUsers]);
 
     const handleSaveClass = (data: Class) => {
         const isEditing = allClasses.some(c => c.classId === data.classId);
 
         if (isEditing) {
-            setAllClasses(prev => prev.map(c => c.classId === data.classId ? data : c));
+            actions.updateClass(data.classId, data);
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลห้องเรียนได้รับการอัปเดตแล้ว" });
         } else {
              const isDuplicate = allClasses.some(
@@ -572,15 +542,14 @@ export default function AdminClassesPage() {
                 });
                 return;
             }
-            setAllClasses(prev => [data, ...prev]);
+            actions.addClass(data);
             toast({ title: "สร้างสำเร็จ", description: "ห้องเรียนใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsClassDialogOpen(false);
     }
     
     const handleDeleteClass = (classId: string) => {
-        setAllEnrollments(prev => prev.filter(e => e.classId !== classId));
-        setAllClasses(prev => prev.filter(c => c.classId !== classId));
+        actions.deleteClass(classId);
         toast({ title: "ลบสำเร็จ", description: "ห้องเรียนและข้อมูลการลงทะเบียนได้ถูกลบแล้ว" });
     }
 
@@ -590,41 +559,20 @@ export default function AdminClassesPage() {
     };
 
     const handleStudentImport = ({ newUsers, newStudents, newEnrollments }: { newUsers: User[], newStudents: Student[], newEnrollments: Enrollment[] }) => {
-        const existingUserEmails = new Set(allUsers.map(u => u.email.toLowerCase()));
-        const existingStudentIds = new Set(allStudents.map(s => s.studentId));
-
-        const uniqueNewUsers = newUsers.filter(u => !existingUserEmails.has(u.email.toLowerCase()));
-        const uniqueNewStudents = newStudents.filter(s => !existingStudentIds.has(s.studentId));
+        const result = actions.importStudents({ newUsers, newStudents, newEnrollments });
         
-        let conflicts = newUsers.length - uniqueNewUsers.length + (newStudents.length - uniqueNewStudents.length);
-        
-        if (conflicts > 0) {
+        if (result.conflicts > 0) {
              toast({
                 variant: "destructive",
                 title: "ตรวจพบข้อมูลซ้ำซ้อน",
-                description: `ข้ามการนำเข้า ${conflicts} รายการ เนื่องจากมีอีเมลหรือรหัสนักเรียนซ้ำกับข้อมูลที่มีอยู่แล้ว`
+                description: `ข้ามการนำเข้า ${result.conflicts} รายการ เนื่องจากมีอีเมลหรือรหัสนักเรียนซ้ำกับข้อมูลที่มีอยู่แล้ว`
             });
         }
         
-        const validUserIds = new Set(uniqueNewUsers.map(u => u.studentId));
-        const validStudentIds = new Set(uniqueNewStudents.map(s => s.studentId));
-
-        const finalNewEnrollments = newEnrollments.filter(e => validUserIds.has(e.studentId) && validStudentIds.has(e.studentId));
-        
-        if (uniqueNewUsers.length > 0) {
-            setAllUsers(prev => [...prev, ...uniqueNewUsers]);
-        }
-        if (uniqueNewStudents.length > 0) {
-            setAllStudents(prev => [...prev, ...uniqueNewStudents]);
-        }
-        if (finalNewEnrollments.length > 0) {
-            setAllEnrollments(prev => [...prev, ...finalNewEnrollments]);
-        }
-
-        if (finalNewEnrollments.length > 0) {
+        if (result.importedCount > 0) {
             toast({
                 title: 'นำเข้าสำเร็จ!',
-                description: `สร้างและลงทะเบียนนักเรียนใหม่ ${finalNewEnrollments.length} คน`,
+                description: `สร้างและลงทะเบียนนักเรียนใหม่ ${result.importedCount} คน`,
             });
         }
     };
@@ -656,8 +604,8 @@ export default function AdminClassesPage() {
             return;
         }
 
-        setAllStudents(prev => prev.map(s => s.studentId === studentData.studentId ? studentData : s));
-        setAllUsers(prev => prev.map(u => u.userId === userData.userId ? userData : u));
+        actions.updateStudent(studentData.studentId, studentData);
+        actions.updateUser(userData.userId, userData);
         
         toast({
             title: 'แก้ไขสำเร็จ',
@@ -679,7 +627,7 @@ export default function AdminClassesPage() {
                 </Button>
             </div>
 
-            <StudentImportCard onImport={handleStudentImport} allClassesData={allClasses} />
+            <StudentImportCard onImport={handleStudentImport} />
 
             <Card>
                 <CardHeader>
@@ -830,5 +778,3 @@ export default function AdminClassesPage() {
         </div>
     )
 }
-
-    

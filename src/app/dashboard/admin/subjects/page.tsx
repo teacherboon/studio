@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2, BookPlus } from "lucide-react";
@@ -36,10 +36,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { classes, subjects as initialSubjects, users, offerings as initialOfferings, type Offering, type Subject } from "@/lib/data";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
+import type { Offering } from '@/lib/types';
+import { useData } from '@/context/data-context';
 
 
 function OfferingActionDropdown({ offering, onEdit, onDelete }: { offering: Offering, onEdit: () => void, onDelete: () => void }) {
@@ -83,7 +84,8 @@ function OfferingActionDropdown({ offering, onEdit, onDelete }: { offering: Offe
 }
 
 function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }: { offeringData?: Offering | null, onSave: (data: Offering) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
-    const teachers = users.filter(u => u.role === 'TEACHER');
+    const { allUsers, allSubjects, allClasses } = useData();
+    const teachers = useMemo(() => allUsers.filter(u => u.role === 'TEACHER'), [allUsers]);
     const { toast } = useToast();
     
     const [selectedSubject, setSelectedSubject] = useState(offeringData?.subjectId || '');
@@ -105,13 +107,13 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                 setSelectedTeacher('');
                 setSelectedClass('');
                 setPeriodsPerWeek(0);
-                setYearBe(0);
+                setYearBe(new Date().getFullYear() + 543);
             }
         }
     }, [offeringData, open]);
     
     const handleSave = () => {
-        if (!selectedSubject || !selectedTeacher || !selectedClass) {
+        if (!selectedSubject || !selectedTeacher || !selectedClass || !yearBe) {
             toast({ variant: 'destructive', title: 'ข้อมูลไม่ครบถ้วน', description: 'กรุณากรอกข้อมูลให้ครบทุกช่อง' });
             return;
         }
@@ -151,7 +153,7 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                                 <SelectValue placeholder="เลือกรายวิชา" />
                             </SelectTrigger>
                             <SelectContent>
-                                {initialSubjects.map(s => (
+                                {allSubjects.map(s => (
                                     <SelectItem key={s.subjectId} value={s.subjectId}>{s.subjectCode} - {s.subjectNameTh}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -181,8 +183,8 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
                                 <SelectValue placeholder="เลือกห้องเรียน" />
                             </SelectTrigger>
                             <SelectContent>
-                                {classes.map(c => (
-                                    <SelectItem key={c.classId} value={c.classId}>ห้อง {c.level}/{c.room}</SelectItem>
+                                {allClasses.map(c => (
+                                    <SelectItem key={c.classId} value={c.classId}>ห้อง {c.level}/{c.room} ({c.yearBe})</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -212,18 +214,20 @@ function CreateOrEditOfferingDialog({ offeringData, onSave, open, onOpenChange }
 }
 
 export default function AdminOfferingsPage() {
-    const [offeringsList, setOfferingsList] = useState<Offering[]>(initialOfferings.sort((a,b) => b.offeringId.localeCompare(a.offeringId)));
+    const { allOfferings, actions, offeringDetails } = useData();
     const [editingOffering, setEditingOffering] = useState<Offering | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
+    
+    const sortedOfferings = useMemo(() => [...allOfferings].sort((a,b) => b.offeringId.localeCompare(a.offeringId)), [allOfferings]);
 
 
     const handleSaveOffering = (data: Offering) => {
-        const isEditing = offeringsList.some(o => o.offeringId === data.offeringId);
+        const isEditing = allOfferings.some(o => o.offeringId === data.offeringId);
         
-        const isDuplicate = offeringsList.some(o => 
+        const isDuplicate = allOfferings.some(o => 
             o.offeringId !== data.offeringId &&
             o.subjectId === data.subjectId && 
             o.classId === data.classId &&
@@ -240,17 +244,17 @@ export default function AdminOfferingsPage() {
         }
 
         if(isEditing) {
-            setOfferingsList(prev => prev.map(o => o.offeringId === data.offeringId ? data : o));
+            actions.updateOffering(data.offeringId, data);
              toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาที่เปิดสอนได้รับการอัปเดตแล้ว" });
         } else {
-            setOfferingsList(prev => [data, ...prev].sort((a,b) => b.offeringId.localeCompare(a.offeringId)));
+            actions.addOffering(data);
             toast({ title: "สร้างสำเร็จ", description: "เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย" });
         }
         setIsDialogOpen(false);
     }
 
     const deleteOffering = (offeringId: string) => {
-        setOfferingsList(prev => prev.filter(o => o.offeringId !== offeringId));
+        actions.deleteOffering(offeringId);
         toast({
             title: 'ลบรายวิชาสำเร็จ',
             description: 'รายวิชาที่เปิดสอนได้ถูกลบออกจากระบบแล้ว',
@@ -263,17 +267,14 @@ export default function AdminOfferingsPage() {
     };
 
     const getOfferingDetails = (offering: Offering) => {
-        const subject = initialSubjects.find(s => s.subjectId === offering.subjectId);
-        const classInfo = classes.find(c => c.classId === offering.classId);
-        const teacher = users.find(u => u.email === offering.teacherEmail);
-        return { subject, classInfo, teacher };
+        return offeringDetails[offering.offeringId] || {};
     }
     
-    const paginatedOfferings = offeringsList.slice(
+    const paginatedOfferings = sortedOfferings.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
-    const totalPages = Math.ceil(offeringsList.length / itemsPerPage);
+    const totalPages = Math.ceil(allOfferings.length / itemsPerPage);
 
     return (
         <div className="space-y-8">
@@ -323,7 +324,7 @@ export default function AdminOfferingsPage() {
                                     <TableRow key={offering.offeringId}>
                                         <TableCell>{subject?.subjectCode}</TableCell>
                                         <TableCell>{subject?.subjectNameTh}</TableCell>
-                                        <TableCell>ห้อง {classInfo?.level}/{classInfo?.room}</TableCell>
+                                        <TableCell>ห้อง {classInfo?.level}/{classInfo?.room} ({classInfo?.yearBe})</TableCell>
                                         <TableCell>{teacher?.thaiName}</TableCell>
                                         <TableCell>{offering.termLabel}</TableCell>
                                         <TableCell className="text-center">{offering.periodsPerWeek || '-'}</TableCell>

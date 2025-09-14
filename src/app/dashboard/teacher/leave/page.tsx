@@ -40,7 +40,7 @@ import { useUser } from '@/hooks/use-user';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { findSubstituteTeacher, FindSubstituteTeacherOutput } from '@/ai/flows/find-substitute-teacher';
-import { users, schedules } from '@/lib/data';
+import { useData } from '@/context/data-context';
 
 const formSchema = z.object({
   leaveType: z.enum(['PERSONAL', 'OFFICIAL_DUTY'], {
@@ -56,6 +56,7 @@ type LeaveFormValues = z.infer<typeof formSchema>;
 
 export default function TeacherLeavePage() {
   const user = useUser();
+  const { allUsers, allSchedules, allOfferings } = useData();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FindSubstituteTeacherOutput | null>(null);
@@ -72,10 +73,10 @@ export default function TeacherLeavePage() {
     const dayOfWeek = format(data.leaveDate, 'EEEE').toUpperCase() as 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY';
     
     // Find periods the teacher is scheduled to teach on that day
-    const affectedPeriods = schedules
+    const affectedPeriods = allSchedules
         .filter(s => {
-            const offering = users.find(u => u.email === s.offeringId);
-            return offering?.email === user.email && s.dayOfWeek === dayOfWeek;
+            const offering = allOfferings.find(o => o.offeringId === s.offeringId);
+            return offering?.teacherEmail === user.email && s.dayOfWeek === dayOfWeek;
         })
         .map(s => s.period);
     
@@ -97,8 +98,9 @@ export default function TeacherLeavePage() {
             leaveDate: format(data.leaveDate, 'yyyy-MM-dd'),
             leaveReason: data.reason,
             affectedPeriods: affectedPeriods,
-            allSchedules: schedules,
-            allTeachers: users.filter(u => u.role === 'TEACHER'),
+            allSchedules: allSchedules,
+            allTeachers: allUsers.filter(u => u.role === 'TEACHER'),
+            allOfferings: allOfferings,
         }
 
         const aiResult = await findSubstituteTeacher(aiInput);
@@ -188,7 +190,7 @@ export default function TeacherLeavePage() {
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 disabled={(date) =>
-                                date < new Date() || date < new Date('1900-01-01')
+                                date < new Date(new Date().setDate(new Date().getDate() - 1)) // Disable past dates
                                 }
                                 initialFocus
                             />

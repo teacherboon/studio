@@ -36,9 +36,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { subjects as initialSubjects } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import type { Subject } from '@/lib/types';
+import { useData } from '@/context/data-context';
 
 
 function SubjectForm({ subjectData, onSave, closeDialog }: { subjectData: Partial<Subject> | null, onSave: (data: Subject) => void, closeDialog: () => void }) {
@@ -275,18 +275,20 @@ function SubjectImportCard({ onSubjectsImported }: { onSubjectsImported: (newSub
 }
 
 export default function ManageSubjectsPage() {
-    const [allSubjects, setAllSubjects] = useState<Subject[]>(initialSubjects.sort((a,b) => b.subjectId.localeCompare(a.subjectId)));
+    const { allSubjects, actions } = useData();
     const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
+    
+    const sortedSubjects = useMemo(() => allSubjects.sort((a,b) => b.subjectId.localeCompare(a.subjectId)), [allSubjects]);
 
     const handleSaveSubject = (data: Subject) => {
         const isEditing = allSubjects.some(s => s.subjectId === data.subjectId);
 
         if (isEditing) {
-            setAllSubjects(prev => prev.map(s => s.subjectId === data.subjectId ? data : s));
+            actions.updateSubject(data.subjectId, data);
             toast({ title: "แก้ไขสำเร็จ", description: "ข้อมูลรายวิชาได้รับการอัปเดตแล้ว" });
         } else {
             if (allSubjects.some(s => s.subjectCode.toLowerCase() === data.subjectCode.toLowerCase())) {
@@ -297,14 +299,14 @@ export default function ManageSubjectsPage() {
                 });
                 return;
             }
-            setAllSubjects(prev => [data, ...prev].sort((a,b) => b.subjectId.localeCompare(a.subjectId)));
+            actions.addSubject(data);
             toast({ title: "สร้างสำเร็จ", description: "รายวิชาใหม่ได้ถูกเพิ่มเข้าระบบแล้ว" });
         }
         setIsDialogOpen(false);
     }
     
     const handleDeleteSubject = (subjectId: string) => {
-        setAllSubjects(prev => prev.filter(s => s.subjectId !== subjectId));
+        actions.deleteSubject(subjectId);
         toast({ title: "ลบสำเร็จ", description: "รายวิชาได้ถูกลบออกจากระบบแล้ว" });
     }
 
@@ -314,29 +316,25 @@ export default function ManageSubjectsPage() {
     };
 
     const handleSubjectsImport = (newSubjects: Subject[]) => {
-        const existingCodes = new Set(allSubjects.map(s => s.subjectCode.toLowerCase()));
-        const uniqueNewSubjects = newSubjects.filter(
-            subject => !existingCodes.has(subject.subjectCode.toLowerCase())
-        );
+        const { importedCount, conflictCount } = actions.importSubjects(newSubjects);
 
-        if (uniqueNewSubjects.length < newSubjects.length) {
+        if (conflictCount > 0) {
             toast({
                 variant: 'destructive',
                 title: 'พบข้อมูลซ้ำซ้อน',
-                description: `ข้ามการนำเข้า ${newSubjects.length - uniqueNewSubjects.length} รายการ เนื่องจากมีรหัสวิชาซ้ำกับข้อมูลที่มีอยู่แล้ว`,
+                description: `ข้ามการนำเข้า ${conflictCount} รายการ เนื่องจากมีรหัสวิชาซ้ำกับข้อมูลที่มีอยู่แล้ว`,
             });
         }
 
-        if (uniqueNewSubjects.length > 0) {
-            setAllSubjects(prev => [...prev, ...uniqueNewSubjects].sort((a,b) => b.subjectId.localeCompare(a.subjectId)));
+        if (importedCount > 0) {
             toast({
                 title: 'นำเข้าสำเร็จ!',
-                description: `เพิ่มรายวิชาใหม่ ${uniqueNewSubjects.length} รายการ`,
+                description: `เพิ่มรายวิชาใหม่ ${importedCount} รายการ`,
             });
         }
     };
 
-    const paginatedSubjects = allSubjects.slice(
+    const paginatedSubjects = sortedSubjects.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );

@@ -29,12 +29,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { schedules as initialSchedules, offerings as initialOfferings, subjects, classes, users } from '@/lib/data';
 import type { DayOfWeek, Schedule, Offering, Subject, Class as ClassType, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { autoSchedule, AutoScheduleOutput } from '@/ai/flows/auto-schedule-flow';
 import { Combobox } from '@/components/ui/combobox';
+import { useData } from '@/context/data-context';
 
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
@@ -56,6 +56,7 @@ const periods = [
 ];
 
 function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], offerings: Offering[] }) {
+    const { allSubjects, allClasses, allUsers } = useData();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
     
@@ -65,9 +66,9 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
             const scheduledPeriods = schedules.filter(s => s.offeringId === offering.offeringId).length;
             const remaining = requiredPeriods - scheduledPeriods;
             
-            const subject = subjects.find(s => s.subjectId === offering.subjectId);
-            const classInfo = classes.find(c => c.classId === offering.classId);
-            const teacher = users.find(u => u.email === offering.teacherEmail);
+            const subject = allSubjects.find(s => s.subjectId === offering.subjectId);
+            const classInfo = allClasses.find(c => c.classId === offering.classId);
+            const teacher = allUsers.find(u => u.email === offering.teacherEmail);
 
             return {
                 offeringId: offering.offeringId,
@@ -83,7 +84,7 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
             if (b.remaining > 0 && a.remaining <= 0) return 1;
             return b.remaining - a.remaining;
         });
-    }, [schedules, offerings]);
+    }, [schedules, offerings, allSubjects, allClasses, allUsers]);
 
     const paginatedData = summaryData.slice(
         (currentPage - 1) * itemsPerPage,
@@ -156,30 +157,25 @@ function ScheduleSummaryCard({ schedules, offerings }: { schedules: Schedule[], 
     );
 }
 
-function AutoScheduleCard({ 
-    allSchedules,
-    allOfferings,
-    onSchedulesCreated 
-}: { 
-    allSchedules: Schedule[], 
-    allOfferings: Offering[],
-    onSchedulesCreated: (newSchedules: Schedule[]) => void,
-}) {
+function AutoScheduleCard({ onSchedulesCreated }: { onSchedulesCreated: (newSchedules: Schedule[]) => void }) {
+    const { allSchedules, allOfferings, allClasses, allUsers, allSubjects } = useData();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<AutoScheduleOutput | null>(null);
+
+    const offeringsToSchedule = useMemo(() => allOfferings.filter(o => !o.isConduct), [allOfferings]);
 
     const handleAutoSchedule = async () => {
         setLoading(true);
         setResult(null);
         try {
-            const classData = classes.map(c => ({ classId: c.classId, name: `${c.level}/${c.room}` }));
-            const teacherData = users.filter(u => u.role === 'TEACHER').map(t => ({ email: t.email, name: t.thaiName }));
+            const classData = allClasses.map(c => ({ classId: c.classId, name: `${c.level}/${c.room}` }));
+            const teacherData = allUsers.filter(u => u.role === 'TEACHER').map(t => ({ email: t.email, name: t.thaiName }));
             const periodNumbers = periods.filter(p => p.period !== null).map(p => p.period as number);
             const dayValues = daysOfWeek.map(d => d.value);
 
             const response = await autoSchedule({
-                offerings: allOfferings,
+                offerings: offeringsToSchedule,
                 existingSchedules: allSchedules,
                 teachers: teacherData,
                 classes: classData,
@@ -222,7 +218,7 @@ function AutoScheduleCard({
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Button onClick={handleAutoSchedule} disabled={loading}>
+                <Button onClick={handleAutoSchedule} disabled={loading || offeringsToSchedule.length === 0}>
                     {loading ? (
                         <>
                             <Loader2 className="mr-2 animate-spin" />
@@ -242,8 +238,8 @@ function AutoScheduleCard({
                         <ul className="list-disc list-inside text-sm text-muted-foreground mt-2">
                             {result.failedSchedules.map(fail => {
                                 const offering = allOfferings.find(o => o.offeringId === fail.offeringId);
-                                const subject = subjects.find(s => s.subjectId === offering?.subjectId);
-                                const classInfo = classes.find(c => c.classId === offering?.classId);
+                                const subject = allSubjects.find(s => s.subjectId === offering?.subjectId);
+                                const classInfo = allClasses.find(c => c.classId === offering?.classId);
                                 return (
                                     <li key={fail.offeringId}>
                                         <strong>{subject?.subjectCode} (ห้อง {classInfo?.level}/{classInfo?.room}):</strong> {fail.reason}
@@ -260,16 +256,16 @@ function AutoScheduleCard({
 
 function TeacherScheduleTable({ 
     teacherEmail, 
-    schedules, 
     onDelete 
 }: { 
     teacherEmail: string, 
-    schedules: Schedule[],
     onDelete: (scheduleId: string) => void,
 }) {
+    const { allSchedules, allOfferings, allSubjects, allClasses, allUsers } = useData();
+
     const getScheduleForCell = (day: DayOfWeek, period: number) => {
-        const offeringForTeacher = initialOfferings.filter(o => o.teacherEmail === teacherEmail);
-        const scheduleEntry = schedules.find(s => 
+        const offeringForTeacher = allOfferings.filter(o => o.teacherEmail === teacherEmail);
+        const scheduleEntry = allSchedules.find(s => 
             s.dayOfWeek === day && 
             s.period === period &&
             offeringForTeacher.some(o => o.offeringId === s.offeringId)
@@ -277,11 +273,11 @@ function TeacherScheduleTable({
 
         if (!scheduleEntry) return null;
 
-        const offering = initialOfferings.find(o => o.offeringId === scheduleEntry.offeringId);
+        const offering = allOfferings.find(o => o.offeringId === scheduleEntry.offeringId);
         if (!offering) return null;
 
-        const subject = subjects.find(s => s.subjectId === offering.subjectId);
-        const classInfo = classes.find(c => c.classId === offering.classId);
+        const subject = allSubjects.find(s => s.subjectId === offering.subjectId);
+        const classInfo = allClasses.find(c => c.classId === offering.classId);
 
         return (
             <div className="text-xs p-1 bg-primary/10 rounded-md relative group h-full">
@@ -302,7 +298,7 @@ function TeacherScheduleTable({
                         <AlertDialogHeader>
                             <AlertDialogTitle>ยืนยันการลบคาบสอน</AlertDialogTitle>
                             <AlertDialogDescription>
-                                คุณแน่ใจหรือไม่ว่าต้องการลบคาบสอน "{subject?.subjectNameTh}" ของครู {users.find(u => u.email === teacherEmail)?.thaiName}?
+                                คุณแน่ใจหรือไม่ว่าต้องการลบคาบสอน "{subject?.subjectNameTh}" ของครู {allUsers.find(u => u.email === teacherEmail)?.thaiName}?
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -353,9 +349,9 @@ function TeacherScheduleTable({
 }
 
 
-function AddScheduleDialog({ onAddSchedule, allSchedules }: { onAddSchedule: (schedule: Schedule) => void, allSchedules: Schedule[] }) {
+function AddScheduleDialog({ onAddSchedule }: { onAddSchedule: (schedule: Schedule) => void }) {
+    const { allOfferings, allSubjects, allClasses, allUsers } = useData();
     const [open, setOpen] = useState(false);
-    const classOfferings = initialOfferings;
     const { toast } = useToast();
     const [selectedOfferingId, setSelectedOfferingId] = useState('');
     const [selectedDay, setSelectedDay] = useState('');
@@ -412,10 +408,10 @@ function AddScheduleDialog({ onAddSchedule, allSchedules }: { onAddSchedule: (sc
                                 <SelectValue placeholder="เลือกวิชาที่เปิดสอน" />
                             </SelectTrigger>
                             <SelectContent>
-                                {classOfferings.map(o => {
-                                    const subject = subjects.find(s => s.subjectId === o.subjectId);
-                                    const classInfo = classes.find(c => c.classId === o.classId);
-                                    const teacher = users.find(u => u.email === o.teacherEmail);
+                                {allOfferings.map(o => {
+                                    const subject = allSubjects.find(s => s.subjectId === o.subjectId);
+                                    const classInfo = allClasses.find(c => c.classId === o.classId);
+                                    const teacher = allUsers.find(u => u.email === o.teacherEmail);
                                     return (
                                         <SelectItem key={o.offeringId} value={o.offeringId}>
                                             {subject?.subjectCode} (อ. {teacher?.thaiName}) - ห้อง {classInfo?.level}/{classInfo?.room}
@@ -470,6 +466,7 @@ function AddScheduleDialog({ onAddSchedule, allSchedules }: { onAddSchedule: (sc
 function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (newSchedules: Schedule[]) => void }) {
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { allOfferings } = useData();
 
     const handleDownloadTemplate = () => {
         const header = 'offeringId,dayOfWeek,period\n';
@@ -507,7 +504,7 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
                     const [offeringId, dayOfWeek, periodStr] = line.split(',').map(s => s.trim());
                     
                     const period = Number(periodStr);
-                    const validOffering = initialOfferings.some(o => o.offeringId === offeringId);
+                    const validOffering = allOfferings.some(o => o.offeringId === offeringId);
                     const validDay = daysOfWeek.some(d => d.value === dayOfWeek);
                     const validPeriod = periods.some(p => p.period === period);
 
@@ -584,9 +581,9 @@ function ImportSchedulesCard({ onSchedulesImported }: { onSchedulesImported: (ne
 
 
 export default function AdminSchedulesPage() {
-    const [allSchedules, setAllSchedules] = useState<Schedule[]>(initialSchedules);
+    const { allSchedules, allOfferings, allSubjects, allUsers, actions } = useData();
     const [selectedTeacherEmail, setSelectedTeacherEmail] = useState<string>('');
-    const allTeachers = users.filter(u => u.role === 'TEACHER');
+    const allTeachers = allUsers.filter(u => u.role === 'TEACHER');
     const selectedTeacher = allTeachers.find(t => t.email === selectedTeacherEmail);
     const { toast } = useToast();
 
@@ -598,56 +595,23 @@ export default function AdminSchedulesPage() {
     }, [allTeachers]);
 
     const handleAddSchedule = (schedule: Schedule) => {
-        const offering = initialOfferings.find(o => o.offeringId === schedule.offeringId);
-        if (!offering) return;
-
-        const teacherForOffering = offering.teacherEmail;
-
-        // Check for teacher conflict
-        const teacherSchedules = allSchedules.filter(s => {
-            const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
-            return schOffering?.teacherEmail === teacherForOffering;
-        });
-
-        const teacherConflict = teacherSchedules.some(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period);
-
-        if (teacherConflict) {
+        const result = actions.addSchedule(schedule);
+        if (result.success) {
             toast({
-                variant: 'destructive',
-                title: 'ตารางสอนซ้ำซ้อน (ครู)',
-                description: `ครู ${users.find(u => u.email === teacherForOffering)?.thaiName} มีคาบสอนแล้วในวันและเวลาดังกล่าว`,
+                title: 'บันทึกสำเร็จ',
+                description: 'เพิ่มคาบสอนใหม่ในตารางเรียบร้อยแล้ว',
             });
-            return;
+        } else {
+             toast({
+                variant: 'destructive',
+                title: result.error,
+                description: result.description,
+            });
         }
-
-        // Check for class conflict
-         const classSchedules = allSchedules.filter(s => {
-            const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
-            return schOffering?.classId === offering.classId;
-        });
-
-         const classConflict = classSchedules.some(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period);
-
-         if (classConflict) {
-             const conflictingOffering = initialOfferings.find(o => o.offeringId === classSchedules.find(s => s.dayOfWeek === schedule.dayOfWeek && s.period === schedule.period)!.offeringId);
-             const conflictingSubject = subjects.find(s => s.subjectId === conflictingOffering?.subjectId);
-              toast({
-                variant: 'destructive',
-                title: 'ตารางสอนซ้ำซ้อน (ห้องเรียน)',
-                description: `ห้องเรียนนี้มีคาบสอนวิชา "${conflictingSubject?.subjectNameTh}" ในวันและเวลาดังกล่าวแล้ว`,
-            });
-            return;
-         }
-
-        setAllSchedules(prev => [...prev, schedule]);
-        toast({
-            title: 'บันทึกสำเร็จ',
-            description: 'เพิ่มคาบสอนใหม่ในตารางเรียบร้อยแล้ว',
-        });
     }
     
     const handleDeleteSchedule = (scheduleId: string) => {
-        setAllSchedules(prev => prev.filter(s => s.scheduleId !== scheduleId));
+        actions.deleteSchedule(scheduleId);
         toast({
             title: 'ลบสำเร็จ',
             description: 'คาบสอนได้ถูกลบออกจากตารางแล้ว',
@@ -655,53 +619,29 @@ export default function AdminSchedulesPage() {
     }
 
     const handleSchedulesImport = (newSchedules: Schedule[]) => {
-        let schedulesWithConflicts: Schedule[] = [];
-        let uniqueNewSchedules: Schedule[] = [];
-        let currentSchedules = [...allSchedules];
+        const { importedCount, conflictCount } = actions.importSchedules(newSchedules);
 
-        newSchedules.forEach(ns => {
-            const offering = initialOfferings.find(o => o.offeringId === ns.offeringId);
-            if (!offering) return;
-
-            // Check teacher conflict
-            const teacherForOffering = offering.teacherEmail;
-            const teacherSchedules = currentSchedules.filter(s => {
-                const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
-                return schOffering?.teacherEmail === teacherForOffering;
-            });
-            const teacherConflict = teacherSchedules.some(s => s.dayOfWeek === ns.dayOfWeek && s.period === ns.period);
-
-            // Check class conflict
-            const classSchedules = currentSchedules.filter(s => {
-                const schOffering = initialOfferings.find(o => o.offeringId === s.offeringId);
-                return schOffering?.classId === offering.classId;
-            });
-            const classConflict = classSchedules.some(s => s.dayOfWeek === ns.dayOfWeek && s.period === ns.period);
-            
-            if (teacherConflict || classConflict) {
-                schedulesWithConflicts.push(ns);
-            } else {
-                uniqueNewSchedules.push(ns);
-                currentSchedules.push(ns); // Add to current check list to prevent duplicates within the same file
-            }
-        });
-
-        if (schedulesWithConflicts.length > 0) {
+        if (conflictCount > 0) {
             toast({
                 variant: "destructive",
                 title: "ตรวจพบข้อมูลซ้ำซ้อน",
-                description: `ไม่สามารถนำเข้า ${schedulesWithConflicts.length} รายการ เนื่องจากมีคาบสอนในเวลาดังกล่าวแล้ว (ครูหรือห้องเรียนไม่ว่าง)`
+                description: `ไม่สามารถนำเข้า ${conflictCount} รายการ เนื่องจากมีคาบสอนในเวลาดังกล่าวแล้ว (ครูหรือห้องเรียนไม่ว่าง)`
             });
         }
         
-        if (uniqueNewSchedules.length > 0) {
-            setAllSchedules(prevSchedules => [...prevSchedules, ...uniqueNewSchedules]);
+        if (importedCount > 0) {
             toast({
                 title: 'อัปโหลดสำเร็จ',
-                description: `นำเข้าตารางสอนใหม่ ${uniqueNewSchedules.length} รายการ`,
+                description: `นำเข้าตารางสอนใหม่ ${importedCount} รายการ`,
             });
         }
     }
+    
+    const handleSchedulesCreatedByAI = (newSchedules: Schedule[]) => {
+        actions.addSchedules(newSchedules);
+    }
+
+    const offeringsToSchedule = useMemo(() => allOfferings.filter(o => !o.isConduct), [allOfferings]);
 
     return (
         <div className="space-y-8">
@@ -710,15 +650,13 @@ export default function AdminSchedulesPage() {
                     <h1 className="text-3xl font-bold font-headline">จัดตารางสอน</h1>
                     <p className="text-muted-foreground">ดูและจัดการตารางสอนสำหรับครู, จัดตารางอัตโนมัติ, หรือนำเข้าข้อมูล</p>
                 </div>
-                <AddScheduleDialog onAddSchedule={handleAddSchedule} allSchedules={allSchedules} />
+                <AddScheduleDialog onAddSchedule={handleAddSchedule} />
             </div>
 
-            <ScheduleSummaryCard schedules={allSchedules} offerings={initialOfferings.filter(o => o.isConduct === false)} />
+            <ScheduleSummaryCard schedules={allSchedules} offerings={offeringsToSchedule} />
             
             <AutoScheduleCard 
-                allSchedules={allSchedules} 
-                allOfferings={initialOfferings.filter(o => o.isConduct === false)}
-                onSchedulesCreated={(newSchedules) => setAllSchedules(prev => [...prev, ...newSchedules])}
+                onSchedulesCreated={handleSchedulesCreatedByAI}
             />
 
             <ImportSchedulesCard onSchedulesImported={handleSchedulesImport} />
@@ -759,7 +697,6 @@ export default function AdminSchedulesPage() {
                     <CardContent>
                         <TeacherScheduleTable 
                             teacherEmail={selectedTeacher.email} 
-                            schedules={allSchedules}
                             onDelete={handleDeleteSchedule}
                         />
                     </CardContent>
@@ -768,5 +705,3 @@ export default function AdminSchedulesPage() {
         </div>
     )
 }
-
-    

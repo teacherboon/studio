@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import {
   Card,
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
-import { scores, offerings, subjects, classes, students, studentAttributes } from "@/lib/data";
 import { calculateGPA } from "@/lib/utils";
 import type { StudentGradeDetails, Score } from '@/lib/types';
 import { Download, FileWarning, Loader2, BarChart } from 'lucide-react';
@@ -27,9 +26,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { analyzeStudentScores, type AnalyzeStudentScoresOutput } from '@/ai/flows/analyze-student-scores';
 import { useToast } from '@/hooks/use-toast';
 import { GradeReportSheet } from '@/components/grade-report-sheet';
+import { useData } from '@/context/data-context';
 
 export default function StudentGradesPage() {
   const user = useUser();
+  const { allScores, allOfferings, allSubjects, allStudents, allStudentAttributes, allClasses } = useData();
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalyzeStudentScoresOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
@@ -42,8 +43,8 @@ export default function StudentGradesPage() {
     documentTitle: `grade-report-${user?.studentId}-${selectedTerm}`,
   });
   
-  const studentData = user ? students.find(s => s.studentId === user.studentId) : null;
-  const studentScores = user ? scores.filter(s => s.studentId === user.studentId) : [];
+  const studentData = useMemo(() => user ? allStudents.find(s => s.studentId === user.studentId) : null, [user, allStudents]);
+  const studentScores = useMemo(() => user ? allScores.filter(s => s.studentId === user.studentId) : [], [user, allScores]);
 
   useEffect(() => {
     const handleAnalyzeScores = async () => {
@@ -55,8 +56,8 @@ export default function StudentGradesPage() {
       setIsAnalyzing(true);
       try {
           const allStudentScoresForAnalysis = studentScores.map(s => {
-              const offeringInfo = offerings.find(o => o.offeringId === s.offeringId);
-              const subjectInfo = subjects.find(sub => sub.subjectId === offeringInfo?.subjectId);
+              const offeringInfo = allOfferings.find(o => o.offeringId === s.offeringId);
+              const subjectInfo = allSubjects.find(sub => sub.subjectId === offeringInfo?.subjectId);
               return {
                 subjectName: subjectInfo?.subjectNameTh || 'N/A',
                 term: offeringInfo?.termLabel || 'N/A',
@@ -88,17 +89,19 @@ export default function StudentGradesPage() {
       }
     };
 
-    if (user) {
+    if (user && studentScores.length > 0) {
         handleAnalyzeScores();
+    } else if (!user) {
+        setIsAnalyzing(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, studentScores.length]); 
 
-  const availableTerms = [...new Set(
-    offerings
+  const availableTerms = useMemo(() => [...new Set(
+    allOfferings
       .filter(o => studentScores.some(s => s.offeringId === o.offeringId))
       .map(o => o.termLabel)
-  )].sort((a,b) => b.localeCompare(a)); 
+  )].sort((a,b) => b.localeCompare(a)), [allOfferings, studentScores]); 
 
   useEffect(() => {
     if(availableTerms.length > 0 && !selectedTerm) {
@@ -106,32 +109,31 @@ export default function StudentGradesPage() {
     }
   }, [availableTerms, selectedTerm]);
 
-  const scoresForTerm = studentScores.filter(score => {
-    const offering = offerings.find(o => o.offeringId === score.offeringId);
+  const scoresForTerm = useMemo(() => studentScores.filter(score => {
+    const offering = allOfferings.find(o => o.offeringId === score.offeringId);
     return offering?.termLabel === selectedTerm;
-  });
+  }), [studentScores, selectedTerm, allOfferings]);
 
-  const gradeDetails: StudentGradeDetails[] = scoresForTerm.map(score => {
-    const offering = offerings.find(o => o.offeringId === score.offeringId);
-    const subject = subjects.find(s => s.subjectId === offering?.subjectId);
+  const gradeDetails: StudentGradeDetails[] = useMemo(() => scoresForTerm.map(score => {
+    const offering = allOfferings.find(o => o.offeringId === score.offeringId);
+    const subject = allSubjects.find(s => s.subjectId === offering?.subjectId);
     return {
       ...score,
       subjectName: subject?.subjectNameTh || 'N/A',
       subjectCode: subject?.subjectCode || 'N/A',
       subjectType: subject?.type || 'พื้นฐาน',
     };
-  });
+  }), [scoresForTerm, allOfferings, allSubjects]);
   
-  const currentClass = classes.find(c => {
+  const currentClass = useMemo(() => allClasses.find(c => {
     if (scoresForTerm.length === 0) return false;
-    const offering = offerings.find(o => o.offeringId === scoresForTerm[0]?.offeringId);
+    const offering = allOfferings.find(o => o.offeringId === scoresForTerm[0]?.offeringId);
     return c.classId === offering?.classId;
-  });
+  }), [scoresForTerm, allOfferings, allClasses]);
 
-  const attributesForYear = studentAttributes.find(attr => attr.studentId === studentData?.studentId && currentClass && String(attr.yearBe) === currentClass.yearBe.toString());
+  const attributesForYear = useMemo(() => allStudentAttributes.find(attr => attr.studentId === studentData?.studentId && currentClass && String(attr.yearBe) === currentClass.yearBe.toString()), [allStudentAttributes, studentData, currentClass]);
 
-
-  const gpa = calculateGPA(scoresForTerm as Score[]);
+  const gpa = useMemo(() => calculateGPA(scoresForTerm as Score[]), [scoresForTerm]);
 
   if (!user || !studentData) {
     return (

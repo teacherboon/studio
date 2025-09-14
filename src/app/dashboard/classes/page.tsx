@@ -7,11 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { classes, students as allStudents, enrollments, scores as initialScores, type Score, offerings as initialOfferings, subjects } from "@/lib/data";
-import { Download, Upload, Users, FileText, Save, Edit, School, BookOpen, Calendar, PlusCircle } from 'lucide-react';
+import { Download, Upload, Users, FileText, Save, Edit, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Offering, Class } from '@/lib/types';
+import type { Offering, Score } from '@/lib/types';
 import { useUser } from '@/hooks/use-user';
 import {
   Select,
@@ -30,11 +29,13 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { useData } from '@/context/data-context';
 
 
 function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: Offering) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const user = useUser();
     const { toast } = useToast();
+    const { allSubjects, allClasses } = useData();
     
     const [selectedSubject, setSelectedSubject] = useState('');
     const [selectedClass, setSelectedClass] = useState('');
@@ -44,11 +45,11 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
     const [yearMode, setYearMode] = useState<"PRIMARY" | "SECONDARY">('PRIMARY');
 
     const availableClasses = useMemo(() => {
-      return classes.filter(c => c.yearBe === yearBe && c.isActive);
-    }, [yearBe]);
+      return allClasses.filter(c => c.yearBe === yearBe && c.isActive);
+    }, [yearBe, allClasses]);
 
     useEffect(() => {
-        if (!open) {
+        if (open) {
             const currentYear = new Date().getFullYear() + 543;
             setSelectedSubject('');
             setSelectedClass('');
@@ -100,7 +101,7 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>เพิ่มรายวิchaที่สอน</DialogTitle>
+                    <DialogTitle>เพิ่มรายวิชาที่สอน</DialogTitle>
                     <DialogDescription>
                          กำหนดวิชา, ห้องเรียน, และปี/ภาคการศึกษาที่คุณจะสอน
                     </DialogDescription>
@@ -121,7 +122,7 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
                                 <SelectValue placeholder="เลือกรายวิชา" />
                             </SelectTrigger>
                             <SelectContent>
-                                {subjects.map(s => (
+                                {allSubjects.map(s => (
                                     <SelectItem key={s.subjectId} value={s.subjectId}>{s.subjectCode} - {s.subjectNameTh}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -192,7 +193,8 @@ function CreateOfferingDialog({ onSave, open, onOpenChange }: { onSave: (data: O
 
 export default function ClassesPage() {
     const user = useUser();
-    const [allOfferings, setAllOfferings] = useState<Offering[]>(initialOfferings);
+    const { allOfferings, allStudents, allScores, allSubjects, actions } = useData();
+    
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -203,20 +205,8 @@ export default function ClassesPage() {
 
     const allOfferingsForTeacher = useMemo(() => {
         if (!user) return [];
-        return allOfferings
-            .filter(o => o.teacherEmail === user.email)
-            .map(o => {
-                const subject = subjects.find(s => s.subjectId === o.subjectId);
-                const classInfo = classes.find(c => c.classId === o.classId);
-                return {
-                    ...o,
-                    subjectName: subject?.subjectNameTh || 'N/A',
-                    subjectCode: subject?.subjectCode || 'N/A',
-                    className: `ห้อง ${classInfo?.level}/${classInfo?.room}` || 'N/A',
-                    termDisplay: o.termLabel.includes('/') ? ` (เทอม ${o.termLabel})` : ''
-                }
-            }).sort((a,b) => b.yearBe - a.yearBe || a.subjectName.localeCompare(b.subjectName));
-    }, [user, allOfferings]);
+        return actions.getOfferingsForTeacher(user.email);
+    }, [user, allOfferings, actions]);
 
     const academicYears = useMemo(() => {
         const years = [...new Set(allOfferingsForTeacher.map(o => o.yearBe))];
@@ -234,15 +224,8 @@ export default function ClassesPage() {
 
     const studentsInClass = useMemo(() => {
         if (!selectedOffering) return [];
-
-        const studentIdsInClass = enrollments
-            .filter(e => e.classId === selectedOffering.classId)
-            .map(e => e.studentId);
-            
-        return allStudents
-            .filter(s => studentIdsInClass.includes(s.studentId))
-            .sort((a, b) => (a.classNumber || 999) - (b.classNumber || 999));
-    }, [selectedOffering]);
+        return actions.getStudentsInClass(selectedOffering.classId);
+    }, [selectedOffering, allStudents, actions]);
 
 
     useEffect(() => {
@@ -252,11 +235,11 @@ export default function ClassesPage() {
         }
         const initialClassScores: Record<string, number | null> = {};
         studentsInClass.forEach(student => {
-            const existingScore = initialScores.find(s => s.studentId === student.studentId && s.offeringId === selectedOffering.offeringId);
+            const existingScore = allScores.find(s => s.studentId === student.studentId && s.offeringId === selectedOffering.offeringId);
             initialClassScores[student.studentId] = existingScore?.rawScore ?? null;
         });
         setStudentScores(initialClassScores);
-    }, [studentsInClass, selectedOffering]);
+    }, [studentsInClass, selectedOffering, allScores]);
     
      useEffect(() => {
         if (academicYears.length > 0 && !selectedYear) {
@@ -292,7 +275,7 @@ export default function ClassesPage() {
             return;
         }
         
-        setAllOfferings(prev => [data, ...prev]);
+        actions.addOffering(data);
         toast({ title: "สร้างสำเร็จ", description: "เพิ่มรายวิชาที่เปิดสอนใหม่เรียบร้อย" });
     }
 
@@ -304,30 +287,38 @@ export default function ClassesPage() {
     };
 
     const handleSaveScores = () => {
-        if (!selectedOffering) return;
+        if (!selectedOffering || !user) return;
+        
+        const scoresToUpdate: Score[] = [];
+        const scoresToAdd: Score[] = [];
+        const subject = allSubjects.find(s => s.subjectId === selectedOffering.subjectId);
 
         Object.entries(studentScores).forEach(([studentId, rawScore]) => {
-            const scoreIndex = initialScores.findIndex(s => s.studentId === studentId && s.offeringId === selectedOffering.offeringId);
-            if (scoreIndex !== -1) {
-                initialScores[scoreIndex].rawScore = rawScore;
+            const existingScore = allScores.find(s => s.studentId === studentId && s.offeringId === selectedOffering.offeringId);
+            if (existingScore) {
+                scoresToUpdate.push({ ...existingScore, rawScore, updatedBy: user.email, updatedAt: new Date().toISOString() });
             } else {
-                 initialScores.push({
+                 scoresToAdd.push({
                     scoreId: `new-score-${Date.now()}-${studentId}`,
                     offeringId: selectedOffering.offeringId,
                     studentId: studentId,
                     rawScore: rawScore,
-                    letterGrade: null,
-                    gradePoint: null,
-                    credits: subjects.find(s => s.subjectId === selectedOffering.subjectId)?.defaultCredits || 0,
+                    letterGrade: null, // This would be calculated on the backend/server
+                    gradePoint: null, // This would be calculated on the backend/server
+                    credits: subject?.defaultCredits || 0,
                     statusFlag: 'NORMAL',
-                    updatedBy: user?.email || '',
+                    updatedBy: user.email,
                     updatedAt: new Date().toISOString(),
                 });
             }
         });
+
+        actions.updateScores(scoresToUpdate);
+        actions.addScores(scoresToAdd);
+        
         toast({
             title: 'บันทึกคะแนนสำเร็จ',
-            description: 'คะแนนของนักเรียนได้รับการอัปเดตแล้ว (จำลอง)',
+            description: 'คะแนนของนักเรียนได้รับการอัปเดตแล้ว',
         });
     };
 

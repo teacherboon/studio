@@ -4,10 +4,10 @@
 import { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { schedules, offerings, subjects, classes, users, students } from '@/lib/data';
 import type { DayOfWeek } from '@/lib/types';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useData } from '@/context/data-context';
 
 const daysOfWeek: { value: DayOfWeek; label: string }[] = [
     { value: 'MONDAY', label: 'วันจันทร์' },
@@ -28,9 +28,10 @@ const periods = [
 ];
 
 function ScheduleTable({ classId }: { classId: string | undefined}) {
+    const { allSchedules, allOfferings, allSubjects, allUsers } = useData();
     const getScheduleForCell = (day: DayOfWeek, period: number) => {
-        const offeringInClass = offerings.filter(o => o.classId === classId);
-        const scheduleEntry = schedules.find(s => 
+        const offeringInClass = allOfferings.filter(o => o.classId === classId);
+        const scheduleEntry = allSchedules.find(s => 
             s.dayOfWeek === day && 
             s.period === period &&
             offeringInClass.some(o => o.offeringId === s.offeringId)
@@ -38,11 +39,11 @@ function ScheduleTable({ classId }: { classId: string | undefined}) {
 
         if (!scheduleEntry) return null;
 
-        const offering = offerings.find(o => o.offeringId === scheduleEntry.offeringId);
+        const offering = allOfferings.find(o => o.offeringId === scheduleEntry.offeringId);
         if (!offering) return null;
 
-        const subject = subjects.find(s => s.subjectId === offering.subjectId);
-        const teacher = users.find(u => u.email === offering.teacherEmail);
+        const subject = allSubjects.find(s => s.subjectId === offering.subjectId);
+        const teacher = allUsers.find(u => u.email === offering.teacherEmail);
 
         return (
             <div className="text-xs p-1 bg-primary/10 rounded-md">
@@ -91,16 +92,25 @@ function ScheduleTable({ classId }: { classId: string | undefined}) {
 
 export default function StudentSchedulePage() {
     const user = useUser();
+    const { allStudents, allClasses, allEnrollments } = useData();
     
     const studentData = useMemo(() => {
         if (!user || !user.studentId) return null;
-        return students.find(s => s.studentId === user.studentId);
-    }, [user]);
+        return allStudents.find(s => s.studentId === user.studentId);
+    }, [user, allStudents]);
+
+    const currentEnrollment = useMemo(() => {
+        if (!studentData) return null;
+        const currentYear = new Date().getFullYear() + 543;
+        // Find the active class for the current year.
+        const activeClassesForYear = allClasses.filter(c => c.yearBe === currentYear && c.isActive);
+        return allEnrollments.find(e => e.studentId === studentData.studentId && activeClassesForYear.some(c => c.classId === e.classId));
+    }, [studentData, allClasses, allEnrollments]);
 
     const currentClass = useMemo(() => {
-        if (!studentData) return null;
-        return classes.find(c => c.level === studentData.level && c.room === studentData.room && c.isActive);
-    }, [studentData]);
+        if (!currentEnrollment) return null;
+        return allClasses.find(c => c.classId === currentEnrollment.classId);
+    }, [currentEnrollment, allClasses]);
 
     if (!user || !studentData || !currentClass) {
         return (
